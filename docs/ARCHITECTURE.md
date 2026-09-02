@@ -174,10 +174,36 @@ Two ordering rules that are not obvious:
 - **Refresh the graph before creating the Data Agent**, or the agent binds to an ontology
   with no traversable graph and every relationship question fails.
 
-Prerequisites: an F-SKU capacity ID and tenant ID in `src/config.yaml`, both in
-**Sweden Central**. Keep the Foundry project in the same region — the call path is
-already `orchestrator → tool → data agent → DAX`; a cross-region hop is latency added to
-a chain that is the accepted cost of the boundary rule, not a place to spend more.
+### Capacity, region and tenant prerequisites
+
+Verified against Microsoft Learn (fetched 2026-02, primary source, not a summary).
+
+| Requirement | This demo | Source |
+|---|---|---|
+| Capacity SKU | **F2 or higher**, paid (or P1+). Trial SKUs cannot use Azure OpenAI. Our `fabriccapacitysweden` is an **F8** — sufficient | [Create a Fabric data agent § Prerequisites](https://learn.microsoft.com/fabric/data-science/how-to-create-data-agent) |
+| Capacity region | **Sweden Central** — inside the **EU Data Boundary** | [Copilot in Fabric § Available regions](https://learn.microsoft.com/fabric/fundamentals/copilot-fabric-overview#available-regions) |
+| Cross-geo processing | **Not required.** The Azure OpenAI service backing Fabric Copilot is deployed in US datacenters *and in the EU Data Boundary*; an EU capacity maps to EU hosting, so the tenant switch stays off | same |
+| Tenant switches | Copilot on; **Standalone Copilot experience** on (Admin portal → Copilot). Without the second one, data agents fail inside Copilot scenarios even when every other Copilot switch is green | [Data agent tutorial](https://learn.microsoft.com/fabric/data-science/data-agent-end-to-end-tutorial) |
+
+Three things worth knowing before someone "helpfully" moves this demo:
+
+- **F64 is not required.** The F64 figure circulating for Fabric AI is the old Copilot
+  threshold. Data agents need F2. The F64 number in the consumption doc is an *example*
+  used to size CU cost, not a floor.
+- **A UK capacity would be worse than a Swedish one**, not better. The region table maps
+  UK → EU Data Boundary as a *cross-geo* hop requiring the tenant switch; EU → EU does not.
+  For a client whose whole argument is auditability under the French transparency regime,
+  "the data never left the EU boundary and no override was enabled" is part of the pitch.
+- **Do not reason from the Text Analytics region list.** That table (North Europe, West
+  Europe, France Central, Norway East, Switzerland, UK South/West) excludes Sweden Central
+  and governs Text Analytics and Translator only — not the Azure OpenAI path the data
+  agent uses.
+
+Keep the Foundry project in **Sweden Central** too. The call path is already
+`orchestrator → tool → data agent → DAX`; a cross-region hop is latency added to a chain
+that is the accepted cost of the boundary rule, not a place to spend more.
+
+Both the capacity ID and tenant ID live in `src/config.yaml`, which is gitignored.
 
 ---
 
