@@ -189,10 +189,10 @@ Fab-Zava-Media/
 ├── tests/
 │   ├── test_smoke.py           the demo storyline, locked mechanically
 │   ├── test_deploy_scripts.py  the seams between the deploy scripts
-│   └── test_foundry_scripts.py the Foundry failures that deploy cleanly
-├── scripts/
-├── taskflow/
-└── presentation/
+│   ├── test_foundry_scripts.py the Foundry failures that deploy cleanly
+│   └── test_taskflow.py        the task flow schema traps
+└── taskflow/
+    └── zava_media_taskflow.json  workspace canvas — imported by hand, no REST API exists
 ```
 
 `src/config.yaml` and `src/state.json` are gitignored — they carry tenant, capacity and
@@ -207,7 +207,7 @@ item GUIDs. `state.example.json` shows the shape; every ID in it is written by a
 python -m pytest tests/ -v --tb=short
 ```
 
-**149 tests, no tenant required.** Three files, three different jobs.
+**160 tests, no tenant required.** Four files, four different jobs.
 
 `test_smoke.py` guards the **dataset**. It asserts the exact anomaly percentages
 (+12.00 / +11.00 / −8.00), that background noise stays visibly below them, that spend
@@ -247,6 +247,15 @@ place:
   silently disables `responses`)
 - a date-shaped api-version on the Agents data plane (→ 400, reads as a broken route)
 - a GUID hardcoded where a connection name belongs (→ works here, breaks on promotion)
+
+`test_taskflow.py` guards the **one artifact no API validates**. Task flows have no REST
+endpoint, so the workspace canvas is imported by hand in front of the customer and the
+portal either parses it or says "import failed" with no line number. The guard catches a
+non-ASCII character anywhere in the prose (invisible in a diff, fatal to the parser), a BOM,
+`taskType` instead of `type`, an edge pointing at an id no task declares (draws nothing,
+raises nothing), and an item renamed in `config.example.yaml` but not on the canvas. It also
+asserts the two Foundry agents stay *off* the canvas: a task flow maps Fabric items, and
+putting them there would imply Fabric owns them.
 
 Harmonise the clauses, smooth an anomaly, or rename a measure on one side of a seam, and
 the suite fails — which is the intent. The demo can break while every file still looks fine.

@@ -1,0 +1,88 @@
+{
+  "tasks": [
+    {
+      "type": "get data",
+      "id": "a0000000-0000-4000-a000-000000000001",
+      "name": "Ingest plan, delivery and billing",
+      "description": "Eleven CSV tables uploaded to OneLake Files. Media plan (what was sold), delivery (what ran) and billing (what was invoiced) arrive as three separate systems would deliver them, because the gaps between them are the point."
+    },
+    {
+      "type": "store data",
+      "id": "a0000000-0000-4000-a000-000000000002",
+      "name": "Lakehouse - ZavaMediaLH",
+      "description": "Batch layer. Star schema over seven dimensions and three facts, roughly 65000 rows."
+    },
+    {
+      "type": "prepare data",
+      "id": "a0000000-0000-4000-a000-000000000003",
+      "name": "CSV to Delta",
+      "description": "Spark notebook. Calendar columns are forced to STRING on purpose: inferred dates break the Direct Lake join downstream."
+    },
+    {
+      "type": "track data",
+      "id": "a0000000-0000-4000-a000-000000000004",
+      "name": "Live pacing - RT_Zava_Media",
+      "description": "Eventhouse and KQL database carrying a trailing window of campaign pacing deltas. Feeds the ontology as a TimeSeries binding, so one question can cross batch and live."
+    },
+    {
+      "type": "analyze and train data",
+      "id": "a0000000-0000-4000-a000-000000000005",
+      "name": "Ontology - ONT_Zava_Media",
+      "description": "Fabric IQ. Seven entity types, nine relationships, one TimeSeries binding. Populate and RefreshGraph run as a separate step: creating the ontology does NOT populate the graph, and an empty graph answers every relationship question with nothing, successfully."
+    },
+    {
+      "type": "analyze and train data",
+      "id": "a0000000-0000-4000-a000-000000000006",
+      "name": "Semantic model - SM_Zava_Media",
+      "description": "Direct Lake model, around 35 DAX measures, Prep for AI enabled. This is where a delivery-versus-plan figure is defined once, so Fabric and Foundry cannot disagree about it."
+    },
+    {
+      "type": "visualize",
+      "id": "a0000000-0000-4000-a000-000000000007",
+      "name": "Report - Zava_Media_Report",
+      "description": "The human-facing view of the same measures the agent quotes."
+    },
+    {
+      "type": "develop",
+      "id": "a0000000-0000-4000-a000-000000000008",
+      "name": "Data agent - Zava_Media_Analyst",
+      "description": "Answers the number, and only the number. Reaches the ontology over GQL and the semantic model over DAX. Consumed from Foundry as a tool, never as a knowledge source. Must be PUBLISHED: a draft is invisible to Foundry and the connection resolves to nothing."
+    }
+  ],
+  "edges": [
+    {
+      "source": "a0000000-0000-4000-a000-000000000001",
+      "target": "a0000000-0000-4000-a000-000000000002"
+    },
+    {
+      "source": "a0000000-0000-4000-a000-000000000002",
+      "target": "a0000000-0000-4000-a000-000000000003"
+    },
+    {
+      "source": "a0000000-0000-4000-a000-000000000003",
+      "target": "a0000000-0000-4000-a000-000000000005"
+    },
+    {
+      "source": "a0000000-0000-4000-a000-000000000003",
+      "target": "a0000000-0000-4000-a000-000000000006"
+    },
+    {
+      "source": "a0000000-0000-4000-a000-000000000004",
+      "target": "a0000000-0000-4000-a000-000000000005"
+    },
+    {
+      "source": "a0000000-0000-4000-a000-000000000005",
+      "target": "a0000000-0000-4000-a000-000000000008"
+    },
+    {
+      "source": "a0000000-0000-4000-a000-000000000006",
+      "target": "a0000000-0000-4000-a000-000000000008"
+    },
+    {
+      "source": "a0000000-0000-4000-a000-000000000006",
+      "target": "a0000000-0000-4000-a000-000000000007"
+    }
+  ],
+  "name": "Zava Media - plan to answer",
+  "description": "Media agency analytics: plan versus delivery versus billing, crossed with live pacing, exposed to Foundry as a data agent. The Foundry half (contracts corpus and supervisor) is deliberately absent from this canvas: task flows map Fabric items, and those agents are not Fabric items."
+}

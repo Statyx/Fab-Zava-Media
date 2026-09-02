@@ -234,6 +234,17 @@ The canonical order, and the artifact each step needs from the previous one:
 | 12 | Fabric data agent connection | `deploy_foundry_connection.py` | **published** data agent |
 | 13 | Contracts agent + supervisor | `deploy_foundry_agents.py` | the connection |
 
+Then one step the chain **cannot** perform:
+
+| — | Workspace task flow | `taskflow/zava_media_taskflow.json`, imported by hand | every item above |
+
+Task flows are a workspace **UI feature**, not a Fabric item type. There is no REST
+endpoint, no item to POST, nothing to poll — the only way in is the portal's *Import a task
+flow* button. The JSON also carries tasks and edges only, so item assignments and canvas
+positions do not survive an export/import round trip and must be redone. It is last because
+it assigns the items the thirteen steps create. `taskflow/README.md` has the assignment
+table, and `tests/test_taskflow.py` validates the file offline, since nothing else will.
+
 Ordering rules that are not obvious, and each cost a debugging session:
 
 - **Publish the Data Agent.** An unpublished agent is invisible to Foundry. The connection
@@ -314,7 +325,7 @@ Stated plainly, because a demo that oversells is worse than one that is narrow.
   hundreds of contracts, with amendments and versions, is a different problem.
 - Nothing here addresses identity passthrough at scale — the demo runs as one principal.
 - **The chain has not been run against a live tenant.** Everything is structurally
-  validated — 149 offline tests — which catches shape errors and catches nothing about
+  validated — 160 offline tests — which catches shape errors and catches nothing about
   behaviour. Three things in particular are unproven: which `category` ARM accepts for a
   Fabric data agent connection (`deploy_foundry_connection.py` probes three and records the
   winner), the availability of the chosen model and version in Sweden Central, and whether
