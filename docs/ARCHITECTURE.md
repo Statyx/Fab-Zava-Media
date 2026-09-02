@@ -229,10 +229,14 @@ The canonical order, and the artifact each step needs from the previous one:
 | 7 | Ontology (Fabric IQ) | `deploy_ontology.py` | Delta tables **and** the KQL table |
 | 8 | Graph population + refresh | `deploy_graph.py` | `ontology_id` |
 | 9 | Semantic model | `deploy_semantic_model.py` | `lakehouse_sql_endpoint` |
-| 10 | Data agent (published) | `deploy_data_agent.py` | `ontology_id` **and** `semantic_model_id` |
-| 11 | Foundry project + model | `deploy_foundry_project.py` | subscription, region |
-| 12 | Fabric data agent connection | `deploy_foundry_connection.py` | **published** data agent |
-| 13 | Contracts agent + supervisor | `deploy_foundry_agents.py` | the connection |
+| 10 | Power BI report | `deploy_report.py` | `semantic_model_id` |
+| 11 | Data agent (published) | `deploy_data_agent.py` | `ontology_id` **and** `semantic_model_id` |
+| 12 | Foundry project + model | `deploy_foundry_project.py` | subscription, region |
+| 13 | Fabric data agent connection | `deploy_foundry_connection.py` | **published** data agent |
+| 14 | Contracts agent + supervisor | `deploy_foundry_agents.py` | the connection |
+
+Step 10 sits between the model and the data agent because it binds to the model by id,
+and because everything after it is Foundry — the report is the last purely-Fabric artifact.
 
 Then one step the chain **cannot** perform:
 
@@ -244,7 +248,7 @@ Task flows are a workspace **UI feature**, not a Fabric item type. There is no R
 endpoint, no item to POST, nothing to poll — the only way in is the portal's *Import a task
 flow* button. The JSON also carries tasks and edges only, so item assignments and canvas
 positions do not survive an export/import round trip and must be redone. It is last because
-it assigns the items the thirteen steps create. `taskflow/README.md` has the assignment
+it assigns the items the fourteen steps create. `taskflow/README.md` has the assignment
 table, and `tests/test_taskflow.py` validates the file offline, since nothing else will.
 
 Ordering rules that are not obvious, and each cost a debugging session:

@@ -176,6 +176,7 @@ Fab-Zava-Media/
 │   ├── deploy_graph.py         graph population (the ontology does NOT do this)
 │   ├── refresh_graph.py        standalone RefreshGraph job
 │   ├── deploy_semantic_model.py  Direct Lake model, ~35 DAX measures, Prep for AI
+│   ├── deploy_report.py        Zava_Media_Report — 3 pages / 27 visuals, PBIR only
 │   ├── deploy_data_agent.py    Zava_Media_Analyst — ontology (GQL) + model (DAX)
 │   ├── foundry_common.py       ARM + Agents data-plane helpers (two api-versions, one 'v1')
 │   ├── deploy_foundry_project.py     RG + AI Services account + project + model deployment
@@ -190,7 +191,10 @@ Fab-Zava-Media/
 │   ├── test_smoke.py           the demo storyline, locked mechanically
 │   ├── test_deploy_scripts.py  the seams between the deploy scripts
 │   ├── test_foundry_scripts.py the Foundry failures that deploy cleanly
+│   ├── test_report.py         the PBIR traps that VALIDATE cleanly
 │   └── test_taskflow.py        the task flow schema traps
+├── report/
+│   └── Zava_Media_Report.Report/  generated PBIR folder — rebuilt from scratch each run
 └── taskflow/
     └── zava_media_taskflow.json  workspace canvas — imported by hand, no REST API exists
 ```
