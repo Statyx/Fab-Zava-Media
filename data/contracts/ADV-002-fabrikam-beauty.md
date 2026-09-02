@@ -1,87 +1,88 @@
-# Contrat-cadre d'achat d'espace publicitaire
+# Media Buying Framework Agreement
 
-> **Document de démonstration — entièrement fictif.**
-> Zava Media, Fabrikam Beauty et les régies citées sont des entités imaginaires.
-> Ce texte n'a aucune valeur juridique et ne reproduit aucun contrat réel.
+> **Demonstration document — entirely fictional.**
+> Zava Media, Fabrikam Beauty and the media owners named here are imaginary entities.
+> This text has no legal value and reproduces no real contract.
 
-**Référence :** ZM-ADV-002-2026
-**Entre :** Zava Media SAS, ci-après « l'Agence »
-**Et :** Fabrikam Beauty SAS, ci-après « l'Annonceur »
-**Identifiant annonceur :** ADV-002
+**Reference:** ZM-ADV-002-2026
+**Between:** Zava Media SAS, hereinafter "the Agency"
+**And:** Fabrikam Beauty SAS, hereinafter "the Advertiser"
+**Advertiser ID:** ADV-002
 
 ---
 
-## Article 1 — Objet
+## Article 1 — Purpose
 
-L'Agence assure la planification, l'achat et le contrôle de la diffusion des campagnes
-médias de l'Annonceur sur les marchés et pour les marques visés à l'Article 3.
+The Agency shall plan, buy and monitor the broadcast of the Advertiser's media campaigns
+for the brands and markets listed in Article 3.
 
-## Article 2 — Durée
+## Article 2 — Term
 
-Du 1er janvier 2026 au 31 décembre 2026.
+From 1 January 2026 to 31 December 2026.
 
-## Article 3 — Périmètre
+## Article 3 — Scope
 
-**3.1 Marques couvertes :** Fabrikam Skin, Fabrikam Hair.
+**3.1 Brands covered:** Fabrikam Skin, Fabrikam Hair.
 
-**3.2 Marchés couverts :** France, Espagne, Italie, Allemagne, Royaume-Uni.
+**3.2 Markets covered:** France, Spain, Italy, Germany, United Kingdom.
 
-## Article 4 — Rémunération de l'Agence
+## Article 4 — Agency remuneration
 
-**4.1** Honoraires forfaitaires trimestriels, complétés d'une part variable indexée sur
-l'atteinte des objectifs de couverture définis au plan annuel.
+**4.1** Fixed quarterly fees, plus a variable component indexed on achievement of the
+reach objectives set out in the annual plan.
 
-**4.2** Aucune commission n'est prélevée sur le montant des achats.
+**4.2** No commission is charged on the value of media purchased.
 
-## Article 5 — Engagement de volume et obligation de résultat
+## Article 5 — Volume commitment and obligation of result
 
-**5.1** Les volumes figurant aux plans médias trimestriels validés constituent un
-**engagement de livraison** de l'Agence, et non une simple estimation.
+**5.1** The volumes stated in approved quarterly media plans constitute a **delivery
+commitment** by the Agency, not a mere estimate.
 
-**5.2** Investissement média net annuel minimum : **5 500 000 EUR**.
+**5.2** Minimum annual net media investment: **EUR 5,500,000**.
 
-## Article 6 — Écarts de livraison
+## Article 6 — Delivery variances
 
-**6.1 Appréciation.** Les écarts sont constatés **par marché et par trimestre**, sur la
-base des volumes contractuels des plans médias validés.
+**6.1 Assessment.** Variances are assessed **per market and per quarter**, against the
+contracted volumes of the approved media plans.
 
-**6.2 Sous-livraison — pénalité.** Lorsque le volume effectivement livré est inférieur de
-plus de **5 %** au volume contractuel sur un marché et un trimestre donnés, l'Agence verse
-à l'Annonceur une **pénalité forfaitaire égale à 2 % du budget média net** du marché et du
-trimestre concernés.
+**6.2 Under-delivery — penalty.** Where the volume actually delivered falls more than
+**5 %** below the contracted volume for a given market and quarter, the Agency shall pay
+the Advertiser a **fixed penalty equal to 2 % of the net media budget** for the market
+and quarter concerned.
 
-Cette pénalité est **due de plein droit**, sans mise en demeure préalable, et déduite de
-la facturation du trimestre suivant.
+This penalty is **due as of right**, without prior formal notice, and shall be deducted
+from the following quarter's invoicing.
 
-**6.3** La pénalité prévue au 6.2 se cumule avec l'obligation de compensation en nature
-prévue au 6.4 lorsque l'écart excède **10 %**.
+**6.3** The penalty under 6.2 is cumulative with the in-kind compensation under 6.4 where
+the variance exceeds **10 %**.
 
-**6.4 Compensation en nature.** Au-delà de **10 %** de sous-livraison, l'Agence livre à
-ses frais un volume compensatoire équivalent sur le même canal, dans le trimestre suivant.
+**6.4 Compensation in kind.** Beyond **10 %** under-delivery, the Agency shall deliver an
+equivalent compensatory volume on the same channel, at its own cost, within the following
+quarter.
 
-**6.5 Sur-livraison.** Toute sur-livraison est réputée acquise à l'Annonceur et n'est pas
-facturable. Elle n'ouvre droit à aucun avoir ni report.
+**6.5 Over-delivery.** Any over-delivery accrues to the Advertiser and is not billable.
+It gives rise to no credit and no carry-over.
 
-## Article 7 — Transparence et audit
+## Article 7 — Transparency and audit
 
-**7.1** Reporting trimestriel détaillé par marché, régie et canal, incluant les montants
-brut, net et net-net.
+**7.1** Detailed quarterly reporting by market, media owner and channel, including gross,
+net and net-net amounts.
 
-**7.2** Droit d'audit annuel de l'Annonceur, sur les douze mois écoulés.
+**7.2** Annual audit right for the Advertiser, covering the preceding twelve months.
 
-## Article 8 — Remises de fin d'année
+## Article 8 — Year-end rebates
 
-**8.1** Les remises consenties par les régies sont restituées à l'Annonceur à hauteur de
-**100 %**, au plus tard le 31 mars de l'année suivante.
+**8.1** Rebates granted by media owners are passed through to the Advertiser at **100 %**,
+no later than 31 March of the following year.
 
-## Article 9 — Facturation et règlement
+## Article 9 — Invoicing and payment
 
-**9.1** Facturation mensuelle à terme échu sur les volumes livrés et contrôlés.
+**9.1** Monthly invoicing in arrears on volumes delivered and verified.
 
-**9.2** Délai maximal de facturation : **90 jours** après la fin du mois de diffusion.
+**9.2** Maximum invoicing window: **90 days** after the end of the month of broadcast.
 
-**9.3** Règlement à 30 jours fin de mois.
+**9.3** Payment terms: 30 days end of month.
 
-## Article 10 — Résiliation
+## Article 10 — Termination
 
-Préavis de six mois, notifié par lettre recommandée avec accusé de réception.
+Six months' notice, by recorded delivery with acknowledgement of receipt.

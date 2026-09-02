@@ -190,9 +190,9 @@ def test_every_advertiser_has_a_contract(tables):
 
 
 @pytest.mark.parametrize("advertiser_id,must_contain", [
-    ("ADV-001", ["make-good", "avoir de compensation", "45 jours"]),
-    ("ADV-002", ["pénalité forfaitaire", "2 % du budget média net"]),
-    ("ADV-004", ["Aucune compensation", "120 jours"]),
+    ("ADV-001", ["make-good", "Compensation credit", "45 days"]),
+    ("ADV-002", ["fixed penalty equal to 2 %", "net media budget"]),
+    ("ADV-004", ["No compensation", "120 days"]),
 ])
 def test_contract_clauses_carry_the_storyline(advertiser_id, must_contain):
     """The clauses must stay divergent.
@@ -209,4 +209,4 @@ def test_contract_clauses_carry_the_storyline(advertiser_id, must_contain):
 def test_contracts_are_marked_fictional():
     for path in sorted(CONTRACTS.glob("*.md")):
         head = path.read_text(encoding="utf-8")[:400]
-        assert "fictif" in head, f"{path.name} lacks its fictional-document notice"
+        assert "fictional" in head, f"{path.name} lacks its fictional-document notice"

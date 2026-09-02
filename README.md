@@ -27,7 +27,7 @@ That separation is the point of the demo, not an implementation detail — see
 | **Foundry items** | Project · orchestrator agent · knowledge base over the contracts |
 | **Region** | Sweden Central (capacity and Foundry project must match) |
 | **Dataset** | 11 tables, ~65 000 rows, deterministic, committed to the repo |
-| **Contracts** | 5 French framework contracts with **deliberately divergent** clauses |
+| **Contracts** | 5 framework contracts with **deliberately divergent** clauses |
 | **Runs without a tenant?** | Data generation and tests: yes. Deployment: no. |
 
 ---
@@ -153,7 +153,7 @@ Fab-Zava-Media/
 │   └── generate_data.py        deterministic seeded generator (seed 42)
 ├── data/
 │   ├── raw/                    11 generated CSVs — COMMITTED on purpose
-│   └── contracts/              5 framework contracts (French, fictional)
+│   └── contracts/              5 framework contracts (English, fictional)
 ├── docs/ARCHITECTURE.md
 ├── tests/test_smoke.py         the demo storyline, locked mechanically
 ├── scripts/
@@ -225,8 +225,7 @@ python ../Azure-Brain/Meta-Brain/tools/scan_public_safety.py .
 | Delivery rows | 21 960 daily rows |
 | Pacing events | 20 160 hourly rows with a trailing 7-day pacing index |
 | Currency | EUR throughout, including the UK market (deliberate simplification) |
-| Contract language | French — the client is French, and the contracts are the differentiating asset |
-| Code and docs | English |
+| Language | English throughout — contracts, code and docs. The French transparency law is cited *in* the contracts (ADV-005) where it belongs, not used as the document language |
 
 ---
 

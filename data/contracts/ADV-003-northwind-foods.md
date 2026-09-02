@@ -1,83 +1,85 @@
-# Contrat-cadre d'achat d'espace publicitaire
+# Media Buying Framework Agreement
 
-> **Document de démonstration — entièrement fictif.**
-> Zava Media, Northwind Foods et les régies citées sont des entités imaginaires.
-> Ce texte n'a aucune valeur juridique et ne reproduit aucun contrat réel.
+> **Demonstration document — entirely fictional.**
+> Zava Media, Northwind Foods and the media owners named here are imaginary entities.
+> This text has no legal value and reproduces no real contract.
 
-**Référence :** ZM-ADV-003-2026
-**Entre :** Zava Media SAS, ci-après « l'Agence »
-**Et :** Northwind Foods Ltd, ci-après « l'Annonceur »
-**Identifiant annonceur :** ADV-003
+**Reference:** ZM-ADV-003-2026
+**Between:** Zava Media SAS, hereinafter "the Agency"
+**And:** Northwind Foods Ltd, hereinafter "the Advertiser"
+**Advertiser ID:** ADV-003
 
 ---
 
-## Article 1 — Objet
+## Article 1 — Purpose
 
-L'Agence assure la planification, l'achat et le suivi des investissements médias de
-l'Annonceur pour les marques et sur les marchés visés à l'Article 3.
+The Agency shall plan, buy and monitor the Advertiser's media investments for the brands
+and markets listed in Article 3.
 
-## Article 2 — Durée
+## Article 2 — Term
 
-Du 1er janvier 2026 au 31 décembre 2026, renouvelable par tacite reconduction.
+From 1 January 2026 to 31 December 2026, renewable by tacit agreement.
 
-## Article 3 — Périmètre
+## Article 3 — Scope
 
-**3.1 Marques couvertes :** Northwind Organics, Northwind Snacks.
+**3.1 Brands covered:** Northwind Organics, Northwind Snacks.
 
-**3.2 Marchés couverts :** Royaume-Uni, France, Italie, Espagne, Allemagne.
+**3.2 Markets covered:** United Kingdom, France, Italy, Spain, Germany.
 
-## Article 4 — Rémunération de l'Agence
+## Article 4 — Agency remuneration
 
-**4.1** Honoraires forfaitaires annuels de **420 000 EUR**, payables par quart à terme échu.
+**4.1** Fixed annual fee of **EUR 420,000**, payable quarterly in arrears.
 
-**4.2** Aucune commission sur achat n'est due.
+**4.2** No commission on media purchased is payable.
 
-## Article 5 — Volumes et engagement
+## Article 5 — Volumes and commitment
 
-**5.1** Les plans médias trimestriels validés fixent le budget média net engagé.
+**5.1** Approved quarterly media plans set the committed net media budget.
 
-**5.2** Investissement média net annuel minimum : **6 200 000 EUR**.
+**5.2** Minimum annual net media investment: **EUR 6,200,000**.
 
-## Article 6 — Écarts de livraison
+## Article 6 — Delivery variances
 
-**6.1** Les écarts de livraison sont constatés lors de la **réconciliation annuelle**
-prévue à l'Article 8, et non trimestre par trimestre.
+**6.1** Delivery variances are assessed at the **annual reconciliation** provided for in
+Article 8, and not quarter by quarter.
 
-**6.2** Un écart cumulé annuel supérieur à **10 %** en sur-livraison ou en sous-livraison,
-apprécié tous marchés confondus, ouvre une renégociation des conditions du contrat suivant.
+**6.2** A cumulative annual variance exceeding **10 %**, in over-delivery or
+under-delivery, assessed across all markets combined, opens a renegotiation of the terms
+of the following contract.
 
-**6.3** Aucun avoir, aucune pénalité et aucune compensation en nature ne sont dus au titre
-d'un écart trimestriel isolé.
+**6.3** No credit, penalty or compensation in kind is due in respect of an isolated
+quarterly variance.
 
-**6.4** La sur-livraison n'est en aucun cas facturable.
+**6.4** Over-delivery is in no circumstances billable.
 
-## Article 7 — Transparence
+## Article 7 — Transparency
 
-**7.1** L'Agence fournit un état trimestriel des investissements par marché et par régie.
+**7.1** The Agency shall provide a quarterly statement of investment by market and by
+media owner.
 
-**7.2** L'Annonceur peut demander communication des justificatifs d'achat pour un marché
-donné, dans la limite de deux demandes par an.
+**7.2** The Advertiser may request purchase documentation for a given market, limited to
+two requests per year.
 
-## Article 8 — Remises de fin d'année et réconciliation
+## Article 8 — Year-end rebates and reconciliation
 
-**8.1** L'ensemble des remises de fin d'année obtenues auprès des régies est restitué à
-l'Annonceur à hauteur de **100 %**.
+**8.1** All year-end rebates obtained from media owners are passed through to the
+Advertiser at **100 %**.
 
-**8.2** La réconciliation annuelle porte sur : les volumes planifiés, les volumes livrés,
-les montants facturés et les remises acquises. Elle est établie contradictoirement avant
-le **31 mars** de l'année suivante.
+**8.2** The annual reconciliation covers planned volumes, delivered volumes, invoiced
+amounts and rebates earned. It is agreed between the parties before **31 March** of the
+following year.
 
-**8.3** Tout volume livré et non facturé à la date de la réconciliation est réputé
-définitivement abandonné par l'Agence.
+**8.3** Any volume delivered and not invoiced as at the date of reconciliation is deemed
+definitively waived by the Agency.
 
-## Article 9 — Facturation et règlement
+## Article 9 — Invoicing and payment
 
-**9.1** Facturation mensuelle à terme échu sur les volumes livrés.
+**9.1** Monthly invoicing in arrears on volumes delivered.
 
-**9.2** Délai maximal de facturation : **90 jours** après la fin du mois de diffusion.
+**9.2** Maximum invoicing window: **90 days** after the end of the month of broadcast.
 
-**9.3** Règlement à 45 jours fin de mois.
+**9.3** Payment terms: 45 days end of month.
 
-## Article 10 — Résiliation
+## Article 10 — Termination
 
-Préavis de six mois.
+Six months' notice.

@@ -1,81 +1,81 @@
-# Contrat-cadre d'achat d'espace publicitaire
+# Media Buying Framework Agreement
 
-> **Document de démonstration — entièrement fictif.**
-> Zava Media, Litware Retail et les régies citées sont des entités imaginaires.
-> Ce texte n'a aucune valeur juridique et ne reproduit aucun contrat réel.
+> **Demonstration document — entirely fictional.**
+> Zava Media, Litware Retail and the media owners named here are imaginary entities.
+> This text has no legal value and reproduces no real contract.
 
-**Référence :** ZM-ADV-004-2026
-**Entre :** Zava Media SAS, ci-après « l'Agence »
-**Et :** Litware Retail Ltd, ci-après « l'Annonceur »
-**Identifiant annonceur :** ADV-004
+**Reference:** ZM-ADV-004-2026
+**Between:** Zava Media SAS, hereinafter "the Agency"
+**And:** Litware Retail Ltd, hereinafter "the Advertiser"
+**Advertiser ID:** ADV-004
 
 ---
 
-## Article 1 — Objet
+## Article 1 — Purpose
 
-L'Agence assure l'achat d'espace publicitaire pour le compte de l'Annonceur selon les
-plans médias validés trimestriellement.
+The Agency shall buy advertising space on behalf of the Advertiser in accordance with
+the media plans approved each quarter.
 
-## Article 2 — Durée
+## Article 2 — Term
 
-Du 1er janvier 2026 au 31 décembre 2026.
+From 1 January 2026 to 31 December 2026.
 
-## Article 3 — Périmètre
+## Article 3 — Scope
 
-**3.1 Marques couvertes :** Litware Home, Litware Fashion.
+**3.1 Brands covered:** Litware Home, Litware Fashion.
 
-**3.2 Marchés couverts :** Royaume-Uni, France, Espagne, Italie, Allemagne.
+**3.2 Markets covered:** United Kingdom, France, Spain, Italy, Germany.
 
-## Article 4 — Rémunération de l'Agence
+## Article 4 — Agency remuneration
 
-**4.1** Commission de **2,5 %** assise sur le montant net des achats réalisés.
+**4.1** Commission of **2.5 %** on the net value of media purchased.
 
-**4.2** Aucun honoraire forfaitaire n'est dû.
+**4.2** No fixed fee is payable.
 
-## Article 5 — Volumes prévisionnels
+## Article 5 — Forecast volumes
 
-**5.1** Les volumes figurant aux plans médias sont fournis à titre **indicatif**. Ils
-reflètent les estimations des régies à la date de réservation.
+**5.1** Volumes stated in the media plans are provided for **indicative purposes only**.
+They reflect media owner estimates at the date of booking.
 
-**5.2** Ils ne constituent **pas un engagement de résultat** de l'Agence.
+**5.2** They do **not constitute an obligation of result** on the part of the Agency.
 
-## Article 6 — Écarts de livraison
+## Article 6 — Delivery variances
 
-**6.1** Aucune compensation, aucun avoir et aucune pénalité ne sont dus au titre d'un
-écart entre le volume prévisionnel et le volume effectivement livré, **quels qu'en soient
-le sens et l'amplitude**.
+**6.1** No compensation, no credit and no penalty is due in respect of any variance
+between forecast volume and volume actually delivered, **whatever its direction or
+magnitude**.
 
-**6.2** L'Annonceur ne peut se prévaloir d'une sur-livraison pour obtenir une remise, un
-report de budget, un crédit ou un avoir sur un trimestre ultérieur.
+**6.2** The Advertiser may not rely on over-delivery to obtain a discount, a budget
+carry-over, a credit or a make-good in any subsequent quarter.
 
-**6.3** Symétriquement, l'Agence ne peut facturer un volume supérieur au budget média
-validé au plan, y compris en cas de sur-livraison constatée.
+**6.3** Symmetrically, the Agency may not invoice any volume in excess of the media
+budget approved in the plan, including where over-delivery is observed.
 
-**6.4** Le présent article déroge expressément à tout usage professionnel contraire.
+**6.4** This Article expressly derogates from any contrary industry practice.
 
-## Article 7 — Transparence et audit
+## Article 7 — Transparency and audit
 
-**7.1** L'Agence communique semestriellement un état des investissements par marché et
-par régie.
+**7.1** The Agency shall provide a half-yearly statement of investment by market and by
+media owner.
 
-**7.2** Un audit peut être diligenté par l'Annonceur tous les deux ans, à ses frais.
+**7.2** The Advertiser may commission an audit every two years, at its own expense.
 
-## Article 8 — Remises de fin d'année
+## Article 8 — Year-end rebates
 
-**8.1** Les remises consenties par les régies sont partagées entre l'Agence et
-l'Annonceur selon une clé de **50 / 50**.
+**8.1** Rebates granted by media owners are shared between the Agency and the Advertiser
+on a **50 / 50** basis.
 
-**8.2** Le décompte est établi au 31 mars de l'année suivante.
+**8.2** The statement of account is drawn up by 31 March of the following year.
 
-## Article 9 — Facturation et règlement
+## Article 9 — Invoicing and payment
 
-**9.1** Facturation mensuelle à terme échu.
+**9.1** Monthly invoicing in arrears.
 
-**9.2** Délai maximal de facturation : **120 jours** après la fin du mois de diffusion.
-Au-delà, la créance est prescrite.
+**9.2** Maximum invoicing window: **120 days** after the end of the month of broadcast.
+Beyond that period the claim is time-barred.
 
-**9.3** Règlement à 60 jours fin de mois.
+**9.3** Payment terms: 60 days end of month.
 
-## Article 10 — Résiliation
+## Article 10 — Termination
 
-Préavis de trois mois.
+Three months' notice.
