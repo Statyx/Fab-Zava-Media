@@ -157,22 +157,50 @@ looks fine and is quietly incomplete.
 
 ## 5. Deployment order
 
-Each step depends on the previous one's artifact ID.
+One command runs the whole Fabric side; every step is idempotent, so it resumes rather
+than duplicating:
 
+```bash
+cd src
+python deploy_all.py                    # full deploy, then a warm-up
+python deploy_all.py --from ontology    # resume from a step to the end
+python deploy_all.py ontology graph     # run only these (canonical order kept)
+python deploy_all.py --warmup           # warm-up only, right before the demo
 ```
-workspace → lakehouse → load CSVs → eventhouse → pacing stream
-         → ontology → graph refresh
-         → semantic model → report
-         → data agent (publish!)
-         → Foundry project → connection → knowledge base → orchestrator
-```
 
-Two ordering rules that are not obvious:
+The canonical order, and the artifact each step needs from the previous one:
 
-- **Publish the Data Agent.** An unpublished agent is invisible to Foundry. The
-  connection will appear to be created and then resolve to nothing.
+| # | Step | Script | Needs |
+|---|---|---|---|
+| 1 | Generate the dataset | `generate_data.py` | — (offline) |
+| 2 | Workspace + capacity | `deploy_workspace.py` | `capacity_id` |
+| 3 | Lakehouse + CSV upload | `deploy_lakehouse.py` | `workspace_id` |
+| 4 | CSV → Delta tables | `deploy_setup_notebook.py` | `lakehouse_id` |
+| 5 | Eventhouse + KQL table | `deploy_eventhouse.py` | `workspace_id` |
+| 6 | Ingest pacing events | `preload_pacing.py` | `query_service_uri`, `kql_db_name` |
+| 7 | Ontology (Fabric IQ) | `deploy_ontology.py` | Delta tables **and** the KQL table |
+| 8 | Graph population + refresh | `deploy_graph.py` | `ontology_id` |
+| 9 | Semantic model | `deploy_semantic_model.py` | `lakehouse_sql_endpoint` |
+| 10 | Data agent (published) | `deploy_data_agent.py` | `ontology_id` **and** `semantic_model_id` |
+| — | Foundry project → connection → knowledge base → orchestrator | *(separate deploy)* | published data agent |
+
+`deploy_all.py` stops at step 10. The Foundry side is deliberately a separate deploy: it
+lives in a different resource provider, and the connection cannot be created until the
+Fabric data agent is published.
+
+Ordering rules that are not obvious, and each cost a debugging session:
+
+- **Publish the Data Agent.** An unpublished agent is invisible to Foundry. The connection
+  appears to be created and then resolves to nothing. `deploy_data_agent.py` therefore
+  writes the `published/` tree as well as `draft/` — `test_data_agent_is_published_not_just_drafted`
+  fails the build if that mirror is ever broken.
 - **Refresh the graph before creating the Data Agent**, or the agent binds to an ontology
-  with no traversable graph and every relationship question fails.
+  with no traversable graph and every relationship question returns nothing — successfully.
+- **Ingest the pacing events before deploying the ontology.** The TimeSeries binding
+  resolves against a KQL table that must already exist.
+- **`az account set` runs first.** `deploy_all.py` reads `az_subscription` from
+  `config.yaml`; without it `az` can silently sit on another tenant and every call returns
+  404 EntityNotFound, which reads exactly like a permissions problem.
 
 ### Capacity, region and tenant prerequisites
 

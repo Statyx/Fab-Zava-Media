@@ -150,18 +150,36 @@ tells you which path answered.
 Fab-Zava-Media/
 ├── src/
 │   ├── config.example.yaml     names, anomalies, reference data — copy to config.yaml
-│   └── generate_data.py        deterministic seeded generator (seed 42)
+│   ├── generate_data.py        deterministic seeded generator (seed 42)
+│   ├── platform_env.py         PATH repair + UTF-8 stdout; every script bootstraps first
+│   ├── helpers.py              auth, async polling, item lookup, Kusto, OneLake tokens
+│   ├── notebook_utils.py       notebook definition builder (.py format, never ipynb)
+│   ├── deploy_all.py           one-shot idempotent orchestrator + pre-demo warm-up
+│   ├── deploy_workspace.py     workspace + capacity assignment (region sanity check)
+│   ├── deploy_lakehouse.py     lakehouse + CSV upload; owns BATCH_TABLES
+│   ├── deploy_setup_notebook.py  CSV → Delta, calendar columns forced to STRING
+│   ├── deploy_eventhouse.py    eventhouse, KQL table, streaming ingestion
+│   ├── preload_pacing.py       20 160 pacing rows + count verification
+│   ├── deploy_ontology.py      7 entities, 9 relationships, 1 TimeSeries binding
+│   ├── deploy_graph.py         graph population (the ontology does NOT do this)
+│   ├── refresh_graph.py        standalone RefreshGraph job
+│   ├── deploy_semantic_model.py  Direct Lake model, ~35 DAX measures, Prep for AI
+│   └── deploy_data_agent.py    Zava_Media_Analyst — ontology (GQL) + model (DAX)
 ├── data/
 │   ├── raw/                    11 generated CSVs — COMMITTED on purpose
 │   └── contracts/              5 framework contracts (English, fictional)
 ├── docs/ARCHITECTURE.md
-├── tests/test_smoke.py         the demo storyline, locked mechanically
+├── tests/
+│   ├── test_smoke.py           the demo storyline, locked mechanically
+│   └── test_deploy_scripts.py  the seams between the deploy scripts
 ├── scripts/
 ├── taskflow/
 └── presentation/
 ```
 
-`src/config.yaml` is gitignored — it carries tenant and capacity GUIDs.
+`src/config.yaml` and `src/state.json` are gitignored — they carry tenant, capacity and
+item GUIDs. `state.example.json` shows the shape; every ID in it is written by a
+`deploy_*.py` step, never by hand.
 
 ---
 
@@ -171,14 +189,33 @@ Fab-Zava-Media/
 python -m pytest tests/ -v --tb=short
 ```
 
-The suite is not a formality. It asserts the **exact** anomaly percentages
+**102 tests, no tenant required.** Two files, two different jobs.
+
+`test_smoke.py` guards the **dataset**. It asserts the exact anomaly percentages
 (+12.00 / +11.00 / −8.00), that background noise stays visibly below them, that spend
 does *not* move with the over-delivered impressions (otherwise the make-good clause
 would be the wrong question), that the unbilled gap is a real anti-join with no status
 flag leaking the answer, and that the three contracts still say three different things.
 
-Harmonise the clauses or smooth an anomaly, and the suite fails — which is the intent.
-The demo can break while every file still looks fine.
+`test_deploy_scripts.py` guards the **seams between the deploy scripts** — every failure
+it catches would otherwise ship as a deploy that succeeds and is wrong:
+
+- an ontology entity bound to a column that no longer exists in the CSV (→ empty graph,
+  no error)
+- a DAX measure the data agent tells the LLM to use, that is not in the semantic model
+  (→ the model invents plausible, unverifiable DAX)
+- a GQL few-shot citing an edge label that was renamed (→ returns nothing, successfully)
+- a data agent written to `draft/` only (→ invisible to Foundry, looks deployed)
+- a second join path to `dim_advertiser` (→ Power BI silently deactivates one and the
+  advertiser-level figure changes)
+- KQL columns reordered against the CSV (→ positional ingestion loads campaign IDs into
+  the channel column)
+- a column or measure whose *name* implies a contractual entitlement — that half of the
+  question belongs to Foundry, and the boundary is enforced in the model, not just in a
+  prompt
+
+Harmonise the clauses, smooth an anomaly, or rename a measure on one side of a seam, and
+the suite fails — which is the intent. The demo can break while every file still looks fine.
 
 ---
 
@@ -194,8 +231,18 @@ python -m pytest tests/ -v
 The generator prints the planted anomalies on completion, so whoever runs the demo knows
 the right answers before the agent gives them.
 
-Deployment to Fabric additionally needs a real F-SKU capacity ID and tenant ID in
-`src/config.yaml`. Without them, everything above still works offline.
+Then deploy the Fabric side — one command, idempotent, resumable:
+
+```bash
+cd src
+python deploy_all.py                    # workspace → … → published data agent, then warm up
+python deploy_all.py --from ontology    # resume after a failure
+python deploy_all.py --warmup           # right before the demo: pay the cold start off-stage
+```
+
+Deployment needs a real F-SKU capacity ID and tenant ID in `src/config.yaml`. Without
+them, everything above still works offline. The full step table and the ordering rules
+that are not obvious are in [`docs/ARCHITECTURE.md` § 5](docs/ARCHITECTURE.md).
 
 ---
 
