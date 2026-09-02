@@ -41,7 +41,8 @@ from helpers import (load_config, load_state, get_fabric_token, fabric_headers,
 # The order encodes real dependencies:
 #   lakehouse tables must exist before the ontology binds to them;
 #   the ontology must exist before the graph can be populated;
-#   the semantic model must exist before the data agent can point at it.
+#   the semantic model must exist before the data agent can point at it;
+#   the report binds to the semantic model by id, so it follows it.
 STEPS = [
     ("generate_data",   "generate_data"),
     ("workspace",       "deploy_workspace"),
@@ -52,6 +53,7 @@ STEPS = [
     ("ontology",        "deploy_ontology"),
     ("graph",           "deploy_graph"),
     ("semantic_model",  "deploy_semantic_model"),
+    ("report",          "deploy_report"),
     ("data_agent",      "deploy_data_agent"),
     # ── Foundry half ────────────────────────────────────────────────
     # Everything below needs a PUBLISHED Fabric data agent, so it cannot move above

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.1.0/schema.json",
+  "activePageName": "delivery_overview",
+  "pageOrder": [
+    "delivery_overview",
+    "plan_vs_delivery",
+    "billing_rebates"
+  ]
+}
