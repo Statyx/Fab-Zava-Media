@@ -521,3 +521,97 @@ def test_verifier_rejects_a_duplicated_source_block():
     problems = verify_foundry.check_answer_contract(doubled)
     assert any("2 times" in p for p in problems), \
         "two provenance locations are read as two presentations, and both get filled"
+
+
+def test_foundry_agent_names_use_the_charset_the_service_accepts():
+    """
+    Foundry agent names are NOT Fabric item names, and nothing says so at the call site.
+
+    Observed live 2026-09-02: `agents.create_version(agent_name="Zava_Media_Contracts")`
+    is rejected with
+
+        (invalid_parameters) Must start and end with alphanumeric characters, can
+        contain hyphens in the middle, and must not exceed 63 characters.
+
+    The message names neither the value nor the field. It arrives at step 2 of 7, after
+    step 1 has uploaded the entire contract corpus into a brand-new vector store, so the
+    run dies having created a billable orphan.
+
+    What makes this worth a test rather than a comment is the asymmetry: `data_agent_name`
+    in the same config block is a FABRIC item, Fabric accepts underscores, and
+    "Zava_Media_Analyst" is deployed and working under that exact name. A reviewer
+    normalising the file to one convention breaks the deploy in whichever direction they
+    choose. Both names are asserted here, in opposite directions, on purpose.
+    """
+    from foundry_common import FOUNDRY_AGENT_NAME_RE
+
+    cfg = yaml.safe_load((SRC / "config.example.yaml").read_text(encoding="utf-8"))
+    foundry = cfg["foundry"]
+
+    for key in ("orchestrator_agent_name", "contracts_agent_name"):
+        name = foundry[key]
+        assert FOUNDRY_AGENT_NAME_RE.match(name), (
+            f"foundry.{key} = {name!r} is rejected by the Agents data plane: "
+            f"alphanumeric at both ends, hyphens in the middle only, 63 max. "
+            f"An underscore here fails at step 2 of 7, after the corpus upload."
+        )
+
+    assert "_" in cfg["data_agent_name"], (
+        "data_agent_name is a FABRIC item name and is deployed with underscores. "
+        "If this ever legitimately changes, delete the assertion deliberately - do not "
+        "let a global search-and-replace across the config decide it."
+    )
+
+
+def test_illegal_agent_names_are_rejected_before_anything_is_created():
+    """The validator must run before the client, and reject exactly what the service does."""
+    import foundry_common
+
+    for bad in ("Zava_Media_Agent", "-leading", "trailing-", "a" * 64, ""):
+        with pytest.raises(SystemExit):
+            foundry_common.check_agent_name(bad, "foundry.some_setting")
+
+    for good in ("Zava-Media-Agent", "a", "A1", "a-b-c", "a" * 63):
+        assert foundry_common.check_agent_name(good, "x") == good
+
+    # Ordering is the whole point: a validated name is worthless if the corpus was
+    # already uploaded. Both names must be checked before _client() is reached.
+    tree = ast.parse(source("deploy_foundry_agents.py"))
+    main = next(n for n in ast.walk(tree)
+                if isinstance(n, ast.FunctionDef) and n.name == "main")
+    called = [n.func.id for n in ast.walk(main)
+              if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)]
+    assert called.count("check_agent_name") == 2, \
+        "both agent names must be validated, not just one"
+    assert called.index("_client") > called.index("check_agent_name"), \
+        "names must be validated before the client is built, let alone before the upload"
+
+def test_the_a2a_connection_name_uses_dashes_not_underscores():
+    """
+    Connection names have their own charset rule, and it is not the agent rule.
+
+    Live 2026-09-02, PUT of the A2A connection at project scope:
+
+        ValidationError: Connection name must be 1-64 characters long and can only
+        contain alphanumeric characters, dashes, and dots.
+
+    The trap is that `fabric_connection_name` violates that same rule and EXISTS on the
+    tenant, created through the identical PUT, scope and api-version - only the body's
+    category differs. So the rule is enforced inconsistently, and a reviewer who makes
+    the two names agree has a 50% chance of picking the one the service rejects.
+
+    This asserts the direction that is always safe. It deliberately does not assert
+    anything about the Fabric connection: that name is deployed, verified and
+    load-bearing, and a test has no business demanding it be recreated.
+    """
+    cfg = yaml.safe_load((SRC / "config.example.yaml").read_text(encoding="utf-8"))
+    name = cfg["foundry"]["contracts_connection_name"]
+
+    assert re.match(r"^[A-Za-z0-9.-]{1,64}$", name), (
+        f"foundry.contracts_connection_name = {name!r} is rejected at step 4 of 7: "
+        f"alphanumeric, dashes and dots only, 1-64 characters."
+    )
+    assert "_" not in name, (
+        "an underscore here is rejected by the service even though the Fabric "
+        "connection next to it has one and works - see the comment in config.example.yaml"
+    )

@@ -31,7 +31,7 @@ from platform_env import bootstrap
 bootstrap()
 
 from helpers import load_config, load_state, print_step
-from foundry_common import banner, die, require
+from foundry_common import banner, die, foundry_credential, require
 
 SOURCE_MARKER = "### SOURCE"
 MAX_PROSE_LINES = 30
@@ -51,14 +51,13 @@ IDENTIFIER_PATTERNS = [
 def _client(state):
     try:
         from azure.ai.projects import AIProjectClient
-        from azure.identity import DefaultAzureCredential
     except ImportError:
         die("pip install 'azure-ai-projects>=2.0.0' azure-identity")
     endpoint = state.get("foundry_endpoint")
     if not endpoint:
         die("state.json has no 'foundry_endpoint'. Run deploy_foundry_project.py first.")
     return AIProjectClient(endpoint=endpoint,
-                           credential=DefaultAzureCredential(),
+                           credential=foundry_credential(),
                            allow_preview=True)
 
 

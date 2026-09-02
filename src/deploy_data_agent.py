@@ -9,7 +9,7 @@ Two sources:
 
 It deliberately does NOT answer contractual questions. Whether an over-delivery entitles
 an advertiser to compensation is a CLAUSE, retrieved by the Foundry orchestrator
-(Zava_Media_Agent) from data/contracts/. Keeping that boundary sharp is the whole point
+(Zava-Media-Agent) from data/contracts/. Keeping that boundary sharp is the whole point
 of the demo: a number nobody can audit is worth nothing, and a clause quoted without the
 number behind it is worth nothing either.
 
@@ -499,7 +499,7 @@ def main():
         print("   (no definition returned — verify in the portal)")
 
     print(f"\nOK. '{agent_name}' is deployed. Foundry connects to THIS agent as a tool; "
-          f"the orchestrator '{cfg.get('foundry', {}).get('orchestrator_agent_name', 'Zava_Media_Agent')}' "
+          f"the orchestrator '{cfg.get('foundry', {}).get('orchestrator_agent_name', 'Zava-Media-Agent')}' "
           f"adds the contract half.")
 
 

@@ -20,7 +20,7 @@ TENANT: az silently flips to another tenant. Set `az_subscription` in config.yam
 this script runs `az account set` first. Without it you get 404 EntityNotFound while
 authenticated against the wrong tenant, which looks exactly like a permissions problem.
 
-WHAT THIS DOES NOT DEPLOY: the Foundry side. The orchestrator agent (Zava_Media_Agent),
+WHAT THIS DOES NOT DEPLOY: the Foundry side. The orchestrator agent (Zava-Media-Agent),
 its connection to this Fabric data agent and the contracts knowledge base are a separate
 deploy — see docs/ARCHITECTURE.md. This script stops at the Fabric boundary.
 """
@@ -216,7 +216,7 @@ def main():
         warm_up(cfg, load_state())
 
     agent = cfg.get("data_agent_name", "Zava_Media_Analyst")
-    orch = cfg.get("foundry", {}).get("orchestrator_agent_name", "Zava_Media_Agent")
+    orch = cfg.get("foundry", {}).get("orchestrator_agent_name", "Zava-Media-Agent")
     print(f"\n🎯  Zava Media ready on the Fabric side. Ask {agent}: "
           f"\"What did we over-deliver for Contoso Mobility in Spain in 2026-Q3?\" "
           f"→ it returns the figure and says the contractual entitlement is out of its scope. "

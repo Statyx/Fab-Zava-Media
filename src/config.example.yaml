@@ -34,15 +34,33 @@ foundry:
   model_name: "gpt-4.1-mini"
   model_version: "2025-04-14"
   model_capacity: 50                            # thousands of TPM
-  orchestrator_agent_name: "Zava_Media_Agent"   # Foundry side: routes + synthesises
-  contracts_agent_name: "Zava_Media_Contracts"  # A2A subordinate over data/contracts/ — see below
+  orchestrator_agent_name: "Zava-Media-Agent"   # Foundry side: routes + synthesises
+  contracts_agent_name: "Zava-Media-Contracts"  # A2A subordinate over data/contracts/ — see below
   fabric_connection_name: "zava_media_dataagent"
-  contracts_connection_name: "zava_media_contracts_a2a"
+  contracts_connection_name: "zava-media-contracts-a2a"
+  # ⚠️ The two names above disagree on purpose, and normalising them will break a deploy.
+  # Creating the A2A connection with an underscore is rejected, live 2026-09-02:
+  #   ValidationError: Connection name must be 1-64 characters long and can only contain
+  #   alphanumeric characters, dashes, and dots.
+  # `zava_media_dataagent` nevertheless EXISTS on this tenant, created through the very
+  # same PUT, the same project scope and the same api-version — only the body's category
+  # differs (MicrosoftFabric). So the rule is real but not applied uniformly, and the
+  # underscore that survives is the accident, not the dashes. Dashes are safe for both;
+  # the Fabric one is left alone only because it is deployed, verified and load-bearing.
   knowledge_base_name: "zava-media-contracts"
   # Foundry agent names ARE their API identifier and there is no rename operation.
   # Changing a name here means recreating the agent and editing every router prompt.
   #
-  # WHY A THIRD AGENT EXISTS (Zava_Media_Contracts).
+  # HYPHENS, NOT UNDERSCORES — and this is not a style choice. The Agents data plane
+  # enforces "start and end with alphanumeric characters, hyphens in the middle only,
+  # 63 characters maximum". An underscore is rejected with a 400 that never names the
+  # offending value, at step 2 of 7, i.e. after the contract corpus has already been
+  # uploaded. Note the asymmetry that makes this easy to get wrong: FABRIC item names
+  # accept underscores happily, which is why `data_agent_name` above is
+  # "Zava_Media_Analyst" and must stay that way. Two services, two charsets.
+  # deploy_foundry_agents.py validates both names before creating anything.
+  #
+  # WHY A THIRD AGENT EXISTS (Zava-Media-Contracts).
   # The obvious design — one supervisor holding the Fabric data agent tool AND a
   # file_search over the contracts — is documented to fail on a live tenant:
   # file_search describes its own purpose to the model, while a connection-backed

@@ -154,15 +154,15 @@ connection-backed tool surfaces only under its connection *name*, which says not
 what sits behind it. The model picks the tool it can read.
 
 So the fix is structural, not textual: the contracts corpus goes **behind A2A** as its own
-agent, `Zava_Media_Contracts`. Both supervisor tools are then opaque and connection-backed,
+agent, `Zava-Media-Contracts`. Both supervisor tools are then opaque and connection-backed,
 and the model must tell them apart by name — which is what the routing contract in the
 prompt actually describes.
 
 | Agent | Where | Holds | Answers |
 |---|---|---|---|
 | `Zava_Media_Analyst` | Fabric | Ontology + semantic model | The number |
-| `Zava_Media_Contracts` | Foundry | Vector store over the contracts | The clause, verbatim |
-| `Zava_Media_Agent` | Foundry | The two connections, nothing else | Crosses them |
+| `Zava-Media-Contracts` | Foundry | Vector store over the contracts | The clause, verbatim |
+| `Zava-Media-Agent` | Foundry | The two connections, nothing else | Crosses them |
 
 For this demo that is not decoration. The entire commercial argument is *the number and the
 clause come from different systems and are traceable to both*. A supervisor that quotes

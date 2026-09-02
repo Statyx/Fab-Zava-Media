@@ -1,8 +1,8 @@
 """
 Step 13 — the two Foundry agents.
 
-    Zava_Media_Contracts   subordinate. Owns the contract corpus. Reached over A2A.
-    Zava_Media_Agent       supervisor. Owns routing and the answer. Reached by the user.
+    Zava-Media-Contracts   subordinate. Owns the contract corpus. Reached over A2A.
+    Zava-Media-Agent       supervisor. Owns routing and the answer. Reached by the user.
 
 WHY THE SUBORDINATE EXISTS AT ALL
 ---------------------------------
@@ -44,8 +44,8 @@ bootstrap()
 
 from helpers import load_config, load_state, save_state, print_step
 from foundry_common import (
-    AzError, a2a_base_path, agents_request, arm_get, arm_request, banner, die,
-    project_scope, require,
+    AzError, a2a_base_path, agents_request, arm_get, arm_request, banner,
+    check_agent_name, die, foundry_credential, project_scope, require,
 )
 
 TOTAL = 7
@@ -158,7 +158,6 @@ Answer in the language the question was asked in. The `### SOURCE` marker stays 
 def _client(state):
     try:
         from azure.ai.projects import AIProjectClient
-        from azure.identity import DefaultAzureCredential
     except ImportError:
         die("Missing SDK. pip install 'azure-ai-projects>=2.3.0' azure-identity\n"
             "Note the floor: >=2.0.0 is enough to CALL an agent over A2A, but >=2.3.0 "
@@ -170,12 +169,29 @@ def _client(state):
     # are preview surfaces; without it they are simply absent, and the resulting error
     # never uses the word "preview".
     return AIProjectClient(endpoint=endpoint,
-                           credential=DefaultAzureCredential(),
+                           credential=foundry_credential(),
                            allow_preview=True)
 
 
-def upload_contracts(client, name: str) -> str:
-    """Push data/contracts/*.md into a vector store for the subordinate's file_search."""
+def upload_contracts(client, name: str, existing_id: str = "") -> str:
+    """Push data/contracts/*.md into a vector store for the subordinate's file_search.
+
+    Reuses `existing_id` when it still resolves. This step is the expensive one - a
+    store plus five file uploads - and it is also the one that runs before the agent
+    names are exercised against the service, so a failure further down the chain used to
+    leave a fresh billable store behind on every retry. `--skip-upload` existed for this,
+    but the orchestrator cannot pass flags to a step (it neutralises argv on purpose), so
+    the reuse path was unreachable from `deploy_all.py` - the only way this script is
+    normally run. Reuse is therefore the default, and `--force-upload` overrides it.
+    """
+    if existing_id:
+        try:
+            client.get_openai_client().vector_stores.retrieve(existing_id)
+            print(f"    reusing vector store {existing_id}")
+            return existing_id
+        except Exception:  # noqa: BLE001 - stale id in state is a fine reason to rebuild
+            print(f"    vector store {existing_id} no longer resolves, rebuilding")
+
     files = sorted(CONTRACTS_DIR.glob("*.md"))
     if not files:
         die(f"No contracts found in {CONTRACTS_DIR}. Run the data generator first.")
@@ -339,8 +355,8 @@ def create_supervisor(client, cfg, name: str, model: str,
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Deploy the Zava Media Foundry agents")
-    parser.add_argument("--skip-upload", action="store_true",
-                        help="reuse the vector store already in state.json")
+    parser.add_argument("--force-upload", action="store_true",
+                        help="rebuild the vector store even when state.json has one")
     parser.add_argument("--delete", action="store_true", help="delete both agents")
     args = parser.parse_args()
 
@@ -349,8 +365,15 @@ def main() -> int:
     config = load_config()
     state = load_state()
 
-    supervisor = require(config, "foundry", "orchestrator_agent_name")
-    contracts = require(config, "foundry", "contracts_agent_name")
+    # Validated BEFORE the client is built, and long before the corpus is uploaded.
+    # The service rejects an illegal name at step 2 of 7, i.e. after step 1 has already
+    # created a vector store and pushed five files into it.
+    supervisor = check_agent_name(
+        require(config, "foundry", "orchestrator_agent_name"),
+        "foundry.orchestrator_agent_name")
+    contracts = check_agent_name(
+        require(config, "foundry", "contracts_agent_name"),
+        "foundry.contracts_agent_name")
     kb_name = require(config, "foundry", "knowledge_base_name")
     fabric_conn = require(config, "foundry", "fabric_connection_name")
     a2a_conn = require(config, "foundry", "contracts_connection_name")
@@ -373,13 +396,11 @@ def main() -> int:
         return 0
 
     print_step(1, TOTAL, f"Uploading the contract corpus as '{kb_name}'")
-    if args.skip_upload and state.get("foundry_vector_store_id"):
-        store_id = state["foundry_vector_store_id"]
-        print(f"    reusing {store_id}")
-    else:
-        store_id = upload_contracts(client, kb_name)
-        state["foundry_vector_store_id"] = store_id
-        save_state(state)
+    store_id = upload_contracts(
+        client, kb_name,
+        existing_id="" if args.force_upload else state.get("foundry_vector_store_id", ""))
+    state["foundry_vector_store_id"] = store_id
+    save_state(state)
 
     print_step(2, TOTAL, f"Creating the subordinate '{contracts}'")
     create_contracts_agent(client, contracts, model, store_id)

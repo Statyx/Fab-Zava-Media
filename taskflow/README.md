@@ -39,7 +39,7 @@ scheduling, and no data flow.
 
 ## Why the Foundry agents are not on the canvas
 
-A task flow maps **Fabric items**. `Zava_Media_Contracts` and `Zava_Media_Agent` live in a
+A task flow maps **Fabric items**. `Zava-Media-Contracts` and `Zava-Media-Agent` live in a
 Foundry project, in a different resource provider, and cannot be assigned to a task. Drawing
 them here would suggest Fabric owns them.
 

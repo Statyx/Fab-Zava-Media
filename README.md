@@ -119,8 +119,8 @@ flowchart LR
 
   subgraph foundry[Microsoft Foundry — Sweden Central]
     KB[Vector store<br/>zava-media-contracts]
-    CTR[Contracts agent<br/>Zava_Media_Contracts]
-    ORCH[Supervisor<br/>Zava_Media_Agent]
+    CTR[Contracts agent<br/>Zava-Media-Contracts]
+    ORCH[Supervisor<br/>Zava-Media-Agent]
   end
 
   CSV --> LH
@@ -180,7 +180,7 @@ Fab-Zava-Media/
 │   ├── foundry_common.py       ARM + Agents data-plane helpers (two api-versions, one 'v1')
 │   ├── deploy_foundry_project.py     RG + AI Services account + project + model deployment
 │   ├── deploy_foundry_connection.py  Fabric data agent connection, built from state GUIDs
-│   ├── deploy_foundry_agents.py      Zava_Media_Contracts + Zava_Media_Agent, A2A wiring
+│   ├── deploy_foundry_agents.py      Zava-Media-Contracts + Zava-Media-Agent, A2A wiring
 │   └── verify_foundry.py       three routing probes + the answer contract, post-deploy
 ├── data/
 │   ├── raw/                    11 generated CSVs — COMMITTED on purpose

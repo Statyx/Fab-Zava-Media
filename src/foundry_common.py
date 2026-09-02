@@ -21,6 +21,7 @@ the two are not the same and cannot be swapped.
 """
 
 import json
+import re
 import subprocess
 import sys
 import time
@@ -100,6 +101,77 @@ def get_ai_token() -> str:
     """Data-plane token for the Agents API and for A2A. Audience: https://ai.azure.com."""
     return _az(["account", "get-access-token", "--resource", "https://ai.azure.com",
                 "--query", "accessToken", "-o", "tsv"])
+
+
+#: A Foundry agent name, as the Agents data plane defines it: alphanumeric at both ends,
+#: hyphens allowed only in the middle, 63 characters maximum.
+FOUNDRY_AGENT_NAME_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
+
+
+def check_agent_name(name: str, setting: str) -> str:
+    """Reject a Foundry agent name the service will reject, before anything is created.
+
+    ⚠️ A Foundry agent name is NOT a Fabric item name. Fabric accepts underscores
+    happily - `Zava_Media_Analyst` is a live Fabric data agent on this tenant - so a
+    naming convention that works everywhere else in the repository silently does not
+    apply here. Observed live 2026-09-02:
+
+        HttpResponseError: (invalid_parameters) Must start and end with alphanumeric
+        characters, can contain hyphens in the middle, and must not exceed 63 characters.
+
+    Two details make that failure expensive, which is why this check exists at all:
+
+    1. It arrives from `agents.create_version`, at step 2 of 7, AFTER step 1 has already
+       uploaded the whole contract corpus to a fresh vector store. The run dies having
+       created a billable orphan.
+    2. The message never names the offending value or the field it came from, so it reads
+       like a malformed request body rather than "your configured name is illegal".
+
+    Raising here, before the client is even built, costs one regex and turns a confusing
+    mid-run 400 into a sentence naming the setting to edit.
+
+    Args:
+        name: the candidate agent name.
+        setting: dotted config path it came from, quoted back to the user so the fix is
+            unambiguous (e.g. ``foundry.contracts_agent_name``).
+
+    Returns:
+        The name unchanged, so this can wrap a lookup inline.
+
+    Raises:
+        SystemExit: via :func:`die`, with the rule and the likely correction.
+    """
+    if FOUNDRY_AGENT_NAME_RE.match(name):
+        return name
+    suggestion = re.sub(r"[^A-Za-z0-9-]+", "-", name).strip("-") or "agent"
+    die(f"'{name}' is not a legal Foundry agent name (from {setting} in config.yaml).\n"
+        f"The rule: alphanumeric at both ends, hyphens allowed only in the middle, 63 "
+        f"characters maximum. Underscores are rejected.\n"
+        f"This is NOT the Fabric rule - Fabric item names accept underscores, which is "
+        f"why the rest of this config can use them.\n"
+        f"Try: {suggestion}")
+
+
+def foundry_credential():
+    """`DefaultAzureCredential` with a subprocess timeout that fits a real Windows box.
+
+    The default `process_timeout` is 10 seconds. Measured on this machine, a cold
+    `az account get-access-token` takes ~6 seconds - a 1.7x margin, on a step that runs
+    right after the deploy chain has been hammering ARM. One live run died on
+
+        AzureCliCredential: Failed to invoke the Azure CLI
+
+    with `az` working perfectly from the same shell, and did not reproduce on the next
+    attempt. That is the signature of the timeout, not proof of it: the mechanism is
+    consistent with everything observed, and no other cause was found. Raising the limit
+    removes the failure mode whether or not it was the cause, and costs nothing when the
+    CLI is fast - the timeout is a ceiling, not a delay.
+
+    Every other step in this half goes through `az rest` via :func:`_az`, which has no
+    such limit. These two SDK-based scripts are the only callers exposed to it.
+    """
+    from azure.identity import DefaultAzureCredential
+    return DefaultAzureCredential(process_timeout=120)
 
 
 def arm_request(method: str, url: str, body: Optional[Dict] = None,
