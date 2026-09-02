@@ -27,7 +27,7 @@ bootstrap()
 
 from helpers import load_config, load_state, save_state, print_step
 from foundry_common import (
-    AzError, account_scope, arm_get, arm_request, az_json, banner, die,
+    AzError, account_scope, arm_get, arm_request, az_json, az_json_probe, banner, die,
     project_endpoint, project_scope, require, wait_for,
 )
 
@@ -42,7 +42,7 @@ def _subscription_id() -> str:
 
 
 def ensure_resource_group(sub: str, rg: str, region: str):
-    existing = az_json(["group", "show", "-n", rg])
+    existing = az_json_probe(["group", "show", "-n", rg])
     if existing:
         have = (existing.get("location") or "").replace(" ", "").lower()
         if have != region:
@@ -110,9 +110,8 @@ def ensure_deployment(rg: str, account: str, deployment: str,
     GlobalStandard is the right default for a demo: no reserved capacity, no regional
     quota fight, and it is available in Sweden Central.
     """
-    existing = az_json(["cognitiveservices", "account", "deployment", "show",
-                        "-n", account, "-g", rg, "--deployment-name", deployment]) \
-        if _deployment_exists(rg, account, deployment) else None
+    existing = az_json_probe(["cognitiveservices", "account", "deployment", "show",
+                              "-n", account, "-g", rg, "--deployment-name", deployment])
     if existing:
         print(f"    model deployment '{deployment}' already exists")
         return existing
@@ -136,15 +135,6 @@ def ensure_deployment(rg: str, account: str, deployment: str,
                 f"Lower foundry.model_capacity in config.yaml, or request quota for "
                 f"'{model}' in this region.")
         raise
-
-
-def _deployment_exists(rg: str, account: str, deployment: str) -> bool:
-    try:
-        items = az_json(["cognitiveservices", "account", "deployment", "list",
-                         "-n", account, "-g", rg]) or []
-    except AzError:
-        return False
-    return any((d.get("name") or "") == deployment for d in items)
 
 
 def delete_all(sub: str, rg: str, account: str, project: str):
@@ -221,9 +211,9 @@ def main() -> int:
     save_state(state)
 
     print(f"\nProject endpoint: {endpoint}")
-    print("Verify this against the portal's *Project details* page before the demo.")
-    print("Two hostnames are documented for Foundry and the docs are not self-consistent;")
-    print("this is the documented shape, not a value read from your tenant.")
+    print("Read from the account's properties.endpoints[\"AI Foundry API\"] when `az` could")
+    print("reach it, else the documented shape. Note that properties.endpoint - singular -")
+    print("is the legacy *.cognitiveservices.azure.com host and is NOT the one to use.")
     print("\nNext: python deploy_foundry_connection.py")
     return 0
 

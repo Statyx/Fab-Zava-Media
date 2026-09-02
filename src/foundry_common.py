@@ -66,6 +66,36 @@ def az_json(args) -> Any:
     return json.loads(raw)
 
 
+_NOT_FOUND_MARKERS = ("notfound", "could not be found", "was not found",
+                      "does not exist", "resourcenotfound")
+
+
+def az_json_probe(args) -> Any:
+    """`az ... show` used as a question, not an assertion. Absent returns None.
+
+    Every ensure_* function is "read, then create if missing", so the read must be able
+    to say "missing". az_json cannot: `az group show` exits non-zero when the group does
+    not exist, so the very first deploy of a Foundry project died on
+
+        AzError: (ResourceGroupNotFound) Resource group 'rg-zava-media' could not be found.
+
+    at step 2 of 5 - the step whose entire job was to create it. Observed live 2026-09-02.
+    The sibling probes escaped because arm_get() already maps 404 to None; this one used
+    the raw runner.
+
+    Only absence is swallowed. A permission error, an expired login or a bad subscription
+    still raises, because those mean "you cannot tell", not "it is not there" - and
+    creating on top of that guess is how you get a duplicate resource in the wrong place.
+    """
+    try:
+        return az_json(args)
+    except AzError as exc:
+        low = str(exc).lower()
+        if any(m in low for m in _NOT_FOUND_MARKERS):
+            return None
+        raise
+
+
 def get_ai_token() -> str:
     """Data-plane token for the Agents API and for A2A. Audience: https://ai.azure.com."""
     return _az(["account", "get-access-token", "--resource", "https://ai.azure.com",
@@ -121,10 +151,44 @@ def project_endpoint(account_name: str, project_name: str) -> str:
     """
     The data-plane base URL every Agents call hangs off.
 
-    Prefer the value the portal shows on *Project details*; this is the documented shape
-    and is what the deploy writes to state when the portal has not been consulted.
+    The shape is documented, but two hostnames circulate for a Foundry account and the
+    docs are not self-consistent, so this used to be a guess the caller was told to check
+    by hand against the portal.
+
+    It no longer has to be. The tenant publishes the answer: an AIServices account carries
+    a `properties.endpoints` MAP, and the one that matters is keyed "AI Foundry API".
+    Verified on a real account 2026-09-02:
+
+        properties.endpoint                      -> https://<acct>.cognitiveservices.azure.com/
+        properties.endpoints["AI Foundry API"]   -> https://<acct>.services.ai.azure.com/
+
+    The scalar `properties.endpoint` is the legacy Cognitive Services host and is the wrong
+    one - reading it is the mistake this function exists to prevent.
+
+    Falls back to the documented shape when the account cannot be read (no `az` session,
+    or an offline unit test), so callers still get a usable value.
     """
-    return f"https://{account_name}.services.ai.azure.com/api/projects/{project_name}"
+    read = _account_ai_host(account_name)
+    host = read or f"https://{account_name}.services.ai.azure.com"
+    return f"{host.rstrip('/')}/api/projects/{project_name}"
+
+
+def _account_ai_host(account_name: str) -> Optional[str]:
+    """The "AI Foundry API" entry from the account's endpoints map, or None."""
+    try:
+        accounts = az_json_probe(["cognitiveservices", "account", "list"]) or []
+        match = next((a for a in accounts if (a.get("name") or "") == account_name), None)
+        if not match:
+            return None
+        rg = (match.get("resourceGroup") or "").strip()
+        if not rg:
+            return None
+        acct = az_json_probe(["cognitiveservices", "account", "show",
+                              "-n", account_name, "-g", rg])
+        endpoints = ((acct or {}).get("properties") or {}).get("endpoints") or {}
+        return endpoints.get("AI Foundry API") or None
+    except Exception:
+        return None
 
 
 def a2a_base_path(endpoint: str, agent_name: str) -> str:

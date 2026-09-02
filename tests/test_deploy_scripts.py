@@ -40,6 +40,107 @@ def _csv_header(name):
         return next(csv.reader(fh))
 
 
+def _key_paths(node, prefix=""):
+    """Every dotted key path in a nested mapping."""
+    out = set()
+    if isinstance(node, dict):
+        for k, v in node.items():
+            p = f"{prefix}.{k}" if prefix else str(k)
+            out.add(p)
+            out |= _key_paths(v, p)
+    return out
+
+
+def test_ensure_functions_treat_absence_as_absence():
+    """
+    Every ensure_* is "read, then create if missing", so the read must be able to answer
+    "missing". `az group show` exits non-zero when the group does not exist, so a raw
+    az_json probe raises instead:
+
+        AzError: (ResourceGroupNotFound) Resource group 'rg-zava-media' could not be found.
+
+    That killed the first ever Foundry deploy at step 2 of 5 - the step whose whole job was
+    to create that group. Live, 2026-09-02. The sibling probes survived only because
+    arm_get() already maps 404 to None.
+
+    Two halves, and the second is the important one: az_json_probe must swallow *absence*
+    and nothing else. A permission error means "you cannot tell", not "it is not there",
+    and creating on that guess lands a duplicate resource somewhere nobody is looking.
+    """
+    import foundry_common
+
+    src = (SRC / "deploy_foundry_project.py").read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    for fn in [n for n in ast.walk(tree)
+               if isinstance(n, ast.FunctionDef) and n.name.startswith("ensure_")]:
+        calls = [n for n in ast.walk(fn)
+                 if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
+                 and n.func.id == "az_json"]
+        for call in calls:
+            args = call.args[0] if call.args else None
+            literals = [a.value for a in getattr(args, "elts", [])
+                        if isinstance(a, ast.Constant)]
+            assert "show" not in literals, (
+                f"{fn.name} probes with raw az_json({literals}) - it will raise on a "
+                f"resource that does not exist yet, which is the case it exists to handle. "
+                f"Use az_json_probe."
+            )
+
+    def fake(msg):
+        def _run(args):
+            raise foundry_common.AzError(msg)
+        return _run
+
+    real = foundry_common.az_json
+    try:
+        for msg in ["(ResourceGroupNotFound) Resource group 'x' could not be found.",
+                    "(NotFound) The Resource 'y' was not found.",
+                    "ERROR: Resource group 'z' does not exist."]:
+            foundry_common.az_json = fake(msg)
+            assert foundry_common.az_json_probe(["group", "show", "-n", "x"]) is None, msg
+
+        for msg in ["(AuthorizationFailed) The client does not have authorization",
+                    "Please run 'az login' to setup account.",
+                    "(SubscriptionNotRegistered) something else entirely"]:
+            foundry_common.az_json = fake(msg)
+            with pytest.raises(foundry_common.AzError):
+                foundry_common.az_json_probe(["group", "show", "-n", "x"])
+    finally:
+        foundry_common.az_json = real
+
+
+def test_the_real_config_has_every_key_the_template_declares():
+    """
+    config.yaml is gitignored (it carries tenant and capacity GUIDs), so nothing kept it
+    in step with config.example.yaml. It drifted: nine `foundry.*` keys the template
+    declares were simply absent — account_name, model_name, model_version, model_capacity,
+    resource_group, model_deployment_name, contracts_agent_name, contracts_connection_name,
+    wrap_fabric_in_a2a.
+
+    Nothing complained, because the Fabric half never reads them. The whole Foundry half
+    was unrunnable and said so only at `require(config, "foundry", ...)`, after ten Fabric
+    steps had already run. Found 2026-09-02, on the way into the first live Foundry deploy.
+
+    The check is deliberately one-directional: the template is the contract of what must be
+    filled in, so every key it declares must exist. The reverse is not true — the template
+    comments out its optional keys (az_subscription), and a commented key is not a key.
+
+    Skips when config.yaml is absent, which is the normal state of a fresh clone and of CI.
+    """
+    real_path = SRC / "config.yaml"
+    if not real_path.exists():
+        pytest.skip("config.yaml is local-only; nothing to compare against")
+
+    real = yaml.safe_load(real_path.read_text(encoding="utf-8"))
+    template = yaml.safe_load((SRC / "config.example.yaml").read_text(encoding="utf-8"))
+
+    missing = sorted(_key_paths(template) - _key_paths(real))
+    assert not missing, (
+        "config.yaml is missing keys that config.example.yaml declares - the deploy will "
+        f"fail at require() partway through:\n  " + "\n  ".join(missing)
+    )
+
+
 @pytest.fixture(scope="module")
 def bim():
     """The semantic model as it would actually be pushed, minus the network call."""
