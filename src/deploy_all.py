@@ -53,6 +53,13 @@ STEPS = [
     ("graph",           "deploy_graph"),
     ("semantic_model",  "deploy_semantic_model"),
     ("data_agent",      "deploy_data_agent"),
+    # ── Foundry half ────────────────────────────────────────────────
+    # Everything below needs a PUBLISHED Fabric data agent, so it cannot move above
+    # data_agent: a connection can only point at a published artifact, and a draft has
+    # no stable answer surface to bind to.
+    ("foundry_project",    "deploy_foundry_project"),
+    ("foundry_connection", "deploy_foundry_connection"),
+    ("foundry_agents",     "deploy_foundry_agents"),
 ]
 STEP_NAMES = [name for name, _ in STEPS]
 

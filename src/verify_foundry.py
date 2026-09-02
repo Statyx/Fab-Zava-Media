@@ -1,0 +1,273 @@
+"""
+Step 14 — prove the chain, do not sample it.
+
+This script exists because of a specific, documented trap: every A2A subordinate emits
+the SAME item type (`a2a_preview_call`), so the type no longer identifies which one ran.
+A check written on the type alone passes happily while the supervisor is quietly asking
+the contract corpus for a number — which is precisely the failure this architecture was
+shaped to avoid. Routing is therefore asserted by NAME, and always as a pair: the tool
+that should have fired did, AND the other one did not.
+
+Three probes, each isolating one claim:
+
+    quantitative  a figure question       -> Fabric fired, contracts did NOT
+    contractual   a clause question       -> contracts fired
+    the demo      the question we present -> BOTH fired
+
+Then the answer contract is checked structurally, because prose rules do not hold and
+"it looked fine on stage" is not a measurement.
+
+Usage:
+    python verify_foundry.py
+    python verify_foundry.py --question "..."     # ad-hoc, prints the trace
+"""
+
+import argparse
+import json
+import re
+import sys
+
+from platform_env import bootstrap
+bootstrap()
+
+from helpers import load_config, load_state, print_step
+from foundry_common import banner, die, require
+
+SOURCE_MARKER = "### SOURCE"
+MAX_PROSE_LINES = 30
+
+# Identifiers must never appear in the prose half. Deliberately broad: the failure mode
+# is an answer that is entirely true, entirely sourced, and unreadable to the media
+# planner it was written for.
+IDENTIFIER_PATTERNS = [
+    (r"\[[A-Za-z_][A-Za-z0-9 _]*\]", "a bracketed field or measure"),
+    (r"`[^`]+`", "a backticked identifier"),
+    (r"\b(?:dim|fact)_[a-z_]+\b", "a table name"),
+    (r"\bIN\s*\{", "a literal value set"),
+    (r"(?<![<>=!])>=|<=(?!=)", "a comparison operator"),
+]
+
+
+def _client(state):
+    try:
+        from azure.ai.projects import AIProjectClient
+        from azure.identity import DefaultAzureCredential
+    except ImportError:
+        die("pip install 'azure-ai-projects>=2.0.0' azure-identity")
+    endpoint = state.get("foundry_endpoint")
+    if not endpoint:
+        die("state.json has no 'foundry_endpoint'. Run deploy_foundry_project.py first.")
+    return AIProjectClient(endpoint=endpoint,
+                           credential=DefaultAzureCredential(),
+                           allow_preview=True)
+
+
+def ask(client, agent_name: str, question: str):
+    """
+    One turn against the supervisor. Returns (answer_text, tool_names_that_fired).
+
+    Only the supervisor's own hops are visible here. Whatever happens INSIDE a
+    subordinate arrives all at once with its output — so this function can prove that
+    the contracts agent was called, and can say nothing about what it did internally.
+    """
+    openai = client.get_openai_client()
+    response = openai.responses.create(
+        input=question,
+        extra_body={"agent_reference": {"name": agent_name}},
+    )
+
+    fired = []
+    for item in (getattr(response, "output", None) or []):
+        kind = getattr(item, "type", "") or ""
+        if "call" not in kind:
+            continue
+        # By NAME. The type is the same for every A2A subordinate and proves nothing.
+        name = (getattr(item, "name", None)
+                or getattr(item, "server_label", None)
+                or getattr(item, "connection_name", None)
+                or kind)
+        fired.append(str(name))
+
+    text = getattr(response, "output_text", None)
+    if not text:
+        chunks = []
+        for item in (getattr(response, "output", None) or []):
+            for part in (getattr(item, "content", None) or []):
+                if getattr(part, "text", None):
+                    chunks.append(part.text)
+        text = "\n".join(chunks)
+    return text or "", fired
+
+
+def matched(fired, needle: str) -> bool:
+    needle = needle.lower()
+    return any(needle in name.lower() for name in fired)
+
+
+def check_answer_contract(text: str) -> list:
+    """
+    Structural checks on the answer. Returns a list of failures, empty if clean.
+
+    These are the clauses that prose could not enforce on their own — hence a test.
+    """
+    problems = []
+
+    occurrences = text.count(SOURCE_MARKER)
+    if occurrences == 0:
+        problems.append(f"no '{SOURCE_MARKER}' block — provenance has nowhere to live, "
+                        f"so it will leak into the prose")
+        return problems
+    if occurrences > 1:
+        problems.append(f"'{SOURCE_MARKER}' appears {occurrences} times — two locations "
+                        f"are read as two presentations, and both get filled")
+
+    prose, _, source_block = text.partition(SOURCE_MARKER)
+
+    prose_lines = [ln for ln in prose.strip().splitlines() if ln.strip()]
+    if len(prose_lines) > MAX_PROSE_LINES:
+        problems.append(f"{len(prose_lines)} lines of prose, limit is {MAX_PROSE_LINES} "
+                        f"(the SOURCE block is excluded on purpose)")
+
+    for pattern, what in IDENTIFIER_PATTERNS:
+        hit = re.search(pattern, prose)
+        if hit:
+            problems.append(f"prose contains {what}: {hit.group(0)!r} — identifiers "
+                            f"belong in the SOURCE block only")
+
+    source_lines = [ln for ln in source_block.strip().splitlines() if ln.strip()]
+    if len(source_lines) > 6:
+        problems.append(f"SOURCE block has {len(source_lines)} lines, limit is 6")
+
+    # Clause 8: a share printed twice, once as a ratio and once as a percentage.
+    if re.search(r"0[.,]\d{6,}", prose):
+        problems.append("a full-precision ratio is printed — give the percentage only, "
+                        "and drop the decimal tail")
+
+    return problems
+
+
+def probe(client, agent, label, question, expect, forbid=None) -> bool:
+    print(f"\n  {label}")
+    print(f"    Q: {question}")
+    try:
+        text, fired = ask(client, agent, question)
+    except Exception as exc:  # noqa: BLE001
+        print(f"    FAILED to run: {str(exc)[:400]}")
+        if "approval" in str(exc).lower():
+            print("    -> a tool is waiting on an approval. Open the agent alone in the")
+            print("       playground, force each tool to fire, and 'Always approve'.")
+        return False
+
+    print(f"    tools fired: {fired or '(none)'}")
+    ok = True
+
+    for needle in expect:
+        if matched(fired, needle):
+            print(f"    OK   '{needle}' fired")
+        else:
+            print(f"    FAIL '{needle}' never fired")
+            ok = False
+
+    for needle in (forbid or []):
+        if matched(fired, needle):
+            print(f"    FAIL '{needle}' fired and should not have — the supervisor "
+                  f"answered from the wrong source")
+            ok = False
+        else:
+            print(f"    OK   '{needle}' stayed out of it")
+
+    problems = check_answer_contract(text)
+    for problem in problems:
+        print(f"    FAIL answer contract: {problem}")
+    ok = ok and not problems
+
+    print("    ---- answer ----")
+    for line in text.strip().splitlines():
+        print(f"    | {line}")
+    return ok
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Verify the Zava Media Foundry chain")
+    parser.add_argument("--question", help="ask one ad-hoc question and print the trace")
+    args = parser.parse_args()
+
+    banner("Zava Media - verifying the Foundry chain")
+
+    config = load_config()
+    state = load_state()
+    agent = state.get("foundry_supervisor_agent") or require(
+        config, "foundry", "orchestrator_agent_name")
+    contracts = state.get("foundry_contracts_agent") or require(
+        config, "foundry", "contracts_agent_name")
+    fabric_conn = require(config, "foundry", "fabric_connection_name")
+    a2a_conn = require(config, "foundry", "contracts_connection_name")
+
+    client = _client(state)
+
+    if args.question:
+        text, fired = ask(client, agent, args.question)
+        print(f"\ntools fired: {fired}\n")
+        print(text)
+        problems = check_answer_contract(text)
+        for problem in problems:
+            print(f"\nanswer contract: {problem}")
+        return 0 if not problems else 1
+
+    advertiser = config.get("demo_question_advertiser", "the advertiser")
+    market = config.get("demo_question_market", "the market")
+    quarter = config.get("demo_question_quarter", "the quarter")
+
+    results = []
+
+    print_step(1, 3, "Quantitative — Fabric must answer, contracts must stay out")
+    results.append(probe(
+        client, agent, "figure only",
+        f"For advertiser {advertiser} in market {market}, how did delivered impressions "
+        f"compare with the plan in {quarter}?",
+        expect=[fabric_conn], forbid=[a2a_conn, contracts],
+    ))
+
+    print_step(2, 3, "Contractual — the contracts agent must answer")
+    results.append(probe(
+        client, agent, "clause only",
+        f"What does our agreement with advertiser {advertiser} say about over-delivery "
+        f"and make-good?",
+        expect=[a2a_conn], forbid=[],
+    ))
+
+    print_step(3, 3, "The demo question — both sources, one answer")
+    results.append(probe(
+        client, agent, "the demo",
+        f"On {quarter} for advertiser {advertiser} in market {market} we over-delivered. "
+        f"Does the contract provide for compensation?",
+        expect=[fabric_conn, a2a_conn], forbid=[],
+    ))
+
+    print("\n" + "=" * 66)
+    if all(results):
+        print("PASS - all three probes routed correctly and the answers hold their shape.")
+        return 0
+
+    print("FAIL - see above.")
+    print("""
+Ordered checklist. Work down it; do not skip.
+
+  1. Were the tools approved? A run waiting on an approval fails with no useful
+     message. Open the supervisor alone in the playground and approve each tool.
+  2. Is incoming A2A enabled on the subordinate, WITH a published card? Missing card
+     gives 'Failed to fetch agent card: 400', which reads as an RBAC fault and is not.
+  3. Does the caller hold Foundry Agent Consumer on the project?
+  4. Does the A2A connection target the BASE path — not the card path, not the project
+     endpoint?
+  5. If the contracts agent answered a purely quantitative question: the tool list has
+     stopped being homogeneous. Something self-describing is attached to the supervisor
+     and is out-competing the connection-backed tools. Remove it.
+  6. If the supervisor called nothing and narrated a plan instead: tool_choice is not
+     'required'.
+""")
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

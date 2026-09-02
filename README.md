@@ -24,7 +24,7 @@ That separation is the point of the demo, not an implementation detail — see
 | **Domain** | Media agency — planning, delivery, billing, live pacing |
 | **Company** | Zava Media (fictional agency), five fictional advertisers |
 | **Fabric items** | Lakehouse · Eventhouse · Ontology (Fabric IQ) · Data Agent · Semantic model · Report |
-| **Foundry items** | Project · orchestrator agent · knowledge base over the contracts |
+| **Foundry items** | Project · supervisor agent · contracts agent (A2A) · vector store over the contracts |
 | **Region** | Sweden Central (capacity and Foundry project must match) |
 | **Dataset** | 11 tables, ~65 000 rows, deterministic, committed to the repo |
 | **Contracts** | 5 framework contracts with **deliberately divergent** clauses |
@@ -118,8 +118,9 @@ flowchart LR
   end
 
   subgraph foundry[Microsoft Foundry — Sweden Central]
-    KB[Knowledge base<br/>zava-media-contracts]
-    ORCH[Orchestrator<br/>Zava_Media_Agent]
+    KB[Vector store<br/>zava-media-contracts]
+    CTR[Contracts agent<br/>Zava_Media_Contracts]
+    ORCH[Supervisor<br/>Zava_Media_Agent]
   end
 
   CSV --> LH
@@ -130,17 +131,28 @@ flowchart LR
   ONT --> DA
   SM --> DA
   SM --> RPT
-  DA -->|tool| ORCH
-  KB -->|knowledge source| ORCH
+  DA -->|Fabric tool| ORCH
+  KB -->|file_search| CTR
+  CTR -->|A2A| ORCH
   ORCH --> ANS([Number + clause,<br/>both cited])
 ```
 
 Two attachment kinds, and they are not interchangeable:
-the **Data Agent is a tool** — the orchestrator delegates the *question* and Fabric
+the **Data Agent is a tool** — the supervisor delegates the *question* and Fabric
 returns an *answer*. The **contract corpus is a knowledge source** — text comes back and
-the orchestrator reasons over it. Attaching the ontology as a knowledge source *and* the
+the agent reasons over it. Attaching the ontology as a knowledge source *and* the
 Data Agent as a tool is legal, silent, and almost always wrong: nothing in the response
 tells you which path answered.
+
+**Why the contracts sit behind their own agent.** The obvious shape puts `file_search` on
+the supervisor directly. On a tenant, a supervisor holding a connection-backed tool *and*
+`file_search` never calls the connection — it answers everything, numbers included, out of
+the documents. `tool_choice="required"` does not rescue it; the model meets the constraint
+with the wrong tool. `file_search` describes its own purpose, a connection tool surfaces
+only under its name, and the model picks the tool it can read. Pushing the corpus behind
+A2A makes both tools opaque, so the routing contract in the prompt is the only thing telling
+them apart — which is what it was written to do. Full reasoning in
+[ARCHITECTURE § 4](docs/ARCHITECTURE.md).
 
 ---
 
@@ -164,14 +176,20 @@ Fab-Zava-Media/
 │   ├── deploy_graph.py         graph population (the ontology does NOT do this)
 │   ├── refresh_graph.py        standalone RefreshGraph job
 │   ├── deploy_semantic_model.py  Direct Lake model, ~35 DAX measures, Prep for AI
-│   └── deploy_data_agent.py    Zava_Media_Analyst — ontology (GQL) + model (DAX)
+│   ├── deploy_data_agent.py    Zava_Media_Analyst — ontology (GQL) + model (DAX)
+│   ├── foundry_common.py       ARM + Agents data-plane helpers (two api-versions, one 'v1')
+│   ├── deploy_foundry_project.py     RG + AI Services account + project + model deployment
+│   ├── deploy_foundry_connection.py  Fabric data agent connection, built from state GUIDs
+│   ├── deploy_foundry_agents.py      Zava_Media_Contracts + Zava_Media_Agent, A2A wiring
+│   └── verify_foundry.py       three routing probes + the answer contract, post-deploy
 ├── data/
 │   ├── raw/                    11 generated CSVs — COMMITTED on purpose
 │   └── contracts/              5 framework contracts (English, fictional)
 ├── docs/ARCHITECTURE.md
 ├── tests/
 │   ├── test_smoke.py           the demo storyline, locked mechanically
-│   └── test_deploy_scripts.py  the seams between the deploy scripts
+│   ├── test_deploy_scripts.py  the seams between the deploy scripts
+│   └── test_foundry_scripts.py the Foundry failures that deploy cleanly
 ├── scripts/
 ├── taskflow/
 └── presentation/
@@ -189,7 +207,7 @@ item GUIDs. `state.example.json` shows the shape; every ID in it is written by a
 python -m pytest tests/ -v --tb=short
 ```
 
-**102 tests, no tenant required.** Two files, two different jobs.
+**149 tests, no tenant required.** Three files, three different jobs.
 
 `test_smoke.py` guards the **dataset**. It asserts the exact anomaly percentages
 (+12.00 / +11.00 / −8.00), that background noise stays visibly below them, that spend
@@ -214,6 +232,22 @@ it catches would otherwise ship as a deploy that succeeds and is wrong:
   question belongs to Foundry, and the boundary is enforced in the model, not just in a
   prompt
 
+`test_foundry_scripts.py` guards the **Foundry failures that deploy cleanly** — every one
+of them produces a green deploy followed by an agent that answers fluently from the wrong
+place:
+
+- a `file_search` attached to the supervisor (→ the Fabric tool never fires and the numbers
+  come out of a PDF)
+- a figure hardcoded in the supervisor prompt (→ an answer that looks sourced and is not)
+- the `### SOURCE` marker drifting between the prompt that mandates it and the verifier that
+  splits on it (→ a correct answer fails verification and someone "fixes" the agent)
+- an A2A connection pointed at the card path instead of the base path (→ created with HTTP
+  200, resolves at invoke, never before)
+- one protocol written without re-listing the others (→ merge-patch replaces the array and
+  silently disables `responses`)
+- a date-shaped api-version on the Agents data plane (→ 400, reads as a broken route)
+- a GUID hardcoded where a connection name belongs (→ works here, breaks on promotion)
+
 Harmonise the clauses, smooth an anomaly, or rename a measure on one side of a seam, and
 the suite fails — which is the intent. The demo can break while every file still looks fine.
 
@@ -231,18 +265,28 @@ python -m pytest tests/ -v
 The generator prints the planted anomalies on completion, so whoever runs the demo knows
 the right answers before the agent gives them.
 
-Then deploy the Fabric side — one command, idempotent, resumable:
+Then deploy — one command, idempotent, resumable, Fabric then Foundry:
 
 ```bash
 cd src
-python deploy_all.py                    # workspace → … → published data agent, then warm up
-python deploy_all.py --from ontology    # resume after a failure
-python deploy_all.py --warmup           # right before the demo: pay the cold start off-stage
+python deploy_all.py                       # workspace → … → supervisor, then warm up
+python deploy_all.py --from ontology       # resume after a failure
+python deploy_all.py --warmup              # right before the demo: pay the cold start off-stage
+python verify_foundry.py                   # prove the routing, don't assume it
 ```
+
+`verify_foundry.py` is not optional politeness. Every A2A subordinate emits the same call
+type, so a type-based check passes happily while the supervisor asks the contract corpus for
+a number. It asserts on connection **names**, and on each probe it checks both that the
+expected tool fired *and* that the other one did not.
 
 Deployment needs a real F-SKU capacity ID and tenant ID in `src/config.yaml`. Without
 them, everything above still works offline. The full step table and the ordering rules
 that are not obvious are in [`docs/ARCHITECTURE.md` § 5](docs/ARCHITECTURE.md).
+
+**Before the first Foundry run:** open each agent alone in the playground, force each tool,
+and choose *Always approve this tool*. Approval cannot be completed inside a multi-agent
+run — it errors in a way that reads exactly like a routing bug.
 
 ---
 

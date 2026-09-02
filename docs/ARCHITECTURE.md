@@ -120,26 +120,64 @@ definition explicitly, then run a job with `jobType=RefreshGraph`. That path is 
 
 ## 4. Fabric ⟷ Foundry wiring
 
-The portal and the SDK are **sequential, not competing**.
+The portal and the SDK are **sequential, not competing** — and `deploy_foundry_connection.py`
+now attempts the portal half from ARM, using the two GUIDs already in `state.json`:
 
-1. **Portal.** Create the connection from the Fabric Data Agent's URL. Two GUIDs are
-   embedded in it: the workspace ID sits between `groups/` and `/aiskills`, the artifact
-   ID between `aiskills/` and `?`. The portal turns those into a **named** project
-   connection.
-2. **Code.** Resolve the connection **by name** (`zava_media_dataagent`). Never hardcode
-   the GUIDs — they are environment-specific and a hardcoded pair silently binds the demo
-   to one tenant.
+1. **Connection.** The Fabric Data Agent's URL embeds two GUIDs: the workspace ID between
+   `groups/` and `/aiskills`, the artifact ID between `aiskills/` and `?`. Those are exactly
+   `workspace_id` and `data_agent_id`, which the Fabric deploy already recorded — so the
+   script builds the connection from state and falls back to printed portal steps if the
+   ARM shape is refused.
+2. **Code.** Resolve the connection **by name** (`zava_media_dataagent`). Never hardcode the
+   GUIDs — they are environment-specific and a hardcoded pair silently binds the demo to one
+   tenant. `test_connections_are_resolved_by_name_not_by_guid` enforces it.
 
 Required at the time of writing (both preview surfaces):
 
-- `allow_preview=True` on `AIProjectClient`
+- `allow_preview=True` on `AIProjectClient` — without it the preview tools are simply
+  absent, and the error never says "preview"
 - the tool is `MicrosoftFabricPreviewTool` / `fabric_dataagent_preview`
+
+### Three agents, not two
+
+The obvious design is two agents: the Fabric data agent for numbers, and a Foundry
+supervisor holding the Fabric tool plus a `file_search` over the contracts. **That design
+does not work**, and it fails in the worst available way.
+
+On a tenant, a supervisor carrying both a connection-backed tool and `file_search` **never
+calls the connection**. It answers everything — including quantitative questions — out of
+the document corpus. `tool_choice="required"` does not fix it: the model satisfies the
+constraint with the wrong tool. Naming the tool in the prompt does not fix it either.
+
+The cause is asymmetry of self-description. `file_search` announces what it is for. A
+connection-backed tool surfaces only under its connection *name*, which says nothing about
+what sits behind it. The model picks the tool it can read.
+
+So the fix is structural, not textual: the contracts corpus goes **behind A2A** as its own
+agent, `Zava_Media_Contracts`. Both supervisor tools are then opaque and connection-backed,
+and the model must tell them apart by name — which is what the routing contract in the
+prompt actually describes.
+
+| Agent | Where | Holds | Answers |
+|---|---|---|---|
+| `Zava_Media_Analyst` | Fabric | Ontology + semantic model | The number |
+| `Zava_Media_Contracts` | Foundry | Vector store over the contracts | The clause, verbatim |
+| `Zava_Media_Agent` | Foundry | The two connections, nothing else | Crosses them |
+
+For this demo that is not decoration. The entire commercial argument is *the number and the
+clause come from different systems and are traceable to both*. A supervisor that quotes
+"+12 %" out of a PDF looks perfectly fluent and destroys the argument silently.
+
+`config.yaml` carries `wrap_fabric_in_a2a: false` as a documented escape hatch: set it if a
+live run still misroutes, and the Fabric leg is wrapped in A2A too, giving the fully
+symmetric shape.
 
 ### Trap: tool approval
 
-Tool approval **cannot be completed inside a workflow preview**. Run each agent alone in
-the playground first, approve the tool there, and only then run the orchestration. A
-workflow that has never been approved fails in a way that looks like a routing bug.
+Tool approval **cannot be completed inside a workflow or multi-agent run** — the run just
+errors. Run each agent alone in the playground first, force each tool, choose *Always
+approve this tool*, and only then run the orchestration. An unapproved tool fails in a way
+that looks exactly like a routing bug.
 
 ### The wrapper prompt
 
@@ -153,19 +191,27 @@ The orchestrator's prompt for the Fabric tool must carry both clauses:
 Omitting the second is the more common failure, and the harder to notice: the answer
 looks fine and is quietly incomplete.
 
+Beyond those two, `build_supervisor_instructions()` implements an eight-clause answer
+contract whose clause numbering matches `Foundry-Brain/orchestration_patterns.md` Pattern F,
+so the two can be diffed. The clause with the least obvious payoff is **carry no figure in
+the instructions**: a grounded agent holding a hardcoded fact is worse than an ungrounded
+one, because it looks sourced. `test_supervisor_prompt_carries_no_figure` fails the build if
+a digit ever appears in the prompt.
+
 ---
 
 ## 5. Deployment order
 
-One command runs the whole Fabric side; every step is idempotent, so it resumes rather
-than duplicating:
+One command runs the whole chain — Fabric then Foundry; every step is idempotent, so it
+resumes rather than duplicating:
 
 ```bash
 cd src
-python deploy_all.py                    # full deploy, then a warm-up
-python deploy_all.py --from ontology    # resume from a step to the end
-python deploy_all.py ontology graph     # run only these (canonical order kept)
-python deploy_all.py --warmup           # warm-up only, right before the demo
+python deploy_all.py                       # full deploy, then a warm-up
+python deploy_all.py --from ontology       # resume from a step to the end
+python deploy_all.py ontology graph        # run only these (canonical order kept)
+python deploy_all.py --warmup              # warm-up only, right before the demo
+python verify_foundry.py                   # three routing probes, after the deploy
 ```
 
 The canonical order, and the artifact each step needs from the previous one:
@@ -182,11 +228,9 @@ The canonical order, and the artifact each step needs from the previous one:
 | 8 | Graph population + refresh | `deploy_graph.py` | `ontology_id` |
 | 9 | Semantic model | `deploy_semantic_model.py` | `lakehouse_sql_endpoint` |
 | 10 | Data agent (published) | `deploy_data_agent.py` | `ontology_id` **and** `semantic_model_id` |
-| — | Foundry project → connection → knowledge base → orchestrator | *(separate deploy)* | published data agent |
-
-`deploy_all.py` stops at step 10. The Foundry side is deliberately a separate deploy: it
-lives in a different resource provider, and the connection cannot be created until the
-Fabric data agent is published.
+| 11 | Foundry project + model | `deploy_foundry_project.py` | subscription, region |
+| 12 | Fabric data agent connection | `deploy_foundry_connection.py` | **published** data agent |
+| 13 | Contracts agent + supervisor | `deploy_foundry_agents.py` | the connection |
 
 Ordering rules that are not obvious, and each cost a debugging session:
 
@@ -198,6 +242,9 @@ Ordering rules that are not obvious, and each cost a debugging session:
   with no traversable graph and every relationship question returns nothing — successfully.
 - **Ingest the pacing events before deploying the ontology.** The TimeSeries binding
   resolves against a KQL table that must already exist.
+- **A connection is not validated at creation.** Step 12 returns HTTP 200 against a target
+  that does not exist; reachability is only proven at invoke, which is why step 13 reads the
+  agent card back and `verify_foundry.py` exists at all.
 - **`az account set` runs first.** `deploy_all.py` reads `az_subscription` from
   `config.yaml`; without it `az` can silently sit on another tenant and every call returns
   404 EntityNotFound, which reads exactly like a permissions problem.
@@ -264,3 +311,11 @@ Stated plainly, because a demo that oversells is worse than one that is narrow.
 - The contracts are five short documents. Retrieval quality over a real corpus of
   hundreds of contracts, with amendments and versions, is a different problem.
 - Nothing here addresses identity passthrough at scale — the demo runs as one principal.
+- **The chain has not been run against a live tenant.** Everything is structurally
+  validated — 149 offline tests — which catches shape errors and catches nothing about
+  behaviour. Three things in particular are unproven: which `category` ARM accepts for a
+  Fabric data agent connection (`deploy_foundry_connection.py` probes three and records the
+  winner), the availability of the chosen model and version in Sweden Central, and whether
+  `MicrosoftFabricPreviewTool` competes with a self-describing tool the way `file_search`
+  does — that last one is an inference from a neighbouring measurement, which is why the
+  escape hatch exists rather than a claim that it is not needed.

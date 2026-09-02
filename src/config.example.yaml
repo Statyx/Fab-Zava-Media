@@ -28,11 +28,35 @@ report_name: "Zava_Media_Report"
 foundry:
   project_name: "fdy-zavamedia"
   region: "swedencentral"                       # must match capacity_region above
+  resource_group: "rg-zava-media"
+  account_name: "fdy-zavamedia-acct"            # the Foundry (AI Services) resource
+  model_deployment_name: "gpt-4.1-mini"         # deployment name, not the model id
+  model_name: "gpt-4.1-mini"
+  model_version: "2025-04-14"
+  model_capacity: 50                            # thousands of TPM
   orchestrator_agent_name: "Zava_Media_Agent"   # Foundry side: routes + synthesises
+  contracts_agent_name: "Zava_Media_Contracts"  # A2A subordinate over data/contracts/ — see below
   fabric_connection_name: "zava_media_dataagent"
+  contracts_connection_name: "zava_media_contracts_a2a"
   knowledge_base_name: "zava-media-contracts"
   # Foundry agent names ARE their API identifier and there is no rename operation.
   # Changing a name here means recreating the agent and editing every router prompt.
+  #
+  # WHY A THIRD AGENT EXISTS (Zava_Media_Contracts).
+  # The obvious design — one supervisor holding the Fabric data agent tool AND a
+  # file_search over the contracts — is documented to fail on a live tenant:
+  # file_search describes its own purpose to the model, while a connection-backed
+  # tool surfaces only under its connection name. The model picks the tool it can
+  # read, answers every question (including plainly quantitative ones) out of the
+  # corpus, and the Fabric tool never fires. tool_choice="required" does not fix it;
+  # naming the tool in the prompt does not fix it. The fix is architectural: put the
+  # corpus behind A2A so both tools are opaque and are told apart by name alone.
+  # Source: Azure-Brain/Foundry-Brain/agents/foundry-orchestration-agent/known_issues.md
+  #         "a2a_preview and file_search do not coexist on one agent" (tenant-observed).
+  wrap_fabric_in_a2a: false
+  # Escape hatch. If the supervisor still favours the contracts agent on a live run,
+  # set this true: the Fabric leg is then also wrapped in an A2A subordinate, which is
+  # the fully tenant-proven shape. Costs one more agent and one more hop.
 
 # ── The demo question ────────────────────────────────────────────
 # "On the Q3 for this advertiser in Spain we over-delivered — does the contract

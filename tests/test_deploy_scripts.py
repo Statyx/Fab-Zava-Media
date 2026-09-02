@@ -48,7 +48,7 @@ def bim():
     model = dsm.build_model_bim(
         {"lakehouse_name": "ZavaMediaLH", "fabric_api_base": dsm.API_BASE},
         {"workspace_id": "w", "lakehouse_id": "l",
-         "lakehouse_sql_endpoint": "example.datawarehouse.fabric.microsoft.com"},
+         "lakehouse_sql_endpoint": "<sql_endpoint>.datawarehouse.fabric.microsoft.com"},
     )["model"]
     return model
 
