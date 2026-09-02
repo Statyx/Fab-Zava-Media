@@ -236,6 +236,8 @@ The canonical order, and the artifact each step needs from the previous one:
 
 Then one step the chain **cannot** perform:
 
+| # | Step | Script | Needs |
+|---|---|---|---|
 | — | Workspace task flow | `taskflow/zava_media_taskflow.json`, imported by hand | every item above |
 
 Task flows are a workspace **UI feature**, not a Fabric item type. There is no REST
