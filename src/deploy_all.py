@@ -86,6 +86,23 @@ def ensure_tenant(cfg):
 
 
 def select_steps(args):
+    """Resolve the step list.
+
+    Two independent choices, and they compose:
+
+      * WHICH RANGE - positional steps, `--from`, or everything.
+      * WHICH HALF  - `--fabric-only` / `--foundry-only`.
+
+    The half flags are FILTERS applied on top of the range, not alternatives to it.
+    They used to sit in the same elif chain as `--from`, which meant
+    `--from preload_pacing --fabric-only` silently planned the three Foundry steps
+    too: the flag was accepted, echoed in --help, and ignored. Observed on a live
+    deploy 2026-09-02, where it queued a Foundry resource creation nobody asked for.
+    A flag that is silently dropped is worse than one that errors.
+    """
+    if args.fabric_only and args.foundry_only:
+        raise SystemExit("--fabric-only and --foundry-only are mutually exclusive.")
+
     if args.steps:
         unknown = [s for s in args.steps if s not in STEP_NAMES]
         if unknown:
@@ -95,23 +112,46 @@ def select_steps(args):
         if args.from_step not in STEP_NAMES:
             raise SystemExit(f"Unknown --from step '{args.from_step}'. Valid: {STEP_NAMES}")
         chosen = STEP_NAMES[STEP_NAMES.index(args.from_step):]
-    elif args.fabric_only:
-        chosen = list(FABRIC_STEPS)
-    elif args.foundry_only:
-        chosen = list(FOUNDRY_STEPS)
     else:
         chosen = list(STEP_NAMES)
+
+    if args.fabric_only:
+        chosen = [s for s in chosen if s in FABRIC_STEPS]
+    elif args.foundry_only:
+        chosen = [s for s in chosen if s in FOUNDRY_STEPS]
+
     skip = set(s.strip() for s in (args.skip or "").split(",") if s.strip())
-    return [s for s in chosen if s not in skip]
+    chosen = [s for s in chosen if s not in skip]
+    if not chosen:
+        raise SystemExit("Nothing to run: the range and the filters do not overlap.")
+    return chosen
 
 
 def run_steps(names):
+    """Invoke each step's main() as library code.
+
+    Five of the thirteen step modules (deploy_data_agent + the four Foundry ones) build
+    their own argparse inside main(). Imported here, they read the ORCHESTRATOR's sys.argv:
+    `deploy_all.py --from semantic_model --fabric-only` reached step 10 and died with
+    `deploy_all.py: error: unrecognized arguments: --from semantic_model --fabric-only`,
+    because deploy_data_agent's parser only knows `--delete`. Observed live 2026-09-02.
+
+    Any flag at all made the entire back half of the chain unreachable through the
+    orchestrator, while each script still ran fine on its own — which is why the offline
+    suite never saw it. The orchestrator owns the CLI; a step invoked as library code must
+    see a clean argv.
+    """
     mod_of = dict(STEPS)
     total = len(names)
     for idx, name in enumerate(names, 1):
         print_step(idx, total, f"STEP: {name}  (module {mod_of[name]})")
         mod = importlib.import_module(mod_of[name])
-        mod.main()
+        saved_argv = sys.argv
+        sys.argv = [mod_of[name] + ".py"]
+        try:
+            mod.main()
+        finally:
+            sys.argv = saved_argv
     print(f"\n✓  {total} step(s) completed.")
 
 

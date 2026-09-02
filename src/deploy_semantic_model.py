@@ -262,13 +262,13 @@ def build_model_bim(config, state):
             _measure("Delivered Impressions", "SUM(fact_delivery[impressions])",
                      "Total impressions delivered — the numerator of [Delivery vs Plan %]",
                      fmt=NUM, folder="Delivery"),
-            _measure("Clicks", "SUM(fact_delivery[clicks])", "Total clicks",
+            _measure("Delivered Clicks", "SUM(fact_delivery[clicks])", "Total clicks",
                      fmt=NUM, folder="Delivery"),
             _measure("Net Spend (EUR)", "SUM(fact_delivery[spend_net_eur])",
                      "Total net spend against delivery", fmt=EUR, folder="Delivery"),
             _measure("Delivered GRP", "SUM(fact_delivery[delivered_grp])",
                      "Total GRP delivered", fmt="#,0.0", folder="Delivery"),
-            _measure("CTR %", "DIVIDE([Clicks], [Delivered Impressions])",
+            _measure("CTR %", "DIVIDE([Delivered Clicks], [Delivered Impressions])",
                      "Clicks divided by impressions", fmt=PCT, folder="Delivery"),
             _measure("Effective CPM (EUR)",
                      "DIVIDE([Net Spend (EUR)], [Delivered Impressions]) * 1000",
@@ -424,7 +424,7 @@ def build_model_bim(config, state):
         "billing across advertisers, brands, campaigns, markets, channels and media owners. "
         "Always use the existing measures rather than aggregating columns by hand. "
         "Plan: [Planned Budget (EUR)], [Planned Impressions], [Planned GRP]. "
-        "Delivery: [Delivered Impressions], [Clicks], [Net Spend (EUR)], [Delivered GRP], "
+        "Delivery: [Delivered Impressions], [Delivered Clicks], [Net Spend (EUR)], [Delivered GRP], "
         "[CTR %], [Effective CPM (EUR)]. "
         "Plan versus delivery: [Delivery vs Plan %] is the primary answer to any over- or "
         "under-delivery question; supporting measures are [Delivery Ratio], [Impression Gap], "

@@ -82,7 +82,7 @@ Do NOT ask this source for delivery or billing FIGURES — use the semantic mode
 
 ## Source 2 — Semantic Model (DAX): key measures (ALWAYS reuse, never recompute)
 - Plan: [Planned Budget (EUR)], [Planned Impressions], [Planned GRP]
-- Delivery: [Delivered Impressions], [Clicks], [Net Spend (EUR)], [Delivered GRP], [CTR %],
+- Delivery: [Delivered Impressions], [Delivered Clicks], [Net Spend (EUR)], [Delivered GRP], [CTR %],
   [Effective CPM (EUR)]
 - Plan vs delivery: [Delivery vs Plan %] (the primary answer to any over/under-delivery question),
   [Delivery Ratio], [Impression Gap], [GRP Delivery %], [Over-delivered Campaigns],
@@ -281,7 +281,7 @@ def build_sm_elements():
         ]),
         _table("fact_delivery", "What was actually delivered, daily", [
             _meas("Delivered Impressions", "Total impressions delivered"),
-            _meas("Clicks", "Total clicks"),
+            _meas("Delivered Clicks", "Total clicks"),
             _meas("Net Spend (EUR)", "Total net spend"),
             _meas("Delivered GRP", "Total GRP delivered"),
             _meas("CTR %", "Clicks over impressions"),

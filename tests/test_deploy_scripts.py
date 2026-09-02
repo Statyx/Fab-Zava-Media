@@ -242,6 +242,52 @@ def test_semantic_model_columns_exist_in_the_csvs(sm_index):
         assert not unknown, f"{table}: model columns absent from the CSV: {sorted(unknown)}"
 
 
+def test_no_measure_collides_with_a_column_name(sm_index):
+    """
+    Tabular refuses a measure whose name matches a column in the same table, and the
+    comparison is CASE-INSENSITIVE: a `clicks` column and a `Clicks` measure collide.
+
+    This one is expensive to find at deploy time. The import is rejected wholesale -
+    "The 'Clicks' measure cannot be created because a column with the same name already
+    exists" - and it surfaces at step 9 of 13, minutes in, after the workspace, lakehouse,
+    notebook, eventhouse, ontology and graph have all succeeded. Observed on a live
+    deploy 2026-09-02.
+
+    Ten seconds offline instead.
+    """
+    for table, parts in sm_index.items():
+        cols = {c.casefold(): c for c in parts["columns"]}
+        for measure in parts["measures"]:
+            clash = cols.get(measure.casefold())
+            assert clash is None, (
+                f"{table}: measure [{measure}] collides with column [{clash}] "
+                f"(Tabular compares names case-insensitively). "
+                f"Rename the measure - the column name is referenced by the DAX."
+            )
+
+
+def test_measure_references_resolve_to_declared_measures(bim, sm_index):
+    """
+    A DAX expression citing [Some Measure] that no table declares does not fail at import
+    - it fails when a visual or the agent evaluates it. Renaming a measure and missing one
+    of its call sites is exactly how that happens, so the rename is checked mechanically.
+    """
+    declared = {m for parts in sm_index.values() for m in parts["measures"]}
+    columns = {c for parts in sm_index.values() for c in parts["columns"]}
+    for table in bim["tables"]:
+        for measure in table.get("measures", []):
+            expr = measure["expression"]
+            if isinstance(expr, list):
+                expr = "\n".join(expr)
+            # [Name] not preceded by a table reference is a measure reference;
+            # table[column] is a column reference and is checked elsewhere.
+            for ref in re.findall(r"(?<![\w'\]])\[([^\]]+)\]", expr):
+                assert ref in declared or ref in columns, (
+                    f"{table['name']}[{measure['name']}] references [{ref}], "
+                    f"which is neither a declared measure nor a column"
+                )
+
+
 def test_semantic_model_relationships_resolve(bim, sm_index):
     for rel in bim["relationships"]:
         assert rel["fromColumn"] in sm_index[rel["fromTable"]]["columns"], \

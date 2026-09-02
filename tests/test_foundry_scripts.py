@@ -403,6 +403,84 @@ def test_the_two_halves_partition_the_chain():
         "--fabric-only must end on the published data agent, which is what Foundry binds to"
 
 
+def test_half_filters_compose_with_a_resume():
+    """
+    `--fabric-only` is a FILTER on the range, not an alternative to it. It used to sit in
+    the same elif chain as `--from`, so `--from preload_pacing --fabric-only` planned the
+    Foundry steps anyway — the flag was parsed, listed in --help, and silently dropped.
+    On a live deploy 2026-09-02 that queued an Azure Foundry resource creation nobody
+    asked for.
+
+    A flag that is quietly ignored is worse than one that errors, because the plan it
+    prints looks deliberate.
+    """
+    import argparse
+    import deploy_all
+
+    def plan(**kw):
+        args = argparse.Namespace(steps=[], from_step=None, skip=None,
+                                  fabric_only=False, foundry_only=False)
+        for k, v in kw.items():
+            setattr(args, k, v)
+        return deploy_all.select_steps(args)
+
+    resumed = plan(from_step="preload_pacing", fabric_only=True)
+    assert not set(resumed) & set(deploy_all.FOUNDRY_STEPS), \
+        f"--from + --fabric-only leaked Foundry steps: {resumed}"
+    assert "preload_pacing" in resumed and resumed[-1] == "data_agent"
+
+    # the same composition on the other half, and with explicit steps
+    assert plan(from_step="preload_pacing", foundry_only=True) == list(deploy_all.FOUNDRY_STEPS)
+    assert plan(steps=["lakehouse", "foundry_agents"], fabric_only=True) == ["lakehouse"]
+
+    # a range that cannot satisfy the filter must fail loudly, not run nothing
+    with pytest.raises(SystemExit):
+        plan(steps=["foundry_agents"], fabric_only=True)
+    with pytest.raises(SystemExit):
+        plan(fabric_only=True, foundry_only=True)
+
+
+def test_steps_that_parse_argv_are_isolated_from_the_orchestrator():
+    """
+    Five step modules build their own argparse inside main(). Imported by deploy_all, they
+    read the ORCHESTRATOR's sys.argv, so any flag at all killed the back half of the chain:
+
+        deploy_all.py --from semantic_model --fabric-only
+        -> deploy_all.py: error: unrecognized arguments: --from semantic_model --fabric-only
+
+    raised from inside deploy_data_agent.main(), whose parser only knows --delete. Live,
+    2026-09-02, at step 10 of 13 after the semantic model had already been created.
+
+    Each script was fine on its own, which is exactly why the per-script tests missed it —
+    the defect lives in the seam. This asserts the seam: run_steps must neutralise argv
+    around every main(), and restore it afterwards.
+    """
+    import deploy_all
+
+    seen = []
+    sentinel = ["deploy_all.py", "--from", "semantic_model", "--fabric-only"]
+
+    class FakeModule:
+        def main(self):
+            seen.append(list(sys.argv))
+
+    real_import = deploy_all.importlib.import_module
+    deploy_all.importlib.import_module = lambda name: FakeModule()
+    saved = sys.argv
+    sys.argv = list(sentinel)
+    try:
+        deploy_all.run_steps(["semantic_model", "data_agent"])
+    finally:
+        sys.argv = saved
+        deploy_all.importlib.import_module = real_import
+
+    assert len(seen) == 2
+    for argv in seen:
+        assert len(argv) == 1, f"step saw the orchestrator's flags: {argv}"
+        assert argv[0].endswith(".py")
+    assert sys.argv == saved, "run_steps must restore sys.argv"
+
+
 # ── The verifier itself ──────────────────────────────────────────────────────
 
 def test_verifier_asserts_the_negative_case():

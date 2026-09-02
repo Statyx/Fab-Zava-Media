@@ -265,11 +265,26 @@ def kusto_mgmt(query_service_uri: str, kusto_token: str,
 
 def kusto_streaming_ingest(query_service_uri: str, kusto_token: str,
                            db_name: str, table_name: str,
-                           csv_payload: str) -> None:
+                           csv_payload: str,
+                           max_attempts: int = 6) -> None:
     """Ingest CSV data via the Kusto streaming ingestion REST API.
 
     Uses POST /v1/rest/ingest/{db}/{table}?streamFormat=Csv
     which is more reliable than .ingest inline for larger volumes.
+
+    Retries on 5xx and 429. Enabling the streaming ingestion policy is NOT
+    synchronous: `.alter table ... policy streamingingestion` in
+    deploy_eventhouse.py returns 200 immediately, but the cluster needs minutes
+    to actually accept streaming data. Ingesting inside that window returns
+    **520 InternalServiceError with an empty body** — observed on a live
+    Eventhouse 2026-09-02, the identical payload succeeding minutes later.
+    The deploy chain runs this step directly after creating the Eventhouse, so
+    a cold workspace lands in that window almost every time.
+
+    The status code is the only signal available: a 520 body is empty, so
+    nothing distinguishes "policy still propagating" from a real outage.
+    Retrying is safe because the caller clears the table before ingesting, so
+    a duplicated chunk cannot survive a completed run.
     """
     headers = {
         "Authorization": f"Bearer {kusto_token}",
@@ -277,9 +292,27 @@ def kusto_streaming_ingest(query_service_uri: str, kusto_token: str,
     }
     url = (f"{query_service_uri}/v1/rest/ingest/"
            f"{db_name}/{table_name}?streamFormat=Csv")
-    resp = requests.post(url, headers=headers, data=csv_payload.encode("utf-8"),
-                         timeout=60)
-    resp.raise_for_status()
+    payload = csv_payload.encode("utf-8")
+
+    for attempt in range(max_attempts):
+        resp = requests.post(url, headers=headers, data=payload, timeout=120)
+        if resp.status_code < 400:
+            return
+        retryable = resp.status_code >= 500 or resp.status_code == 429
+        if not retryable or attempt == max_attempts - 1:
+            # raise_for_status() discards the response body, which is where Kusto
+            # puts the actual reason (bad column count, schema mismatch...).
+            # Losing it turns a one-line fix into a debugging session.
+            raise RuntimeError(
+                f"Kusto streaming ingest failed: HTTP {resp.status_code} "
+                f"on '{table_name}' after {attempt + 1} attempt(s).\n"
+                f"Response body: {resp.text[:1000] or '(empty)'}"
+            )
+        wait = min(60, 10 * 2 ** attempt)
+        print(f"   HTTP {resp.status_code} on {table_name} - streaming policy may "
+              f"still be propagating; retrying in {wait}s "
+              f"(attempt {attempt + 2}/{max_attempts})")
+        time.sleep(wait)
 
 
 def print_step(step: int, total: int, msg: str):
