@@ -44,12 +44,19 @@ bootstrap()
 
 from helpers import load_config, load_state, save_state, print_step
 from foundry_common import (
-    AzError, a2a_base_path, agents_request, arm_get, arm_request, banner,
+    AzError, _az, a2a_base_path, agents_request, arm_get, arm_request, banner,
     check_agent_name, die, foundry_credential, project_scope, require,
 )
 
-TOTAL = 7
+TOTAL = 8
 CONTRACTS_DIR = Path(__file__).resolve().parent.parent / "data" / "contracts"
+
+# The audience the A2A runtime mints the caller's token for. Must be set as a first-class
+# connection property; `metadata.audience` alone is stored and ignored.
+A2A_AUDIENCE = "https://ai.azure.com"
+
+# Least-privilege role for an agent that only calls another agent.
+AGENT_CONSUMER_ROLE = "Foundry Agent Consumer"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -284,8 +291,18 @@ def enable_incoming_a2a(state, agent_name: str):
         die(f"The agent card for '{agent_name}' does not return. The supervisor would "
             f"fail at invoke with 'Failed to fetch agent card: 400', which looks like a "
             f"permissions problem and is not one.")
-    print(f"    card verified, protocolVersion "
-          f"{card.get('protocolVersion') if isinstance(card, dict) else '?'}")
+
+    # The card carries NO top-level `protocolVersion`. Versions live one level down, one
+    # per entry of `supportedInterfaces`. Reading the top level printed a confident
+    # "protocolVersion None" on a perfectly valid card — a check that cannot fail is worse
+    # than no check, because it is quoted later as evidence.
+    versions = sorted({(i or {}).get("protocolVersion")
+                       for i in (card.get("supportedInterfaces") or [])
+                       if isinstance(i, dict)} - {None})
+    if "1.0" not in versions:
+        die(f"The card for '{agent_name}' does not advertise protocolVersion 1.0 "
+            f"(got {versions or 'none'}).")
+    print(f"    card verified, protocolVersion(s) {', '.join(versions)}")
 
 
 def create_a2a_connection(state, conn_name: str, agent_name: str) -> str:
@@ -294,6 +311,17 @@ def create_a2a_connection(state, conn_name: str, agent_name: str) -> str:
 
     Target must be the base path — not the card path, not the project endpoint. A
     connection whose target is the card path is created happily and never resolves.
+
+    `audience` must be set as a FIRST-CLASS property. Putting it only in `metadata`
+    (which mirrors how the portal displays it) is accepted by ARM and stored, and then
+    the runtime cannot mint the caller's token:
+
+        Failed to fetch agentic identity access token with status code: 400, response: .
+
+    The empty `response:` is the tell — there is no downstream call to report on, because
+    the token was never issued. Tenant-verified 2026-09-02: with `properties.audience`
+    set, that error is replaced by the *next* one in the chain; with it unset or wrong,
+    it comes straight back.
     """
     scope = (project_scope(state["foundry_subscription_id"],
                            state["foundry_resource_group"],
@@ -310,12 +338,64 @@ def create_a2a_connection(state, conn_name: str, agent_name: str) -> str:
             "category": "RemoteA2A",
             "target": target,
             "authType": "AgenticIdentityToken",
+            "audience": A2A_AUDIENCE,          # the one the runtime actually reads
             "isSharedToAll": True,
-            "metadata": {"audience": "https://ai.azure.com"},
+            "metadata": {"audience": A2A_AUDIENCE},
         }
     })
     print(f"    created '{conn_name}' -> {target}")
     return conn_name
+
+
+def grant_agent_consumer(state, agent_name: str) -> None:
+    """
+    Give the CALLER agent rights on the project that hosts the callee.
+
+    Without this the card fetch fails and — this is the expensive part — it fails as
+    **404 Not Found**, not 403. A 404 sends you hunting for a wrong URL; the URL is fine.
+    Tenant-verified 2026-09-02, the progression while the assignment propagated was:
+
+        404 · 404 · 404 · 403 · 200        (~4 minutes, one attempt per minute)
+
+    So treat 404 on the agent card as "RBAC has not landed yet" until proven otherwise,
+    and only then suspect the path.
+
+    An agent document exposes TWO principal ids and only one of them is assignable:
+      - `instance_identity.principal_id`  -> works
+      - `blueprint.principal_id`          -> rejected, PrincipalTypeNotSupported
+        ("Principals of type #microsoft.graph.agentIdentityBlueprintPrincipal cannot
+         validly be used in role assignments")
+    """
+    doc = agents_request("GET", state["foundry_endpoint"], f"/agents/{agent_name}") or {}
+    principal = ((doc.get("instance_identity") or {}).get("principal_id") or "").strip()
+    if not principal:
+        die(f"'{agent_name}' exposes no instance_identity.principal_id, so the A2A hop "
+            f"cannot be authorised. The agent was probably not created successfully.")
+
+    scope = project_scope(state["foundry_subscription_id"], state["foundry_resource_group"],
+                          state["foundry_account_name"], state["foundry_project_name"])
+    # project_scope() returns a full https://management.azure.com/... URL because it feeds
+    # arm_request(). `az role assignment --scope` wants a BARE resource id, and rejects the
+    # URL form with (MissingSubscription) — an error that points at the account context,
+    # which is correctly set, rather than at the argument that is actually malformed.
+    scope = "/" + scope.split("://", 1)[-1].split("/", 1)[-1] if "://" in scope else scope
+    try:
+        # --subscription is explicit on purpose: the CLI resolves the call against its own
+        # default rather than the scope, so a standalone run must not rely on deploy_all.py
+        # having set it first.
+        _az(["role", "assignment", "create",
+             "--assignee-object-id", principal,
+             "--assignee-principal-type", "ServicePrincipal",
+             "--role", AGENT_CONSUMER_ROLE, "--scope", scope,
+             "--subscription", state["foundry_subscription_id"]])
+        print(f"    granted '{AGENT_CONSUMER_ROLE}' to {agent_name} ({principal})")
+    except AzError as exc:
+        if "RoleAssignmentExists" in str(exc):
+            print(f"    '{AGENT_CONSUMER_ROLE}' already granted to {agent_name}")
+        else:
+            raise
+    print("    NOTE: role assignments take minutes to propagate. Until they do, the "
+          "agent card returns 404 — that is expected, not a wrong URL.")
 
 
 def create_supervisor(client, cfg, name: str, model: str,
@@ -427,7 +507,11 @@ def main() -> int:
     create_supervisor(client, config, supervisor, model,
                       fabric_conn_id, a2a_conn_id, contracts)
 
-    print_step(7, TOTAL, "Saving state")
+    print_step(7, TOTAL, f"Granting '{AGENT_CONSUMER_ROLE}' to the supervisor")
+    # Must run AFTER create_supervisor: the identity we grant to is minted with the agent.
+    grant_agent_consumer(state, supervisor)
+
+    print_step(8, TOTAL, "Saving state")
     state["foundry_supervisor_agent"] = supervisor
     state["foundry_contracts_agent"] = contracts
     save_state(state)

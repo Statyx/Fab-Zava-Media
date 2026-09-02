@@ -14,13 +14,29 @@ We can. Both GUIDs are already in state.json, put there by the Fabric deploy:
 which is the same pair the URL `.../groups/{workspace_id}/aiskills/{data_agent_id}`
 exposes. So nothing is read off a screen.
 
-⚠️ ONE THING HERE IS NOT PROVEN. The ARM request body for a *Fabric data agent*
-connection is not documented in this brain — only the A2A one is (category `RemoteA2A`,
-authType `AgenticIdentityToken`). Rather than assert a shape, this script tries the
-plausible categories in order and records which one ARM accepted, in
-`state["fabric_connection_category"]`. First live run turns the unknown into a fact.
-If all of them are rejected, it prints the portal steps and exits non-zero — a 30-second
-manual fallback beats a script that pretends to have succeeded.
+⚠️ PROVEN NEGATIVE — tenant-verified 2026-09-02, Sweden Central.
+
+ARM **cannot** create the connection the Fabric data-agent tool consumes. This is not a
+missing field; the category does not exist on the control plane:
+
+  * `MicrosoftFabricPreviewTool` fails at RUNTIME with
+        No CustomKeys connection found for AzureFabric
+  * ARM has no `AzureFabric` category. Every api-version tried (2025-04-01-preview,
+    2025-06-01, 2025-10-01-preview, …) answers "unable to deserialize request body".
+  * The one Fabric category ARM does accept is `MicrosoftFabric`, and it answers
+        AuthType for MicrosoftFabric Connection can only be AAD, UserEntraToken
+    so it can never be the CustomKeys connection the tool is looking for.
+  * The data plane is read-only for connections (`get`, `get_default`, `list` — no create),
+    so there is no second programmatic route.
+
+⚠️ AND THE TRAP: ARM **accepts** `MicrosoftFabric` and returns 200. A created connection
+therefore looks like success and fails only later, inside a model run, in a script that
+has already done six other things. "ARM stored it" is not an oracle for "the tool can use
+it" — the only oracle is a real question routed through the tool.
+
+⇒ The portal step below is REQUIRED, not a convenience fallback. This script still writes
+the ARM connection because it is harmless and keeps the name reserved, then prints the
+portal steps every time.
 
 Usage:
     python deploy_foundry_connection.py
@@ -174,12 +190,27 @@ def main() -> int:
     print_step(3, TOTAL, "Recording what worked")
     state["fabric_connection_name"] = name
     state["fabric_connection_category"] = category
+    # ARM acceptance proves storage, never usability. Kept false until a real run through
+    # the tool says otherwise, so no later step can mistake "created" for "working".
+    state["fabric_connection_tool_verified"] = False
     save_state(state)
     print(f"    state.fabric_connection_category = '{category}'")
 
-    print("\nA connection is NOT validated at creation. ARM has accepted a record; it has")
-    print("not proven the far end answers. That is settled at the first agent run.")
-    print("\nNext: python deploy_foundry_agents.py")
+    print(f"""
+⚠️  ARM HAS STORED A CONNECTION. THE FABRIC TOOL STILL CANNOT USE IT.
+
+This is a proven limitation, not a suspicion (tenant-verified, Sweden Central):
+the Fabric data-agent tool resolves a CustomKeys connection of category 'AzureFabric',
+and ARM has no such category at any api-version. What ARM accepts — 'MicrosoftFabric' —
+is restricted to AAD / UserEntraToken, so it can never be that connection.
+
+Left as-is, the first agent run fails with:
+    No CustomKeys connection found for AzureFabric
+
+YOU MUST CREATE IT ONCE IN THE PORTAL, under the SAME name ('{name}'), so that
+deploy_foundry_agents.py keeps resolving it by name and nothing else changes.
+{portal_steps(workspace_id, agent_id, name)}
+Next: python deploy_foundry_agents.py""")
     return 0
 
 

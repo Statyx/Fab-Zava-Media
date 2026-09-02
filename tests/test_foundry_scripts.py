@@ -278,6 +278,107 @@ def test_the_card_is_published_and_verified(agents_mod):
     )
 
 
+def test_the_audience_is_a_first_class_connection_property():
+    """
+    Tenant-verified: `properties.audience` is what the runtime reads to mint the caller's
+    token. Writing the value only into `properties.metadata.audience` — which is how the
+    portal displays it — is accepted by ARM, stored, and ignored, and the hop then fails
+    with 'Failed to fetch agentic identity access token with status code: 400, response: '
+    whose EMPTY response body is the tell that no downstream call ever happened.
+    """
+    text = source("deploy_foundry_agents.py")
+    match = re.search(r'"authType"\s*:\s*"AgenticIdentityToken"(.{0,400})', text, re.S)
+    assert match, "the A2A connection body is not written as expected"
+    block = match.group(1)
+    assert re.search(r'"audience"\s*:', block), (
+        "the A2A connection sets no first-class properties.audience; the token cannot "
+        "be minted and the hop fails before it reaches the card"
+    )
+
+
+def test_the_caller_is_granted_agent_consumer_on_the_project():
+    """
+    The single most expensive omission of this build. Without the grant the card fetch
+    returns 404 — not 403 — for minutes, which reads as a wrong URL and sends you hunting
+    through card paths that were correct all along. Observed: 404,404,404,403,200 in ~4min.
+    """
+    text = source("deploy_foundry_agents.py")
+    assert "Foundry Agent Consumer" in text, \
+        "the deploy never grants Foundry Agent Consumer, so the A2A hop cannot authorise"
+    assert "role" in text and "assignment" in text, \
+        "the role is named but never actually assigned"
+
+
+def test_the_grant_uses_the_assignable_principal():
+    """
+    An agent exposes two principal ids and only one can appear in a role assignment.
+    blueprint.principal_id is of type #microsoft.graph.agentIdentityBlueprintPrincipal
+    and is rejected with PrincipalTypeNotSupported.
+    """
+    text = code_only("deploy_foundry_agents.py")
+    assert "instance_identity" in text, \
+        "the grant must read instance_identity.principal_id"
+    assert not re.search(r'blueprint.{0,40}principal_id', text, re.S), \
+        "blueprint.principal_id is not assignable; role assignment will be rejected"
+
+
+def test_the_role_scope_is_a_bare_resource_id():
+    """
+    project_scope() returns a full https://management.azure.com/... URL because it feeds
+    arm_request(). `az role assignment --scope` needs a BARE resource id and rejects the
+    URL form with (MissingSubscription) — an error naming the account context, which is
+    correct, instead of the argument that is actually malformed.
+    """
+    text = source("deploy_foundry_agents.py")
+    match = re.search(r'def grant_agent_consumer.*?(?=\ndef )', text, re.S)
+    assert match, "grant_agent_consumer is gone"
+    body = match.group(0)
+    assert "://" in body, (
+        "the grant passes project_scope() straight to az; that value is a URL and the "
+        "CLI will reject it with (MissingSubscription)"
+    )
+
+
+def test_the_grant_does_not_depend_on_the_cli_default_subscription():
+    """
+    Run standalone — outside deploy_all.py, which sets the default first — the call must
+    still resolve. Otherwise the step works in the orchestrator and only in the orchestrator.
+    """
+    text = source("deploy_foundry_agents.py")
+    match = re.search(r'def grant_agent_consumer.*?(?=\ndef )', text, re.S)
+    assert "--subscription" in match.group(0), \
+        "the role assignment relies on whatever subscription the CLI happens to default to"
+
+
+def test_the_card_check_reads_the_nested_protocol_version():
+    """
+    The agent card has NO top-level `protocolVersion`; versions live per entry inside
+    `supportedInterfaces`. Reading the top level printed a confident 'protocolVersion
+    None' against a perfectly valid card — a check that cannot fail, later quoted as
+    evidence that the card was broken.
+    """
+    text = source("deploy_foundry_agents.py")
+    assert "supportedInterfaces" in text, (
+        "the card verification does not read supportedInterfaces[].protocolVersion, so "
+        "it reports None on every valid card"
+    )
+    assert not re.search(r'card\.get\(\s*["\']protocolVersion', text), \
+        "protocolVersion is read at the top level of the card, where it never exists"
+
+
+def test_the_fabric_connection_records_that_arm_cannot_validate_it():
+    """
+    ARM accepts a MicrosoftFabric connection and returns 200, while the Fabric data-agent
+    tool resolves a CustomKeys connection of category 'AzureFabric' — a category ARM does
+    not have at any api-version. 'ARM stored it' must never be presented as success.
+    """
+    text = source("deploy_foundry_connection.py")
+    assert "AzureFabric" in text, \
+        "the proven ARM limitation is not recorded where the next reader will hit it"
+    assert "portal" in text.lower(), \
+        "no portal fallback is offered for a step ARM provably cannot perform"
+
+
 def test_both_protocols_are_relisted_together(agents_mod):
     """
     Merge-patch REPLACES arrays. Writing one protocol turns the others off — which

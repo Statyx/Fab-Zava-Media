@@ -72,7 +72,15 @@ def ask(client, agent_name: str, question: str):
     openai = client.get_openai_client()
     response = openai.responses.create(
         input=question,
-        extra_body={"agent_reference": {"name": agent_name}},
+        # `type` is REQUIRED and its only legal value is the literal "agent_reference".
+        # Omitting it fails with `Required property 'type' is missing`, param
+        # `agent_reference.type` — which reads like the SDK forgot a field rather than
+        # like our payload is short one. Azure-Brain documented this call shape without
+        # the discriminator and marked the line "doc, never run"; that honesty is what
+        # made this cheap to find. Verified live 2026-09-02: the service answers
+        # `const: Expected "agent_reference"` to any other value, so it enumerates
+        # itself if you send a deliberately wrong one.
+        extra_body={"agent_reference": {"type": "agent_reference", "name": agent_name}},
     )
 
     fired = []
@@ -254,15 +262,26 @@ Ordered checklist. Work down it; do not skip.
 
   1. Were the tools approved? A run waiting on an approval fails with no useful
      message. Open the supervisor alone in the playground and approve each tool.
-  2. Is incoming A2A enabled on the subordinate, WITH a published card? Missing card
-     gives 'Failed to fetch agent card: 400', which reads as an RBAC fault and is not.
-  3. Does the caller hold Foundry Agent Consumer on the project?
-  4. Does the A2A connection target the BASE path — not the card path, not the project
+  2. 'Failed to fetch agent card: 404' -> SUSPECT RBAC FIRST, not the URL. A missing
+     'Foundry Agent Consumer' grant reports as 404 for several minutes before it ever
+     reports as 403. Observed progression: 404, 404, 404, 403, 200 over ~4 minutes.
+     Grant it to the caller's instance_identity.principal_id (NOT blueprint's, which
+     is not assignable) and retry for at least 5 minutes before touching anything else.
+  3. Is incoming A2A enabled on the subordinate, WITH a published card? A missing card
+     gives 'Failed to fetch agent card: 400' — a 400, note, not the 404 of item 2.
+  4. 'Failed to fetch agentic identity access token ... response: ' with an EMPTY
+     response means no token was minted: the connection needs `properties.audience`
+     = 'https://ai.azure.com' as a first-class field. Setting it only inside
+     `properties.metadata` is stored and ignored.
+  5. Does the A2A connection target the BASE path — not the card path, not the project
      endpoint?
-  5. If the contracts agent answered a purely quantitative question: the tool list has
+  6. 'No CustomKeys connection found for AzureFabric' is NOT fixable from ARM. That
+     category does not exist on the control plane; create the Fabric connection once
+     in the portal under the same name. See deploy_foundry_connection.py --portal-steps.
+  7. If the contracts agent answered a purely quantitative question: the tool list has
      stopped being homogeneous. Something self-describing is attached to the supervisor
      and is out-competing the connection-backed tools. Remove it.
-  6. If the supervisor called nothing and narrated a plan instead: tool_choice is not
+  8. If the supervisor called nothing and narrated a plan instead: tool_choice is not
      'required'.
 """)
     return 1
