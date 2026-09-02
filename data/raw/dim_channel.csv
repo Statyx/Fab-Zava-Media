@@ -1,0 +1,8 @@
+channel_id,channel_name,channel_group,measurement_unit,rate_card_cpm_eur,is_grp_channel
+CH-TV,TV,Offline,GRP,22.0,True
+CH-DV,Digital Video,Online,Impressions,14.5,False
+CH-SOC,Social,Online,Impressions,6.2,False
+CH-SEA,Search,Online,Clicks,3.8,False
+CH-DOOH,DOOH,Offline,Contacts,9.4,True
+CH-AUD,Audio,Offline,GRP,7.1,True
+CH-RMN,Retail Media,Online,Impressions,11.3,False

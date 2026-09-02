@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Node (presentation deck builder)
+node_modules/
+
+# Generated decks — regenerate with `node presentation/build_deck.js` (see README).
+# Binary Office files can carry authoring metadata / sensitivity labels, so they are
+# not tracked in this public repo.
+presentation/*.pptx
+
+# Scratch / logs (terminal capture files used during deploys).
+# Keep these narrow: a bare `_*.py` / `_*.json` silently swallows legitimate files.
+*.log
+_tmp_*
+_scratch_*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+
+# Environment-specific — contain tenant / workspace / item IDs. Use the *.example files as templates.
+src/config.yaml
+src/state.json
+.vscode/mcp.json
+
+# Local client denylist for scripts/check_repo_leaks.py — one entry per line.
+# Names are detected, never published. This file must stay untracked.
+.clientdeny
+
+# (The *.example files ARE committed: src/config.example.yaml, src/state.example.json)
+# (data/raw/*.csv IS committed on purpose — the demo must be reproducible without a tenant.)

@@ -1,0 +1,11 @@
+brand_id,brand_name,advertiser_id,category
+BRD-001,Contoso EV,ADV-001,Electric Vehicles
+BRD-002,Contoso Fleet,ADV-001,Fleet Services
+BRD-003,Fabrikam Skin,ADV-002,Skincare
+BRD-004,Fabrikam Hair,ADV-002,Haircare
+BRD-005,Northwind Organics,ADV-003,Organic Food
+BRD-006,Northwind Snacks,ADV-003,Snacking
+BRD-007,Litware Home,ADV-004,Home & Living
+BRD-008,Litware Fashion,ADV-004,Apparel
+BRD-009,Adventure Works Cruises,ADV-005,Cruises
+BRD-010,Adventure Works Breaks,ADV-005,City Breaks

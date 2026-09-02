@@ -1,0 +1,7 @@
+media_owner_id,media_owner_name,owner_type,channels_sold,primary_channel_id,agency_discount_pct,rebate_pct
+MO-001,Meridian TV,Broadcaster,CH-TV,CH-TV,18.0,4.0
+MO-002,Alpine Digital,Ad Platform,CH-DV|CH-SEA,CH-DV,12.0,2.5
+MO-003,Vertex Outdoor,OOH Operator,CH-DOOH,CH-DOOH,15.0,3.0
+MO-004,Solstice Audio,Radio Network,CH-AUD,CH-AUD,16.0,3.5
+MO-005,Kestrel Retail Media,Retail Network,CH-RMN,CH-RMN,10.0,2.0
+MO-006,Halcyon Social,Ad Platform,CH-SOC|CH-DV,CH-SOC,12.0,2.8

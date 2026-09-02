@@ -1,0 +1,6 @@
+advertiser_id,advertiser_name,legal_entity,industry,hq_market_id,account_director
+ADV-001,Contoso Mobility,Contoso Mobility SA,Automotive,MKT-DE,A. Duval
+ADV-002,Fabrikam Beauty,Fabrikam Beauty SAS,Beauty & Personal Care,MKT-FR,M. Laurent
+ADV-003,Northwind Foods,Northwind Foods Ltd,FMCG,MKT-UK,S. Okoye
+ADV-004,Litware Retail,Litware Retail Ltd,Retail,MKT-UK,J. Bernard
+ADV-005,Adventure Works Travel,Adventure Works Travel SpA,Travel & Leisure,MKT-IT,C. Rossi

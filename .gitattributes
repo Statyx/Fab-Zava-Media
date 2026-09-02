@@ -1,0 +1,8 @@
+# The canonical scanner is shared byte-for-byte with the sibling repositories.
+# Without this rule, a Windows checkout (core.autocrlf=true) would rewrite it to
+# CRLF on disk and break the published SHA-256. Scoped to that one file on purpose.
+scripts/check_no_client_leak.py text eol=lf
+
+# Generated CSVs are committed so the demo reproduces without a tenant. Pin them to
+# LF so a Windows clone does not report every row as modified.
+data/raw/*.csv text eol=lf
