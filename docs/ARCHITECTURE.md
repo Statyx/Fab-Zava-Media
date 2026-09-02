@@ -208,6 +208,8 @@ resumes rather than duplicating:
 ```bash
 cd src
 python deploy_all.py                       # full deploy, then a warm-up
+python deploy_all.py --fabric-only         # stop at the published data agent
+python deploy_all.py --foundry-only        # only the Foundry half, against existing state
 python deploy_all.py --from ontology       # resume from a step to the end
 python deploy_all.py ontology graph        # run only these (canonical order kept)
 python deploy_all.py --warmup              # warm-up only, right before the demo

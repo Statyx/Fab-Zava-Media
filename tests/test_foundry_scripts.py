@@ -248,8 +248,8 @@ def test_a2a_target_is_the_base_path_not_the_card():
     and never resolves at invoke.
     """
     import foundry_common
-    path = foundry_common.a2a_base_path("https://x.services.ai.azure.com/api/projects/p",
-                                        "Some_Agent")
+    path = foundry_common.a2a_base_path(
+        "https://<resource>.services.ai.azure.com/api/projects/p", "Some_Agent")
     assert path.endswith("/agents/Some_Agent/endpoint/protocols/a2a")
     assert "agentCard" not in path
 
@@ -387,6 +387,20 @@ def test_foundry_steps_come_after_the_fabric_data_agent():
     assert names.index("data_agent") < names.index("foundry_connection")
     assert names.index("foundry_project") < names.index("foundry_connection")
     assert names.index("foundry_connection") < names.index("foundry_agents")
+
+
+def test_the_two_halves_partition_the_chain():
+    """
+    --fabric-only exists because the Foundry half is the unproven one: a demo must be able
+    to stand up the Fabric side alone. The two lists must partition STEPS exactly, or a
+    step silently belongs to neither and never runs.
+    """
+    import deploy_all
+    assert set(deploy_all.FABRIC_STEPS) | set(deploy_all.FOUNDRY_STEPS) \
+        == set(deploy_all.STEP_NAMES)
+    assert not set(deploy_all.FABRIC_STEPS) & set(deploy_all.FOUNDRY_STEPS)
+    assert deploy_all.FABRIC_STEPS[-1] == "data_agent", \
+        "--fabric-only must end on the published data agent, which is what Foundry binds to"
 
 
 # ── The verifier itself ──────────────────────────────────────────────────────

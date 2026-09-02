@@ -62,6 +62,8 @@ STEPS = [
     ("foundry_agents",     "deploy_foundry_agents"),
 ]
 STEP_NAMES = [name for name, _ in STEPS]
+FOUNDRY_STEPS = [name for name, _ in STEPS if name.startswith("foundry_")]
+FABRIC_STEPS = [name for name in STEP_NAMES if name not in FOUNDRY_STEPS]
 
 
 def ensure_tenant(cfg):
@@ -93,6 +95,10 @@ def select_steps(args):
         if args.from_step not in STEP_NAMES:
             raise SystemExit(f"Unknown --from step '{args.from_step}'. Valid: {STEP_NAMES}")
         chosen = STEP_NAMES[STEP_NAMES.index(args.from_step):]
+    elif args.fabric_only:
+        chosen = list(FABRIC_STEPS)
+    elif args.foundry_only:
+        chosen = list(FOUNDRY_STEPS)
     else:
         chosen = list(STEP_NAMES)
     skip = set(s.strip() for s in (args.skip or "").split(",") if s.strip())
@@ -146,6 +152,10 @@ def main():
                    help=f"run only these steps (order fixed). Valid: {STEP_NAMES}")
     p.add_argument("--from", dest="from_step", help="resume from this step to the end")
     p.add_argument("--skip", help="comma-separated steps to skip")
+    p.add_argument("--fabric-only", dest="fabric_only", action="store_true",
+                   help="stop after the published data agent (skip the Foundry half)")
+    p.add_argument("--foundry-only", dest="foundry_only", action="store_true",
+                   help="run only the Foundry half (needs a published data agent in state)")
     p.add_argument("--warmup", action="store_true", help="run warm-up only (no deploy)")
     p.add_argument("--no-warmup", dest="no_warmup", action="store_true",
                    help="deploy without warm-up")

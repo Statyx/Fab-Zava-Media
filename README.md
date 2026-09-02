@@ -270,6 +270,7 @@ Then deploy — one command, idempotent, resumable, Fabric then Foundry:
 ```bash
 cd src
 python deploy_all.py                       # workspace → … → supervisor, then warm up
+python deploy_all.py --fabric-only         # Fabric side only — the Foundry half is unproven
 python deploy_all.py --from ontology       # resume after a failure
 python deploy_all.py --warmup              # right before the demo: pay the cold start off-stage
 python verify_foundry.py                   # prove the routing, don't assume it
