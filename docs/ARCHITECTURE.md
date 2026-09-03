@@ -274,7 +274,7 @@ Verified against Microsoft Learn (fetched 2026-02, primary source, not a summary
 
 | Requirement | This demo | Source |
 |---|---|---|
-| Capacity SKU | **F2 or higher**, paid (or P1+). Trial SKUs cannot use Azure OpenAI. Our `fabriccapacitysweden` is an **F8** — sufficient | [Create a Fabric data agent § Prerequisites](https://learn.microsoft.com/fabric/data-science/how-to-create-data-agent) |
+| Capacity SKU | **F2 or higher**, paid (or P1+). Trial SKUs cannot use Azure OpenAI. Ours is an **F8** — sufficient | [Create a Fabric data agent § Prerequisites](https://learn.microsoft.com/fabric/data-science/how-to-create-data-agent) |
 | Capacity region | **Sweden Central** — inside the **EU Data Boundary** | [Copilot in Fabric § Available regions](https://learn.microsoft.com/fabric/fundamentals/copilot-fabric-overview#available-regions) |
 | Cross-geo processing | **Not required.** The Azure OpenAI service backing Fabric Copilot is deployed in US datacenters *and in the EU Data Boundary*; an EU capacity maps to EU hosting, so the tenant switch stays off | same |
 | Tenant switches | Copilot on; **Standalone Copilot experience** on (Admin portal → Copilot). Without the second one, data agents fail inside Copilot scenarios even when every other Copilot switch is green | [Data agent tutorial](https://learn.microsoft.com/fabric/data-science/data-agent-end-to-end-tutorial) |
