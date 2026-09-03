@@ -1,0 +1,30 @@
+id: Zava Media Console
+name: Zava Media Console
+version: 1.0.0
+services:
+  auth:
+    enabled: true
+    fabric:
+      enabled: true
+    password:
+      enabled: true
+    # Sign-in only completes on a URI listed here. The port is Rayfin's, handed to Vite
+    # through VITE_PORT in .env.local — running `vite` on any other port gives you an app
+    # that renders and an auth redirect that is rejected. That is what /preview is for.
+    # No deployed host yet: this console has never been published. The entry that used to
+    # sit here belonged to a different console and was inherited with the shell.
+    allowedRedirectUris:
+      - http://localhost:5173
+      - http://127.0.0.1:5173
+  data:
+    enabled: false
+    dialect: mssql
+  staticHosting:
+    enabled: true
+    folder: dist
+    buildCommand: npm run build:fabric
+    indexDocument: index.html
+  storage:
+    enabled: false
+  functions:
+    enabled: false

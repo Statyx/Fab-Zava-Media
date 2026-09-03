@@ -1,0 +1,524 @@
+@import 'tailwindcss';
+
+/* Dark mode is driven by `data-theme` on <html>, exactly as the Marketing Campaign app and the
+   V1 portal do — one attribute swap repaints every surface, because all the colours below are
+   variables.
+
+   An earlier pass of this app deleted dark mode outright, on a brain rule that said "a declared
+   variant with no values is dead code, remove it". The rule is right about dead code and wrong
+   here: a fully specified, contrast-checked ramp already existed in the house app and only had
+   to be adopted. Removing the variant threw away a shipped system to avoid copying it. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* ═══════════════════════════════════════════════════════════
+   SEVERITY — domain colour, not a styling choice
+   ═══════════════════════════════════════════════════════════
+   Held as plain variables so the theme can move them, then exposed through `@theme inline`
+   below. `inline` is what makes this work: the generated utility emits `var(--sev-critical)`
+   at the use site, so it resolves against whichever theme is active rather than against the
+   value that happened to exist at `:root` when Tailwind compiled.
+
+   Dark values are lifted, not reused. A light-mode red-600 (#dc2626) on a #1e293b card is
+   3.4:1 — under the AA floor — so an alarm would read as dimmer than the text beside it. */
+:root,
+[data-theme='light'] {
+  --sev-critical: #dc2626;
+  --sev-high: #ea580c;
+  --sev-medium: #d97706;
+  --sev-low: #059669;
+  --sev-info: #64748b;
+}
+
+[data-theme='dark'] {
+  --sev-critical: #f87171; /* 5.3:1 on the card, still unmistakably an alarm */
+  --sev-high: #fdba74;
+  --sev-medium: #fcd34d;
+  --sev-low: #6ee7b7;
+  --sev-info: #94a3b8;
+}
+
+@theme inline {
+  /* Brand ramp — the ONLY palette override */
+  --color-blue-50: oklch(0.97 0.014 254.6);
+  --color-blue-100: oklch(0.932 0.032 255.6);
+  --color-blue-500: oklch(0.623 0.214 259.1);
+  --color-blue-600: oklch(0.546 0.245 262.9);
+  --color-blue-700: oklch(0.488 0.243 264.4);
+
+  --color-severity-critical: var(--sev-critical);
+  --color-severity-high: var(--sev-high);
+  --color-severity-medium: var(--sev-medium);
+  --color-severity-low: var(--sev-low);
+  --color-severity-info: var(--sev-info);
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* One step below text-xs, for metadata that must not compete with the copy:
+     timings, provenance lines, badge text. In rem so it still rides the single
+     text-size dial below — `text-[11px]` would opt out of it. */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1.45;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DESIGN SYSTEM — house style, shared with Fab-Marketing-Campaign
+   Glassmorphism + Inter + animated mesh.
+   ═══════════════════════════════════════════════════════════ */
+:root,
+[data-theme='light'] {
+  --accent: #7c5ce6;
+  --accent-dark: #6242c9;
+  --accent-glow: rgba(124, 92, 230, 0.14);
+  --accent-soft: rgba(124, 92, 230, 0.07);
+  --bg-primary: #ffffff;
+  --bg-secondary: #f4f6fa; /* page */
+  --bg-card: rgba(255, 255, 255, 0.65); /* glass */
+  --bg-card-solid: #ffffff; /* card */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border: rgba(226, 232, 240, 0.8);
+  --header-bg: rgba(11, 29, 50, 0.92);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --mesh-1: rgba(0, 200, 83, 0.07);
+  --mesh-2: rgba(56, 189, 248, 0.07);
+  --mesh-3: rgba(139, 92, 246, 0.05);
+}
+
+/* The dark ramp is set by measured contrast on the card it sits on (#1e293b), not by eye.
+   `--bg-secondary` is the PAGE and `--bg-card-solid` is the CARD: they must differ, or the
+   cards dissolve into the page and only their borders draw them. */
+[data-theme='dark'] {
+  --bg-primary: #0b1120;
+  --bg-secondary: #0f172a; /* page — darker than the cards sitting on it */
+  --bg-card: rgba(30, 41, 59, 0.72);
+  --bg-card-solid: #1e293b; /* card */
+  --text-primary: #f1f5f9; /* 13.4:1 on the card */
+  --text-secondary: #cbd5e1; /*  9.9:1 */
+  --text-muted: #94a3b8; /*  5.7:1 — #64748b would be 3.1:1, below the AA body floor */
+  --border: rgba(71, 85, 105, 0.75);
+  --header-bg: rgba(15, 23, 42, 0.95);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.3);
+  --mesh-1: rgba(0, 200, 83, 0.04);
+  --mesh-2: rgba(56, 189, 248, 0.04);
+  --mesh-3: rgba(139, 92, 246, 0.03);
+}
+
+@layer base {
+  /* One dial for the whole app's text size. Every font-size is in rem, so it is relative to
+     this: 100% = browser default (16px). 115% because a NOC console is read off a projector or
+     a wall screen from several metres away, where 13.5px body text is unreadable. Never set a
+     font-size in px — it would escape this dial. */
+  html {
+    font-size: 115%;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background 0.4s, color 0.4s;
+  }
+
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--border);
+  }
+}
+
+@layer components {
+  .glass {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Animated mesh backdrop. Three slow blobs; `pointer-events: none` so it never eats a click. */
+  .mesh-bg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .mesh-blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(80px);
+    animation: mesh-drift 22s ease-in-out infinite;
+  }
+
+  .mesh-blob:nth-child(1) {
+    width: 46vw;
+    height: 46vw;
+    background: var(--mesh-3);
+    top: -12%;
+    right: -8%;
+  }
+
+  .mesh-blob:nth-child(2) {
+    width: 38vw;
+    height: 38vw;
+    background: var(--mesh-2);
+    bottom: -14%;
+    left: -6%;
+    animation-delay: -7s;
+  }
+
+  .mesh-blob:nth-child(3) {
+    width: 30vw;
+    height: 30vw;
+    background: var(--mesh-1);
+    top: 30%;
+    left: 40%;
+    animation-delay: -14s;
+  }
+}
+
+@keyframes mesh-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, -6%, 0) scale(1.12);
+  }
+}
+
+/* Respect the OS setting: an animated backdrop is decoration, never information. */
+@media (prefers-reduced-motion: reduce) {
+  .mesh-blob {
+    animation: none;
+  }
+  body {
+    transition: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Dark-mode retrofit for surfaces still written in raw Tailwind utilities.
+   ═══════════════════════════════════════════════════════════
+   Screens hardcode `bg-white` / `text-slate-900` / `border-slate-200`. Remapping the handful of
+   surface utilities here does the same job as rewriting every call site, in one place — and it
+   is deliberately removable: port a page to `var(--…)` and it stops matching these rules.
+
+   Unlayered on purpose. Tailwind emits its utilities inside `@layer utilities`, and an unlayered
+   rule beats a layered one whatever the specificity, so this cannot be defeated by the order
+   Tailwind happens to emit its classes in.
+
+   Alpha variants (`bg-white/5`, `bg-white/10`) are distinct class names and stay untouched —
+   that is what keeps the dark header working in both themes. Solid data fills (`bg-emerald-500`
+   and friends, the status dots) are values, not surfaces, and are left alone. */
+
+/* The sign-in screen owns its colours: its page is a *gradient* (compiled to gradient stops, not
+   to a `background-color`) and its card is a glass surface, so neither is reached by the retrofit
+   above. It gets a real themed surface instead of an exemption — which is the escape hatch the
+   whole retrofit was designed around: a page that owns its colours stops matching. */
+.auth-bg {
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 55%, #eef2ff 100%);
+}
+[data-theme='dark'] .auth-bg {
+  background: linear-gradient(135deg, #0b1120 0%, #0f172a 55%, #141b38 100%);
+}
+
+/* — neutral surfaces ————————————————————————————— */
+[data-theme='dark'] .bg-white {
+  background-color: var(--bg-card-solid);
+}
+[data-theme='dark'] .bg-slate-50,
+[data-theme='dark'] .bg-gray-50 {
+  background-color: var(--bg-secondary);
+}
+[data-theme='dark'] .bg-slate-100,
+[data-theme='dark'] .bg-gray-100 {
+  background-color: rgba(148, 163, 184, 0.14);
+}
+
+/* — neutral text ————————————————————————————————— */
+[data-theme='dark'] .text-slate-900,
+[data-theme='dark'] .text-slate-800,
+[data-theme='dark'] .text-gray-900,
+[data-theme='dark'] .text-gray-800 {
+  color: var(--text-primary);
+}
+[data-theme='dark'] .text-slate-700,
+[data-theme='dark'] .text-slate-600,
+[data-theme='dark'] .text-gray-700,
+[data-theme='dark'] .text-gray-600 {
+  color: var(--text-secondary);
+}
+[data-theme='dark'] .text-slate-500,
+[data-theme='dark'] .text-slate-400,
+[data-theme='dark'] .text-gray-500 {
+  color: var(--text-muted);
+}
+
+/* — neutral borders —————————————————————————————— */
+[data-theme='dark'] .border-slate-100,
+[data-theme='dark'] .border-slate-200,
+[data-theme='dark'] .border-slate-300,
+[data-theme='dark'] .border-gray-200,
+[data-theme='dark'] .divide-slate-200 > * + * {
+  border-color: var(--border);
+}
+[data-theme='dark'] .ring-slate-200 {
+  --tw-ring-color: var(--border);
+}
+
+/* — severity tints ——————————————————————————————
+   The chips and panel tints from `domain/severity.ts`. Leaving them light "so the alarm still
+   stands out" fails: on a dark page a near-white box does not read as an alarm, it reads as a
+   rendering fault. The tint flips and the foreground lifts with it — the alarm still stands
+   out, by hue. The foreground itself is already themed, via `--sev-*` above. */
+[data-theme='dark'] .bg-red-50 {
+  background-color: rgba(239, 68, 68, 0.14);
+}
+[data-theme='dark'] .ring-red-200 {
+  --tw-ring-color: rgba(239, 68, 68, 0.45);
+}
+
+[data-theme='dark'] .bg-orange-50 {
+  background-color: rgba(249, 115, 22, 0.14);
+}
+[data-theme='dark'] .ring-orange-200 {
+  --tw-ring-color: rgba(249, 115, 22, 0.45);
+}
+
+[data-theme='dark'] .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.14);
+}
+[data-theme='dark'] .ring-amber-200 {
+  --tw-ring-color: rgba(245, 158, 11, 0.45);
+}
+
+[data-theme='dark'] .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.14);
+}
+[data-theme='dark'] .ring-emerald-200 {
+  --tw-ring-color: rgba(16, 185, 129, 0.45);
+}
+
+[data-theme='dark'] .bg-blue-50,
+[data-theme='dark'] .hover\:bg-blue-50:hover {
+  background-color: rgba(59, 130, 246, 0.16);
+}
+[data-theme='dark'] .text-blue-700 {
+  color: #93c5fd;
+}
+
+/* ------------------------------------------------------------------ *
+ * Portal vocabulary — the cover screen.
+ *
+ * Ported from the house app rather than reinvented. The entry screen's job is to
+ * *invite*: a flat list of links describes the product, a grid of doors opens it.
+ * `--card-accent` is set per card so one recipe serves every investigation family.
+ * ------------------------------------------------------------------ */
+
+/* The headline gradient is a text fill, so it is defined per theme rather than
+   reusing --accent: the light ramp is too dark to read on the dark page. */
+:root,
+[data-theme='light'] {
+  --portal-grad-a: #5b3fd6;
+  --portal-grad-b: #0369a1;
+}
+[data-theme='dark'] {
+  --portal-grad-a: #a78bfa;
+  --portal-grad-b: #7dd3fc;
+}
+
+@keyframes portal-in {
+  from {
+    opacity: 0;
+    transform: translateY(1.75rem) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.portal-in {
+  animation: portal-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.portal-d1 {
+  animation-delay: 0.1s;
+}
+.portal-d2 {
+  animation-delay: 0.22s;
+}
+.portal-d3 {
+  animation-delay: 0.34s;
+}
+.portal-d4 {
+  animation-delay: 0.46s;
+}
+
+.portal-accent {
+  background: linear-gradient(135deg, var(--portal-grad-a), var(--portal-grad-b));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* The live dot is bound to the data source, not decorative. A status light that
+   cannot go out is not a status light. */
+@keyframes portal-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+.portal-dot {
+  animation: portal-pulse 2s ease-in-out infinite;
+}
+
+/* Investigation cards. The accent bar, the diagonal wash and the sliding arrow are
+   what make a card feel like a door rather than a panel. */
+.portal-card {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.35s,
+    box-shadow 0.35s,
+    border-color 0.35s;
+}
+.portal-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--card-accent, var(--accent));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.portal-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 45%, var(--card-accent, var(--accent)));
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
+}
+.portal-card:hover {
+  transform: translateY(-0.375rem) scale(1.01);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--card-accent, var(--accent));
+}
+.portal-card:hover::before {
+  opacity: 1;
+}
+.portal-card:hover::after {
+  opacity: 0.04;
+}
+[data-theme='dark'] .portal-card:hover::after {
+  opacity: 0.09;
+}
+.portal-card:focus-visible {
+  outline: 2px solid var(--card-accent, var(--accent));
+  outline-offset: 3px;
+}
+
+.portal-arrow {
+  opacity: 0.4;
+  transition:
+    transform 0.35s,
+    opacity 0.35s;
+}
+.portal-card:hover .portal-arrow {
+  transform: translateX(0.375rem);
+  opacity: 1;
+}
+
+.portal-chip {
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  transition:
+    background 0.25s,
+    color 0.25s;
+}
+.portal-card:hover .portal-chip {
+  background: var(--accent-soft);
+  color: var(--card-accent, var(--accent));
+}
+[data-theme='dark'] .portal-chip {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.portal-tile {
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
+}
+.portal-tile:hover {
+  transform: translateY(-0.125rem);
+  box-shadow: var(--shadow-lg);
+}
+
+/* A card arrives from the cover with ?focus=<anchor>. The layout scrolls to
+   that section and marks it; without a rule here the mark is invisible and the
+   reader has to work out for themselves why the page jumped. The ring fades
+   out on its own — it answers "why am I here", it is not a persistent state. */
+[data-focused] {
+  animation: focus-land 2.4s ease-out;
+}
+@keyframes focus-land {
+  0%,
+  55% {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  100% {
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-in,
+  .portal-dot {
+    animation: none;
+  }
+  [data-focused] {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  .portal-card:hover,
+  .portal-tile:hover {
+    transform: none;
+  }
+}
+
+/* The cover's single primary action. It is the only button on a very quiet page, so it
+   carries a little more weight than a normal one — and lifts on hover, which is the whole
+   affordance: this page is a door, not a report. */
+.portal-cta {
+  box-shadow: 0 8px 24px -8px color-mix(in oklab, var(--accent) 70%, transparent);
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease;
+}
+.portal-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px -8px color-mix(in oklab, var(--accent) 80%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-cta,
+  .portal-cta:hover {
+    transform: none;
+    transition: none;
+  }
+}

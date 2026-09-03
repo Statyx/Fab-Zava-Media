@@ -1,0 +1,5 @@
+{
+  "_comment": "Written by scripts/capture_frozen_answers.py, never by hand. Empty until the Zava chain has been measured: a miss is fail-safe and sends the question to the live agent, so shipping this empty costs latency and never correctness.",
+  "capturedAt": null,
+  "answers": {}
+}
