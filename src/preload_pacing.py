@@ -9,6 +9,7 @@ import os, sys, time
 from platform_env import bootstrap
 bootstrap()
 
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import requests
 from helpers import (load_config, load_state, get_kusto_token, kusto_mgmt,
@@ -16,6 +17,30 @@ from helpers import (load_config, load_state, get_kusto_token, kusto_mgmt,
 
 RAW = Path(__file__).parent.parent / "data" / "raw"
 CHUNK = 5000   # rows per streaming-ingest call (the API caps a request at ~4 MB)
+TS_COL = 0     # pacing_events.timestamp — first column, per config.yaml kql_tables
+
+
+def shift_window_to_now(rows):
+    """Slide the pacing window so its newest row lands on the current hour.
+
+    The generated CSV is anchored on the quarter end, which sits in the future for
+    most of the quarter — every `ago(...)` query and the ontology's TimeSeries
+    binding on Campaign then read as empty. Re-anchoring here rather than in
+    generate_data.py keeps the committed CSV deterministic while making each
+    deploy land a window that ends "now". Relative spacing is preserved, so the
+    planted pacing anomalies survive the shift untouched.
+    """
+    if not rows:
+        return rows, None
+    stamps = [datetime.fromisoformat(r.split(",", 1)[0]) for r in rows]
+    newest = max(stamps)
+    now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+    if newest.tzinfo is None:
+        now = now.replace(tzinfo=None)
+    delta = now - newest
+    shifted = [ts + delta for ts in stamps]
+    out = [f"{ts.isoformat()},{r.split(',', 1)[1]}" for ts, r in zip(shifted, rows)]
+    return out, (min(shifted), max(shifted), delta)
 
 
 def ingest_csv(quri, ktok, db, table):
@@ -24,6 +49,11 @@ def ingest_csv(quri, ktok, db, table):
         raise FileNotFoundError(f"{path} missing — run `python src/generate_data.py` first.")
     lines = [ln for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
     data = lines[1:]  # drop the header — Kusto CSV ingestion does not skip it
+    data, window = shift_window_to_now(data)
+    if window:
+        lo, hi, delta = window
+        print(f"   window re-anchored by {delta.days}d {delta.seconds // 3600}h "
+              f"-> {lo:%Y-%m-%d %H:%M} .. {hi:%Y-%m-%d %H:%M} UTC")
     for i in range(0, len(data), CHUNK):
         kusto_streaming_ingest(quri, ktok, db, table, "\n".join(data[i:i + CHUNK]) + "\n")
         print(f"   sent {min(i + CHUNK, len(data)):,}/{len(data):,}")
