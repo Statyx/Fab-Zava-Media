@@ -36,6 +36,85 @@ from foundry_common import banner, die, foundry_credential, require
 SOURCE_MARKER = "### SOURCE"
 MAX_PROSE_LINES = 30
 
+# The MCP endpoint answers 404 when the capacity behind the workspace is paused. Not 503,
+# not 409 — 404, with the reason buried in a JSON-RPC error body that the Foundry service
+# does not surface. Read the body before believing the status line.
+CAPACITY_PAUSED_MARKER = "CapacityNotActive"
+
+
+def fabric_tool_name(config: dict) -> str:
+    """The name the Fabric tool fires under — which is NOT the connection name.
+
+    This changes with the binding, and getting it wrong makes a passing chain look broken:
+
+        MicrosoftFabricPreviewTool  -> the tool is named after the CONNECTION
+        FabricIQPreviewTool         -> the tool is named by the MCP server, i.e.
+                                       `DataAgent_<data agent name>` from tools/list
+
+    We are on the second one. Asserting the connection name here reported `never fired`
+    while the trace plainly showed the call — the assertion was stale, not the chain.
+    """
+    agent_name = config.get("data_agent_name", "")
+    return f"DataAgent_{agent_name}" if agent_name else "DataAgent_"
+
+
+def preflight_capacity(state) -> None:
+    """Fail loudly, and for the right reason, when the Fabric capacity is paused.
+
+    This exists because of a genuinely expensive afternoon. A paused capacity makes the
+    data agent's MCP endpoint answer:
+
+        HTTP 404  {"error":{"code":-32601,"message":"Internal error CapacityNotActive..."}}
+
+    and Foundry reports only its own summary of that — `returned HTTP 404 (Not Found)
+    while enumerating tools`. A 404 on a URL reads as "wrong route", so the investigation
+    goes to routing, then RBAC, then tenant settings, then four different `authType`
+    values — all of which fail identically, because none of them was ever the cause.
+
+    One request, sent before the probes, replaces all of it.
+    """
+    url = state.get("fabric_mcp_server_url")
+    if not url:
+        return
+    try:
+        import requests
+        from azure.identity import DefaultAzureCredential
+        token = DefaultAzureCredential().get_token(
+            "https://api.fabric.microsoft.com/.default").token
+        resp = requests.post(
+            url,
+            headers={"Authorization": f"Bearer {token}",
+                     # BOTH types. With only application/json this surface returns a
+                     # misleading 500 on some routes — see mcp_ontology.md.
+                     "Accept": "application/json, text/event-stream",
+                     "Content-Type": "application/json"},
+            json={"jsonrpc": "2.0", "id": 1, "method": "initialize",
+                  "params": {"protocolVersion": "2025-06-18", "capabilities": {},
+                             "clientInfo": {"name": "verify", "version": "1"}}},
+            timeout=90)
+    except Exception as exc:  # noqa: BLE001
+        print(f"  ! could not pre-check the Fabric MCP endpoint ({str(exc)[:120]})")
+        print("    continuing — but if the probes fail on a 404, check this first")
+        return
+
+    if CAPACITY_PAUSED_MARKER in (resp.text or ""):
+        die("The Fabric capacity behind this workspace is PAUSED.\n\n"
+            "  The data agent's MCP endpoint answers HTTP 404 for a paused capacity, and\n"
+            "  Foundry relays that as '404 (Not Found) while enumerating tools'. Nothing\n"
+            "  is wrong with the connection, the route, the RBAC or the authType.\n\n"
+            "  Resume it, wait for state=Active, then re-run:\n"
+            "    az fabric capacity resume -g <rg> --capacity-name <name>\n"
+            "    az resource show -g <rg> -n <name> "
+            "--resource-type Microsoft.Fabric/capacities --query properties.state -o tsv\n\n"
+            "  The first call after a resume can still exceed the service's 100 s tool\n"
+            "  timeout while the capacity warms up. A second run usually passes.")
+
+    if resp.status_code == 200:
+        print("  Fabric MCP endpoint reachable, capacity active.")
+    else:
+        print(f"  ! Fabric MCP endpoint returned {resp.status_code} — "
+              f"{(resp.text or '')[:160]}")
+
 # Identifiers must never appear in the prose half. Deliberately broad: the failure mode
 # is an answer that is entirely true, entirely sourced, and unreadable to the media
 # planner it was written for.
@@ -207,8 +286,12 @@ def main() -> int:
         config, "foundry", "orchestrator_agent_name")
     contracts = state.get("foundry_contracts_agent") or require(
         config, "foundry", "contracts_agent_name")
-    fabric_conn = require(config, "foundry", "fabric_connection_name")
+    # Called for its validation side effect only: the connection name is no longer what
+    # the Fabric tool fires under, but a config missing it still cannot deploy.
+    require(config, "foundry", "fabric_connection_name")
     a2a_conn = require(config, "foundry", "contracts_connection_name")
+    # The Fabric tool does NOT fire under the connection name on this binding.
+    fabric_tool = fabric_tool_name(config)
 
     client = _client(state)
 
@@ -227,12 +310,14 @@ def main() -> int:
 
     results = []
 
+    preflight_capacity(state)
+
     print_step(1, 3, "Quantitative — Fabric must answer, contracts must stay out")
     results.append(probe(
         client, agent, "figure only",
         f"For advertiser {advertiser} in market {market}, how did delivered impressions "
         f"compare with the plan in {quarter}?",
-        expect=[fabric_conn], forbid=[a2a_conn, contracts],
+        expect=[fabric_tool], forbid=[a2a_conn, contracts],
     ))
 
     print_step(2, 3, "Contractual — the contracts agent must answer")
@@ -248,7 +333,7 @@ def main() -> int:
         client, agent, "the demo",
         f"On {quarter} for advertiser {advertiser} in market {market} we over-delivered. "
         f"Does the contract provide for compensation?",
-        expect=[fabric_conn, a2a_conn], forbid=[],
+        expect=[fabric_tool, a2a_conn], forbid=[],
     ))
 
     print("\n" + "=" * 66)
@@ -275,13 +360,22 @@ Ordered checklist. Work down it; do not skip.
      `properties.metadata` is stored and ignored.
   5. Does the A2A connection target the BASE path — not the card path, not the project
      endpoint?
-  6. 'No CustomKeys connection found for AzureFabric' is NOT fixable from ARM. That
-     category does not exist on the control plane; create the Fabric connection once
-     in the portal under the same name. See deploy_foundry_connection.py --portal-steps.
-  7. If the contracts agent answered a purely quantitative question: the tool list has
+  6. 'returned HTTP 404 (Not Found) while enumerating tools' -> CHECK THE CAPACITY, not
+     the route. A paused Fabric capacity makes the data agent's MCP endpoint answer 404
+     with 'CapacityNotActive' in the body, and Foundry relays only the status. The
+     preflight above catches this now; if you got here anyway, resume the capacity and
+     retry. Do not touch the connection, the RBAC or the authType — four different
+     authTypes were tried against a paused capacity and all four failed identically.
+  7. Fabric tool 'never fired' while the trace clearly shows it? The expected NAME is
+     wrong, not the chain. FabricIQPreviewTool fires as `DataAgent_<data agent name>`
+     (the MCP server's own tool name); only MicrosoftFabricPreviewTool fires under the
+     connection name. See fabric_tool_name().
+  8. 'TaskCanceledException ... HttpClient.Timeout of 100 seconds' is a cold capacity,
+     not a broken tool. It is common on the first call after a resume. Re-run.
+  9. If the contracts agent answered a purely quantitative question: the tool list has
      stopped being homogeneous. Something self-describing is attached to the supervisor
      and is out-competing the connection-backed tools. Remove it.
-  8. If the supervisor called nothing and narrated a plan instead: tool_choice is not
+ 10. If the supervisor called nothing and narrated a plan instead: tool_choice is not
      'required'.
 """)
     return 1

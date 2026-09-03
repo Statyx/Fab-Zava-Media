@@ -399,18 +399,50 @@ def grant_agent_consumer(state, agent_name: str) -> None:
 
 
 def create_supervisor(client, cfg, name: str, model: str,
-                      fabric_conn_id: str, a2a_conn_id: str, contracts_agent: str):
+                      fabric_conn_id: str, a2a_conn_id: str, contracts_agent: str,
+                      fabric_server_url: str):
     from azure.ai.projects.models import (
-        A2APreviewTool, FabricDataAgentToolParameters, MicrosoftFabricPreviewTool,
-        PromptAgentDefinition, ToolProjectConnection,
+        A2APreviewTool, FabricIQPreviewTool, PromptAgentDefinition,
     )
 
+    fnd = cfg.get("foundry", {}) or {}
+
+    # WHY FabricIQPreviewTool AND NOT MicrosoftFabricPreviewTool
+    #   MicrosoftFabricPreviewTool resolves a CustomKeys connection of category
+    #   `AzureFabric`, which ARM cannot create at any api-version — that binding is
+    #   portal-only, and this repo used to stop there and print manual steps.
+    #   FabricIQPreviewTool reaches the SAME published data agent over its MCP endpoint
+    #   through a RemoteTool/GenericProtocol connection, which ARM creates happily. The
+    #   whole chain is scriptable again.
+    #
+    # WHAT IT COSTS
+    #   The data agent's own instructions do NOT travel over MCP. Its metric definitions
+    #   and populations stay behind, so build_supervisor_instructions() carries the guard
+    #   rails instead. Do not thin them out.
+    #
+    # require_approval
+    #   Defaults to "always": every call pauses the run for a human approval that an
+    #   unattended verify/replay has nowhere to answer, so the run simply hangs. Set
+    #   explicitly here so the posture is a recorded decision, not an unread default.
+    # ENDPOINT SOURCE — two modes, and they fail differently.
+    #   "connection" (default): server_url is NOT sent; the connection's `target` carries
+    #       the endpoint. This is what a portal-made connection expects.
+    #   "explicit": server_url is sent alongside. It documents WHICH Fabric item is meant,
+    #       but the service resolves it itself and answered 404 on a URL that a direct
+    #       probe with a user token serves happily — so it is not a superset of "connection".
+    # Live 2026-09-03: "explicit" -> 400/"returned HTTP 404 while enumerating tools".
+    endpoint_source = str(fnd.get("fabric_iq_endpoint", "connection")).strip().lower()
+
+    iq_kwargs = {
+        "project_connection_id": fabric_conn_id,
+        "server_label": str(fnd.get("fabric_iq_server_label", "fabricdataagent")),
+        "require_approval": str(fnd.get("require_approval", "never")).strip().lower(),
+    }
+    if endpoint_source == "explicit":
+        iq_kwargs["server_url"] = fabric_server_url
+
     tools = [
-        MicrosoftFabricPreviewTool(
-            fabric_dataagent_preview=FabricDataAgentToolParameters(
-                project_connections=[ToolProjectConnection(project_connection_id=fabric_conn_id)]
-            )
-        ),
+        FabricIQPreviewTool(**iq_kwargs),
         A2APreviewTool(project_connection_id=a2a_conn_id),
     ]
 
@@ -504,8 +536,15 @@ def main() -> int:
     print(f"    {a2a_conn} -> {a2a_conn_id}")
 
     print_step(6, TOTAL, f"Creating the supervisor '{supervisor}'")
+    # The MCP endpoint is written to state by deploy_foundry_connection.py. Recomputing it
+    # here would let the two drift; if it is missing, that step has not run.
+    fabric_server_url = state.get("fabric_mcp_server_url")
+    if not fabric_server_url:
+        die("state.json has no 'fabric_mcp_server_url'.\n"
+            "Run deploy_foundry_connection.py first — it creates the RemoteTool connection "
+            "and records the data agent's MCP endpoint that the tool needs.")
     create_supervisor(client, config, supervisor, model,
-                      fabric_conn_id, a2a_conn_id, contracts)
+                      fabric_conn_id, a2a_conn_id, contracts, fabric_server_url)
 
     print_step(7, TOTAL, f"Granting '{AGENT_CONSUMER_ROLE}' to the supervisor")
     # Must run AFTER create_supervisor: the identity we grant to is minted with the agent.

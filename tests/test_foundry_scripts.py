@@ -110,15 +110,32 @@ def test_supervisor_tools_are_all_connection_backed(agents_mod):
     tool_choice='required' is only safe on a homogeneous tool list. It forces *a* call,
     never the *right* one. Both supervisor tools must be opaque and connection-backed so
     that the model can only tell them apart by name.
+
+    The Fabric half may be bound either way — both are connection-backed, which is the
+    property this test actually defends:
+
+        MicrosoftFabricPreviewTool  CustomKeys/AzureFabric  ... portal-created only
+        FabricIQPreviewTool         RemoteTool/GenericProtocol ... created from ARM
+
+    We use the second one, so the whole chain deploys without a portal step. Pinning the
+    first one by name made this test fail on a working supervisor — the assertion was
+    stale, not the code. Assert the *shape* (exactly two, both connection-backed), and
+    let the Fabric binding vary.
     """
+    fabric_tools = {"MicrosoftFabricPreviewTool", "FabricIQPreviewTool"}
     fn = next(n for n in ast.walk(tree("deploy_foundry_agents.py"))
               if isinstance(n, ast.FunctionDef) and n.name == "create_supervisor")
     tool_ctors = {n.func.id for n in ast.walk(fn)
                   if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
                   and n.func.id.endswith("Tool")}
-    assert tool_ctors == {"MicrosoftFabricPreviewTool", "A2APreviewTool"}, (
-        f"supervisor tool set is {tool_ctors}; expected exactly the two "
-        f"connection-backed preview tools"
+    assert len(tool_ctors & fabric_tools) == 1, (
+        f"supervisor tool set is {tool_ctors}; expected exactly one Fabric binding "
+        f"out of {sorted(fabric_tools)}"
+    )
+    assert tool_ctors - fabric_tools == {"A2APreviewTool"}, (
+        f"supervisor tool set is {tool_ctors}; besides the Fabric binding it must carry "
+        f"A2APreviewTool and nothing else — a self-describing tool out-competes the "
+        f"connection-backed ones under tool_choice='required'"
     )
 
 
@@ -696,23 +713,29 @@ def test_the_a2a_connection_name_uses_dashes_not_underscores():
         ValidationError: Connection name must be 1-64 characters long and can only
         contain alphanumeric characters, dashes, and dots.
 
-    The trap is that `fabric_connection_name` violates that same rule and EXISTS on the
-    tenant, created through the identical PUT, scope and api-version - only the body's
-    category differs. So the rule is enforced inconsistently, and a reviewer who makes
-    the two names agree has a 50% chance of picking the one the service rejects.
+    CORRECTED 2026-09-03. This docstring used to say the rule was "enforced
+    inconsistently", because `fabric_connection_name` carried an underscore and existed
+    on the tenant through the identical PUT, scope and api-version. That was the wrong
+    conclusion drawn from a real observation. The rule is not inconsistent, it is
+    CATEGORY-DEPENDENT:
 
-    This asserts the direction that is always safe. It deliberately does not assert
-    anything about the Fabric connection: that name is deployed, verified and
-    load-bearing, and a test has no business demanding it be recreated.
+        MicrosoftFabric  -> underscores accepted   (the old Fabric connection)
+        RemoteTool       -> underscores rejected   (A2A, and Fabric IQ over MCP)
+
+    When the Fabric connection moved to RemoteTool/GenericProtocol so it could be created
+    from ARM at all, it started being rejected too - same name, same call, new category.
+    So both names are asserted now, and "only the body's category differs" turned out to
+    be the whole explanation rather than an aside.
     """
     cfg = yaml.safe_load((SRC / "config.example.yaml").read_text(encoding="utf-8"))
-    name = cfg["foundry"]["contracts_connection_name"]
 
-    assert re.match(r"^[A-Za-z0-9.-]{1,64}$", name), (
-        f"foundry.contracts_connection_name = {name!r} is rejected at step 4 of 7: "
-        f"alphanumeric, dashes and dots only, 1-64 characters."
-    )
-    assert "_" not in name, (
-        "an underscore here is rejected by the service even though the Fabric "
-        "connection next to it has one and works - see the comment in config.example.yaml"
-    )
+    for key in ("contracts_connection_name", "fabric_connection_name"):
+        name = cfg["foundry"][key]
+        assert re.match(r"^[A-Za-z0-9.-]{1,64}$", name), (
+            f"foundry.{key} = {name!r} is rejected by the service: "
+            f"alphanumeric, dashes and dots only, 1-64 characters."
+        )
+        assert "_" not in name, (
+            f"foundry.{key} = {name!r} carries an underscore. Both connections are "
+            f"RemoteTool now, and that category rejects it at PUT time."
+        )

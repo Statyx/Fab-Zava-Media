@@ -1,46 +1,60 @@
 """
 Step 12 — the project connection that lets Foundry call the Fabric data agent.
 
-The brain documents this as a portal flow: open the published data agent in Fabric, read
-two GUIDs out of the browser URL, and paste them into *Tools -> Connect a tool*. It also
-calls that path out as "brittle and unautomatable ... script the connection creation if
-you can".
+WHAT THIS SCRIPT USED TO SAY, AND WHY IT WAS WRONG (corrected 2026-09-03)
+    An earlier version of this file carried a section headed "PROVEN NEGATIVE" that
+    concluded the portal step was REQUIRED and unautomatable. Half of that was true and
+    the conclusion did not follow from it.
 
-We can. Both GUIDs are already in state.json, put there by the Fabric deploy:
+    True, still true, and re-verified:
+        `MicrosoftFabricPreviewTool` resolves a **CustomKeys** connection of category
+        **`AzureFabric`**, and ARM cannot create one. Every api-version rejects the body,
+        and the one Fabric category ARM does accept — `MicrosoftFabric` — is restricted to
+        AAD / UserEntraToken, so it can never be that connection.
 
-    workspace_id    <- deploy_workspace.py
-    data_agent_id   <- deploy_data_agent.py
+    The error that misled me:
+            No CustomKeys connection found for AzureFabric
+        names a category you never create. I searched ARM for `AzureFabric`, correctly
+        found nothing, and concluded the goal was unreachable. But `AzureFabric` is the
+        name of ONE path to the goal, not the goal.
 
-which is the same pair the URL `.../groups/{workspace_id}/aiskills/{data_agent_id}`
-exposes. So nothing is read off a screen.
+    The goal — Foundry asking the Fabric data agent a question — is reachable from code
+    through a DIFFERENT tool with a DIFFERENT connection category:
 
-⚠️ PROVEN NEGATIVE — tenant-verified 2026-09-02, Sweden Central.
+        MicrosoftFabricPreviewTool  <- CustomKeys / AzureFabric   ... portal only
+        FabricIQPreviewTool         <- RemoteTool / GenericProtocol ... ARM, scriptable
 
-ARM **cannot** create the connection the Fabric data-agent tool consumes. This is not a
-missing field; the category does not exist on the control plane:
+    The second one reaches the same published data agent over its MCP endpoint. It is what
+    this script now creates, and it needs no portal at all.
 
-  * `MicrosoftFabricPreviewTool` fails at RUNTIME with
-        No CustomKeys connection found for AzureFabric
-  * ARM has no `AzureFabric` category. Every api-version tried (2025-04-01-preview,
-    2025-06-01, 2025-10-01-preview, …) answers "unable to deserialize request body".
-  * The one Fabric category ARM does accept is `MicrosoftFabric`, and it answers
-        AuthType for MicrosoftFabric Connection can only be AAD, UserEntraToken
-    so it can never be the CustomKeys connection the tool is looking for.
-  * The data plane is read-only for connections (`get`, `get_default`, `list` — no create),
-    so there is no second programmatic route.
+THE ENDPOINT
+    A published Fabric data agent exposes an MCP server at
 
-⚠️ AND THE TRAP: ARM **accepts** `MicrosoftFabric` and returns 200. A created connection
-therefore looks like success and fails only later, inside a model run, in a script that
-has already done six other things. "ARM stored it" is not an oracle for "the tool can use
-it" — the only oracle is a real question routed through the tool.
+        {fabric_api_base}/mcp/workspaces/{workspace_id}/dataagents/{agent_id}/agent
 
-⇒ The portal step below is REQUIRED, not a convenience fallback. This script still writes
-the ARM connection because it is harmless and keeps the name reserved, then prints the
-portal steps every time.
+    Verified live on this tenant: `initialize` returns 200 with
+    `serverInfo.name = "DataAgent MCP Server"`, and `tools/list` returns one tool named
+    `DataAgent_<agent name>`. Note the shape — no `dataPlane` segment, and `dataagents`
+    (lowercase, plural) where the generic item route would say `items`.
+
+WHAT MAKES THE CONNECTION ACCEPTABLE TO THE TOOL
+    `metadata.type = "fabric_iq_preview"`. No document mentions it. Without it the
+    connection is created, resolves by name, and the tool still refuses it. It was read
+    back off a connection the portal had made, then reproduced by hand.
+
+    Likewise `audience`: the azd docs show `https://analysis.windows.net/powerbi/api`;
+    the connection that actually works carries the Fabric audience. Prefer what the
+    service produced over what the document says.
+
+WHAT CHANGES FOR THE AGENT
+    The two bindings are NOT interchangeable and this one costs you something. The Fabric
+    data agent's own instructions do not travel over MCP — the metric definitions, the
+    populations, the guard rails all stay behind. `deploy_foundry_agents.py` therefore
+    carries them in the analyst prompt instead. Read the note there before changing it.
 
 Usage:
     python deploy_foundry_connection.py
-    python deploy_foundry_connection.py --portal-steps
+    python deploy_foundry_connection.py --portal-steps    # the legacy manual path
     python deploy_foundry_connection.py --delete
 """
 
@@ -55,17 +69,36 @@ from foundry_common import (
     AzError, arm_get, arm_request, banner, die, project_scope, require,
 )
 
-TOTAL = 3
+TOTAL = 4
 
-# Tried in order. The first one ARM accepts wins and is written to state, so the second
-# run is a single call. `FabricDataAgent` mirrors the tool name in the current catalog;
-# `MicrosoftFabric` mirrors the portal label; `CustomKeys` is the generic escape hatch.
-CANDIDATE_CATEGORIES = ["FabricDataAgent", "MicrosoftFabric", "CustomKeys"]
+# The connection carries identity only; `server_url` on the tool selects the Fabric item.
+FABRIC_AUDIENCE = "https://api.fabric.microsoft.com"
+FABRIC_API_BASE = "https://api.fabric.microsoft.com/v1"
+
+# The marker that makes FabricIQPreviewTool accept the connection. Undocumented; read off
+# a working portal-made connection. A connection without it exists but the tool refuses it.
+CONNECTION_METADATA = {"type": "fabric_iq_preview"}
+
+
+def mcp_server_url(workspace_id: str, agent_id: str) -> str:
+    """The MCP endpoint of a PUBLISHED Fabric data agent.
+
+    Shape matters more than the names in it. The generic Fabric item route is
+    `/mcp/dataPlane/workspaces/{ws}/items/{id}/...`; the data agent is NOT on it. It drops
+    `dataPlane` and uses `dataagents` instead of `items`. Probing sixteen trailing segments
+    on the generic route returns sixteen 404s and proves only that you varied one axis.
+    """
+    return f"{FABRIC_API_BASE}/mcp/workspaces/{workspace_id}/dataagents/{agent_id}/agent"
 
 
 def portal_steps(workspace_id: str, agent_id: str, name: str) -> str:
+    """The legacy manual path. Kept because it is what the CustomKeys tool needs.
+
+    You only need this if you deliberately switch the agent back to
+    `MicrosoftFabricPreviewTool`, which inherits the data agent's own semantics.
+    """
     return f"""
-Portal fallback — this takes about 30 seconds.
+Portal path — only needed for the CustomKeys / MicrosoftFabricPreviewTool binding.
 
   1. Foundry portal, your project, with the *New Foundry* toggle ON.
   2. Tools -> Tools -> Connect a tool -> Microsoft Fabric Data Agent -> Add tool.
@@ -77,8 +110,7 @@ Portal fallback — this takes about 30 seconds.
 
   4. Connect.
 
-The name is what the code resolves at runtime, so it must match config.yaml exactly.
-Then re-run:  python deploy_foundry_agents.py
+The default path in this repo does NOT need any of the above.
 """
 
 
@@ -89,62 +121,64 @@ def connection_scope(state, name: str) -> str:
                           state["foundry_project_name"]) + f"/connections/{name}")
 
 
-def build_body(category: str, workspace_id: str, agent_id: str) -> dict:
+def build_body(server_url: str) -> dict:
+    """The exact ARM payload that creates a working Fabric IQ connection.
+
+    Every field was read back off a connection the portal had made, not guessed.
+    `isSharedToAll` false matches what the portal produces; the agent runs under the
+    project identity, which already sees it.
     """
-    The target carries both GUIDs in the same shape the Fabric URL uses, which is what
-    the portal form ends up storing. `isSharedToAll` keeps the connection visible to the
-    whole project rather than to its creator alone — otherwise the agent runs under a
-    different identity and cannot see it.
-    """
-    body = {
+    return {
         "properties": {
-            "category": category,
-            "target": f"https://api.fabric.microsoft.com/v1/workspaces/{workspace_id}/aiskills/{agent_id}",
-            "authType": "AAD",
-            "isSharedToAll": True,
-            "metadata": {
-                "workspaceId": workspace_id,
-                "artifactId": agent_id,
-            },
+            "category": "RemoteTool",
+            "group": "GenericProtocol",
+            "authType": "UserEntraToken",
+            "audience": FABRIC_AUDIENCE,
+            "target": server_url,
+            "isSharedToAll": False,
+            "useWorkspaceManagedIdentity": False,
+            "metadata": dict(CONNECTION_METADATA),
         }
     }
-    if category == "CustomKeys":
-        body["properties"]["authType"] = "CustomKeys"
-        body["properties"]["credentials"] = {"keys": {}}
-    return body
 
 
-def create_connection(state, name: str, workspace_id: str, agent_id: str) -> str:
+def create_connection(state, name: str, server_url: str) -> None:
     scope = connection_scope(state, name)
-
     existing = arm_get(scope)
+
     if existing:
-        cat = (existing.get("properties") or {}).get("category", "?")
-        print(f"    connection '{name}' already exists (category '{cat}')")
-        return cat
+        props = existing.get("properties") or {}
+        cat = props.get("category", "?")
+        meta_type = (props.get("metadata") or {}).get("type")
+        target = props.get("target")
 
-    known = state.get("fabric_connection_category")
-    order = ([known] if known else []) + [c for c in CANDIDATE_CATEGORIES if c != known]
+        # An existing connection of the OLD category is worse than no connection: it
+        # resolves by name, so the agent script binds it and fails at run time instead.
+        stale = (cat != "RemoteTool" or meta_type != "fabric_iq_preview"
+                 or target != server_url)
+        if not stale:
+            print(f"    connection '{name}' already correct (RemoteTool, fabric_iq_preview)")
+            return
 
-    errors = []
-    for category in order:
-        try:
-            print(f"    trying category '{category}' ...")
-            arm_request("PUT", scope, build_body(category, workspace_id, agent_id))
-            print(f"    accepted with category '{category}'")
-            return category
-        except AzError as exc:
-            errors.append(f"  {category}: {str(exc)[:220]}")
+        print(f"    connection '{name}' exists but is stale "
+              f"(category '{cat}', metadata.type '{meta_type}')")
+        print("    deleting it — a name that resolves to the wrong shape fails at run time,")
+        print("    which is much harder to read than a missing connection")
+        arm_request("DELETE", scope)
 
-    print("\nEvery candidate category was rejected by ARM:\n" + "\n".join(errors))
-    print(portal_steps(workspace_id, agent_id, name))
-    die("Could not create the Fabric connection from ARM. Use the portal steps above.")
+    try:
+        arm_request("PUT", scope, build_body(server_url))
+    except AzError as exc:
+        die(f"ARM refused the connection body:\n  {exc}\n\n"
+            "If this is a deserialisation error, the api-version in foundry_common is the\n"
+            "first thing to check — this shape is accepted at 2025-06-01.")
+    print(f"    created '{name}'  category=RemoteTool  metadata.type=fabric_iq_preview")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Connect the Fabric data agent to Foundry")
     parser.add_argument("--portal-steps", action="store_true",
-                        help="print the manual portal instructions and exit")
+                        help="print the legacy manual portal instructions and exit")
     parser.add_argument("--delete", action="store_true", help="remove the connection")
     args = parser.parse_args()
 
@@ -180,37 +214,32 @@ def main() -> int:
             print(f"    deleted connection '{name}'")
         else:
             print(f"    connection '{name}' does not exist")
-        state.pop("fabric_connection_category", None)
+        for key in ("fabric_connection_category", "fabric_mcp_server_url",
+                    "fabric_connection_tool_verified"):
+            state.pop(key, None)
         save_state(state)
         return 0
 
-    print_step(2, TOTAL, f"Creating connection '{name}'")
-    category = create_connection(state, name, workspace_id, agent_id)
+    print_step(2, TOTAL, "Resolving the data agent's MCP endpoint")
+    server_url = mcp_server_url(workspace_id, agent_id)
+    print(f"    {server_url}")
 
-    print_step(3, TOTAL, "Recording what worked")
+    print_step(3, TOTAL, f"Creating connection '{name}'")
+    create_connection(state, name, server_url)
+
+    print_step(4, TOTAL, "Recording what worked")
     state["fabric_connection_name"] = name
-    state["fabric_connection_category"] = category
-    # ARM acceptance proves storage, never usability. Kept false until a real run through
-    # the tool says otherwise, so no later step can mistake "created" for "working".
+    state["fabric_connection_category"] = "RemoteTool"
+    state["fabric_mcp_server_url"] = server_url
+    # ARM acceptance proves storage, never usability. Kept false until a real question has
+    # been routed through the tool, so no later step can mistake "created" for "working".
     state["fabric_connection_tool_verified"] = False
     save_state(state)
-    print(f"    state.fabric_connection_category = '{category}'")
+    print("    state.fabric_connection_category = 'RemoteTool'")
+    print("    state.fabric_mcp_server_url      = (above)")
 
-    print(f"""
-⚠️  ARM HAS STORED A CONNECTION. THE FABRIC TOOL STILL CANNOT USE IT.
-
-This is a proven limitation, not a suspicion (tenant-verified, Sweden Central):
-the Fabric data-agent tool resolves a CustomKeys connection of category 'AzureFabric',
-and ARM has no such category at any api-version. What ARM accepts — 'MicrosoftFabric' —
-is restricted to AAD / UserEntraToken, so it can never be that connection.
-
-Left as-is, the first agent run fails with:
-    No CustomKeys connection found for AzureFabric
-
-YOU MUST CREATE IT ONCE IN THE PORTAL, under the SAME name ('{name}'), so that
-deploy_foundry_agents.py keeps resolving it by name and nothing else changes.
-{portal_steps(workspace_id, agent_id, name)}
-Next: python deploy_foundry_agents.py""")
+    print("\n    No portal step is required for this binding.")
+    print("    Next: python deploy_foundry_agents.py")
     return 0
 
 

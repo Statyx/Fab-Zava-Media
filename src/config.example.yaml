@@ -36,7 +36,7 @@ foundry:
   model_capacity: 50                            # thousands of TPM
   orchestrator_agent_name: "Zava-Media-Agent"   # Foundry side: routes + synthesises
   contracts_agent_name: "Zava-Media-Contracts"  # A2A subordinate over data/contracts/ — see below
-  fabric_connection_name: "zava_media_dataagent"
+  fabric_connection_name: "zava-media-dataagent"   # dashes: RemoteTool rejects underscores
   contracts_connection_name: "zava-media-contracts-a2a"
   # ⚠️ The two names above disagree on purpose, and normalising them will break a deploy.
   # Creating the A2A connection with an underscore is rejected, live 2026-09-02:
