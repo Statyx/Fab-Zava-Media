@@ -17,10 +17,15 @@ import pytest
 import yaml
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SRC = ROOT / "src"
-RAW = ROOT / "data" / "raw"
-CONTRACTS = ROOT / "data" / "contracts"
-sys.path.insert(0, str(SRC))
+RAW = ROOT / "artifacts" / "lakehouse_data"
+CONTRACTS = ROOT / "design" / "contracts"
+sys.path.insert(0, str(ROOT))
+
+# Every hand-written module, wherever its workload folder is. __init__.py carries no logic.
+PY_FILES = sorted(
+    p for tree in (ROOT / "fabric", ROOT / "foundry", ROOT / "design")
+    for p in tree.rglob("*.py") if p.name != "__init__.py"
+) + [ROOT / "deploy_all.py"]
 
 # The dataset ships committed so the demo reproduces with no tenant.
 EXPECTED_ROWS = {
@@ -50,13 +55,13 @@ BASELINE_MAX_ABS_PP = 4.0       # every other combo must stay clearly below the 
 
 
 # ── Static checks ───────────────────────────────────────────────
-@pytest.mark.parametrize("py", sorted(SRC.rglob("*.py")), ids=lambda p: p.name)
+@pytest.mark.parametrize("py", PY_FILES, ids=lambda p: p.name)
 def test_python_compiles(py):
     ast.parse(py.read_text(encoding="utf-8"), filename=str(py))
 
 
 def test_config_example_parses_and_has_keys():
-    cfg = yaml.safe_load((SRC / "config.example.yaml").read_text(encoding="utf-8"))
+    cfg = yaml.safe_load((ROOT / "config.example.yaml").read_text(encoding="utf-8"))
     for key in ["workspace_name", "capacity_id", "capacity_region", "fabric_api_base",
                 "lakehouse_name", "ontology_name", "report_name", "foundry",
                 "demo_question_advertiser", "demo_question_market", "demo_question_quarter",
@@ -71,7 +76,7 @@ def test_config_example_parses_and_has_keys():
 
 
 def test_config_example_carries_no_real_guids():
-    text = (SRC / "config.example.yaml").read_text(encoding="utf-8")
+    text = (ROOT / "config.example.yaml").read_text(encoding="utf-8")
     assert "<YOUR_FABRIC_CAPACITY_ID>" in text
     assert "<YOUR_TENANT_ID>" in text
 
@@ -80,7 +85,7 @@ def test_config_example_carries_no_real_guids():
 @pytest.fixture(scope="module")
 def tables():
     missing = [n for n in EXPECTED_ROWS if not (RAW / f"{n}.csv").exists()]
-    assert not missing, f"missing generated CSVs: {missing} — run `python src/generate_data.py`"
+    assert not missing, f"missing generated CSVs: {missing} — run `python -m design.notebooks.generate_data`"
     return {n: pd.read_csv(RAW / f"{n}.csv") for n in EXPECTED_ROWS}
 
 

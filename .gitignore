@@ -27,13 +27,16 @@ Thumbs.db
 *.swp
 
 # Environment-specific — contain tenant / workspace / item IDs. Use the *.example files as templates.
-src/config.yaml
-src/state.json
+# Anchored to the repo root: config.yaml / state.json are shared by every workload under
+# fabric/ and foundry/, so there is exactly one of each and it lives at the top level.
+/config.yaml
+/state.json
 .vscode/mcp.json
 
 # Local client denylist for scripts/check_repo_leaks.py — one entry per line.
 # Names are detected, never published. This file must stay untracked.
 .clientdeny
 
-# (The *.example files ARE committed: src/config.example.yaml, src/state.example.json)
-# (data/raw/*.csv IS committed on purpose — the demo must be reproducible without a tenant.)
+# (The *.example files ARE committed: config.example.yaml, state.example.json)
+# (artifacts/lakehouse_data/*.csv IS committed on purpose — the demo must be reproducible
+#  without a tenant.)

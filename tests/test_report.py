@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-REPORT = ROOT / "report" / "Zava_Media_Report.Report"
+REPORT = ROOT / "fabric" / "powerbi" / "Zava_Media_Report.Report"
 DEFN = REPORT / "definition"
 PAGES = DEFN / "pages"
 
@@ -33,7 +33,7 @@ NON_DATA_VISUALS = {
 
 pytestmark = pytest.mark.skipif(
     not REPORT.exists(),
-    reason="report not generated yet — run `python src/deploy_report.py --build-only`",
+    reason="report not generated yet — run `python -m fabric.powerbi.deploy_report --build-only`",
 )
 
 

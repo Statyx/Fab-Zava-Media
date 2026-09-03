@@ -114,7 +114,7 @@ def test_the_canvas_matches_the_deployed_items(flow):
     for something that does not exist.
     """
     import yaml
-    cfg = yaml.safe_load((ROOT / "src" / "config.example.yaml").read_text(encoding="utf-8"))
+    cfg = yaml.safe_load((ROOT / "config.example.yaml").read_text(encoding="utf-8"))
     blob = json.dumps(flow)
     for key in ("lakehouse_name", "eventhouse_name", "ontology_name",
                 "semantic_model_name", "report_name", "data_agent_name"):
@@ -129,7 +129,7 @@ def test_the_foundry_agents_are_not_on_the_canvas(flow):
     implies Fabric owns them, which is exactly the boundary this demo exists to draw.
     """
     import yaml
-    cfg = yaml.safe_load((ROOT / "src" / "config.example.yaml").read_text(encoding="utf-8"))
+    cfg = yaml.safe_load((ROOT / "config.example.yaml").read_text(encoding="utf-8"))
     blob = json.dumps(flow)
     for key in ("orchestrator_agent_name", "contracts_agent_name"):
         assert cfg["foundry"][key] not in blob, \

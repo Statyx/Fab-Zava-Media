@@ -23,16 +23,31 @@ import pytest
 import yaml
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SRC = ROOT / "src"
-RAW = ROOT / "data" / "raw"
-sys.path.insert(0, str(SRC))
+RAW = ROOT / "artifacts" / "lakehouse_data"
+sys.path.insert(0, str(ROOT))
+
+# Deployment code is grouped one folder per workload, so a script is no longer found by
+# a flat glob: walk the two code trees instead. __init__.py files carry no logic.
+CODE_TREES = (ROOT / "fabric", ROOT / "foundry", ROOT / "design")
+
+
+def _py_files():
+    return sorted(
+        p for tree in CODE_TREES for p in tree.rglob("*.py")
+        if p.name != "__init__.py"
+    )
+
 
 # Modules that talk to Fabric must repair PATH and force UTF-8 stdout before anything
 # else. generate_data.py is exempt: it is pure offline generation and imports no helper.
 FABRIC_MODULES = sorted(
-    p.name for p in SRC.glob("*.py")
-    if re.match(r"^(deploy_|preload_|refresh_)", p.name)
+    (p for p in _py_files()
+     if re.match(r"^(deploy_|preload_|refresh_)", p.name)),
+    key=lambda p: p.name,
 )
+
+# The only non-stdlib import a deploy script may make before calling bootstrap().
+BOOTSTRAP_MODULE = "fabric._shared.platform_env"
 
 
 def _csv_header(name):
@@ -67,9 +82,8 @@ def test_ensure_functions_treat_absence_as_absence():
     and nothing else. A permission error means "you cannot tell", not "it is not there",
     and creating on that guess lands a duplicate resource somewhere nobody is looking.
     """
-    import foundry_common
-
-    src = (SRC / "deploy_foundry_project.py").read_text(encoding="utf-8")
+    from foundry import foundry_common
+    src = (ROOT / "foundry" / "deploy_foundry_project.py").read_text(encoding="utf-8")
     tree = ast.parse(src)
     for fn in [n for n in ast.walk(tree)
                if isinstance(n, ast.FunctionDef) and n.name.startswith("ensure_")]:
@@ -127,12 +141,12 @@ def test_the_real_config_has_every_key_the_template_declares():
 
     Skips when config.yaml is absent, which is the normal state of a fresh clone and of CI.
     """
-    real_path = SRC / "config.yaml"
+    real_path = ROOT / "config.yaml"
     if not real_path.exists():
         pytest.skip("config.yaml is local-only; nothing to compare against")
 
     real = yaml.safe_load(real_path.read_text(encoding="utf-8"))
-    template = yaml.safe_load((SRC / "config.example.yaml").read_text(encoding="utf-8"))
+    template = yaml.safe_load((ROOT / "config.example.yaml").read_text(encoding="utf-8"))
 
     missing = sorted(_key_paths(template) - _key_paths(real))
     assert not missing, (
@@ -144,7 +158,7 @@ def test_the_real_config_has_every_key_the_template_declares():
 @pytest.fixture(scope="module")
 def bim():
     """The semantic model as it would actually be pushed, minus the network call."""
-    import deploy_semantic_model as dsm
+    import fabric.powerbi.deploy_semantic_model as dsm
     dsm.API_BASE = "https://api.fabric.microsoft.com/v1"
     model = dsm.build_model_bim(
         {"lakehouse_name": "ZavaMediaLH", "fabric_api_base": dsm.API_BASE},
@@ -163,16 +177,17 @@ def sm_index(bim):
 
 
 # ── Script hygiene ──────────────────────────────────────────────
-@pytest.mark.parametrize("name", FABRIC_MODULES)
-def test_fabric_scripts_bootstrap_first(name):
+@pytest.mark.parametrize("py", FABRIC_MODULES, ids=lambda p: p.name)
+def test_fabric_scripts_bootstrap_first(py):
     """bootstrap() must run before any third-party import.
 
     It repairs PATH (so `az` is findable) and forces stdout to UTF-8. Import a
     module that prints a check mark before bootstrap and the script dies on a
     Windows console with a UnicodeEncodeError, several minutes into a deploy.
     """
-    tree = ast.parse((SRC / name).read_text(encoding="utf-8"))
-    stdlib_ok = set(sys.stdlib_module_names) | {"platform_env"}
+    name = py.name
+    tree = ast.parse(py.read_text(encoding="utf-8"))
+    stdlib_ok = set(sys.stdlib_module_names)
     for node in tree.body:
         if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call) \
                 and getattr(node.value.func, "id", None) == "bootstrap":
@@ -181,12 +196,16 @@ def test_fabric_scripts_bootstrap_first(name):
             assert all(a.name.split(".")[0] in stdlib_ok for a in node.names), \
                 f"{name}: import before bootstrap()"
         elif isinstance(node, ast.ImportFrom):
+            # platform_env is the one non-stdlib module allowed above bootstrap(): it is
+            # what defines bootstrap. Matched in full, so no other fabric.* slips through.
+            if node.module == BOOTSTRAP_MODULE:
+                continue
             assert (node.module or "").split(".")[0] in stdlib_ok, \
                 f"{name}: 'from {node.module} import ...' before bootstrap()"
     pytest.fail(f"{name} never calls bootstrap()")
 
 
-@pytest.mark.parametrize("py", sorted(SRC.glob("*.py")), ids=lambda p: p.name)
+@pytest.mark.parametrize("py", _py_files(), ids=lambda p: p.name)
 def test_no_hardcoded_guids(py):
     """Tenant, capacity and item GUIDs belong in the gitignored config/state, never in code."""
     text = py.read_text(encoding="utf-8")
@@ -197,7 +216,7 @@ def test_no_hardcoded_guids(py):
     assert not real, f"{py.name} carries hardcoded GUID(s): {real}"
 
 
-@pytest.mark.parametrize("py", sorted(SRC.glob("*.py")), ids=lambda p: p.name)
+@pytest.mark.parametrize("py", _py_files(), ids=lambda p: p.name)
 def test_no_bare_shell_true(py):
     """subprocess(..., shell=True) is a portability and injection trap.
 
@@ -249,7 +268,7 @@ def test_batch_tables_match_the_generated_csvs():
 
     pacing_events is deliberately absent: it goes to the Eventhouse, not the Lakehouse.
     """
-    from deploy_lakehouse import BATCH_TABLES
+    from fabric.lakehouse.deploy_lakehouse import BATCH_TABLES
     on_disk = {p.stem for p in RAW.glob("*.csv")}
     assert set(BATCH_TABLES) == on_disk - {"pacing_events"}, (
         f"BATCH_TABLES drifted from data/raw/: "
@@ -263,8 +282,8 @@ def test_setup_notebook_uses_the_same_table_list():
 
     A duplicated list is how a table gets uploaded and never converted to Delta.
     """
-    text = (SRC / "deploy_setup_notebook.py").read_text(encoding="utf-8")
-    assert "from deploy_lakehouse import BATCH_TABLES" in text
+    text = (ROOT / "fabric" / "lakehouse" / "deploy_setup_notebook.py").read_text(encoding="utf-8")
+    assert "from fabric.lakehouse.deploy_lakehouse import BATCH_TABLES" in text
 
 
 def test_calendar_columns_stay_strings_in_the_notebook():
@@ -273,7 +292,7 @@ def test_calendar_columns_stay_strings_in_the_notebook():
     Mixed types silently break the monthly-plan to daily-delivery join that the whole
     over-delivery figure rests on — no error, just wrong numbers.
     """
-    from deploy_setup_notebook import STRING_COLUMNS
+    from fabric.lakehouse.deploy_setup_notebook import STRING_COLUMNS
     for col in ("date_key", "month", "quarter"):
         assert col in STRING_COLUMNS, f"'{col}' must be forced to STRING"
 
@@ -281,8 +300,8 @@ def test_calendar_columns_stay_strings_in_the_notebook():
 # ── Ontology <-> CSVs ────────────────────────────────────────────
 def test_ontology_entities_bind_to_existing_tables_and_columns():
     """An entity bound to a missing column yields an EMPTY GRAPH, not an error."""
-    from deploy_ontology import ENTITIES, DISPLAY_PROPERTY
-    from deploy_lakehouse import BATCH_TABLES
+    from fabric.ontology.deploy_ontology import ENTITIES, DISPLAY_PROPERTY
+    from fabric.lakehouse.deploy_lakehouse import BATCH_TABLES
     for name, table, keys, cols in ENTITIES:
         assert table in BATCH_TABLES, f"entity {name} binds to unknown table '{table}'"
         header = _csv_header(table)
@@ -299,7 +318,7 @@ def test_ontology_relationship_foreign_keys_exist():
     """Both binding sides are columns of fk_table: the one identifying the source, and
     the one holding the target's key. Getting that backwards yields an empty graph,
     silently — the deploy reports success and the agent finds nothing."""
-    from deploy_ontology import ENTITIES, RELATIONSHIPS
+    from fabric.ontology.deploy_ontology import ENTITIES, RELATIONSHIPS
     entity_names = {e[0] for e in ENTITIES}
     for label, source, target, fk_table, src_cols, tgt_cols in RELATIONSHIPS:
         assert source in entity_names, f"relationship {label}: unknown source '{source}'"
@@ -311,7 +330,7 @@ def test_ontology_relationship_foreign_keys_exist():
 
 def test_ontology_timeseries_binds_to_the_streamed_table():
     """The TimeSeries binding is what makes the ontology span batch AND live data."""
-    from deploy_ontology import ENTITIES, TIMESERIES
+    from fabric.ontology.deploy_ontology import ENTITIES, TIMESERIES
     entity_names = {e[0] for e in ENTITIES}
     for entity, (kql_table, ts_col, key_col, metrics) in TIMESERIES.items():
         assert entity in entity_names, f"TimeSeries bound to unknown entity '{entity}'"
@@ -322,14 +341,14 @@ def test_ontology_timeseries_binds_to_the_streamed_table():
 
 def test_graph_reuses_the_ontology_definition():
     """deploy_graph must import ENTITIES/RELATIONSHIPS — a second copy would drift."""
-    text = (SRC / "deploy_graph.py").read_text(encoding="utf-8")
-    assert "from deploy_ontology import" in text
+    text = (ROOT / "fabric" / "graph" / "deploy_graph.py").read_text(encoding="utf-8")
+    assert "from fabric.ontology.deploy_ontology import" in text
     assert "ENTITIES" in text and "RELATIONSHIPS" in text
 
 
 # ── Semantic model ───────────────────────────────────────────────
 def test_semantic_model_covers_every_batch_table(sm_index):
-    from deploy_lakehouse import BATCH_TABLES
+    from fabric.lakehouse.deploy_lakehouse import BATCH_TABLES
     assert set(sm_index) == set(BATCH_TABLES), (
         f"semantic model tables differ from the Delta tables: "
         f"missing={set(BATCH_TABLES) - set(sm_index)}, extra={set(sm_index) - set(BATCH_TABLES)}"
@@ -444,8 +463,8 @@ def test_data_agent_only_cites_measures_that_exist(sm_index):
     Name one that was renamed and the model invents DAX instead — plausible,
     unverifiable, wrong.
     """
-    import deploy_data_agent as dda
-    from deploy_ontology import RELATIONSHIPS
+    import fabric.data_agent.deploy_data_agent as dda
+    from fabric.ontology.deploy_ontology import RELATIONSHIPS
     all_measures = {m for parts in sm_index.values() for m in parts["measures"]}
     text = dda.AI_INSTRUCTIONS + "\n" + "\n".join(q + " " + d for q, d in dda.SM_FEWSHOT_PAIRS)
     cited = set(re.findall(r"\[([A-Z][^\[\]]{2,40})\]", text))
@@ -458,7 +477,7 @@ def test_data_agent_only_cites_measures_that_exist(sm_index):
 
 
 def test_data_agent_elements_match_the_model(sm_index):
-    import deploy_data_agent as dda
+    import fabric.data_agent.deploy_data_agent as dda
     for table in dda.build_sm_elements():
         tname = table["display_name"]
         assert tname in sm_index, f"exposed table '{tname}' is not in the semantic model"
@@ -474,8 +493,8 @@ def test_data_agent_elements_match_the_model(sm_index):
 
 def test_data_agent_gql_uses_declared_labels_only():
     """Few-shots are copied verbatim by the LLM. A wrong edge label returns nothing."""
-    import deploy_data_agent as dda
-    from deploy_ontology import ENTITIES, RELATIONSHIPS
+    import fabric.data_agent.deploy_data_agent as dda
+    from fabric.ontology.deploy_ontology import ENTITIES, RELATIONSHIPS
     entities = {e[0] for e in ENTITIES}
     rels = {r[0] for r in RELATIONSHIPS}
     for question, gql in dda.FEWSHOTS:
@@ -488,7 +507,7 @@ def test_data_agent_gql_uses_declared_labels_only():
 def test_data_agent_is_published_not_just_drafted():
     """A draft-only agent does not appear in the portal and cannot be attached as a
     Foundry tool. It looks deployed and is unusable."""
-    import deploy_data_agent as dda
+    import fabric.data_agent.deploy_data_agent as dda
     parts = dda.build_parts("ws", "Zava_Media_Analyst", "ont", "ONT_Zava_Media",
                             "sm", "SM_Zava_Media")
     paths = [p["path"] for p in parts]
@@ -502,7 +521,7 @@ def test_data_agent_is_published_not_just_drafted():
 
 def test_data_agent_refuses_contract_questions():
     """The refusal IS the demo: it is what hands the question to Foundry."""
-    import deploy_data_agent as dda
+    import fabric.data_agent.deploy_data_agent as dda
     instructions = dda.AI_INSTRUCTIONS.lower()
     assert "no contractual terms" in instructions
     assert "do not speculate" in instructions
@@ -514,6 +533,6 @@ def test_data_agent_refuses_contract_questions():
 def test_kql_columns_match_the_csv_in_order():
     """Kusto CSV ingestion is positional. A reordered column silently loads
     campaign IDs into the channel column."""
-    cfg = yaml.safe_load((SRC / "config.example.yaml").read_text(encoding="utf-8"))
+    cfg = yaml.safe_load((ROOT / "config.example.yaml").read_text(encoding="utf-8"))
     declared = [c["name"] for c in cfg["kql_tables"]["pacing_events"]["columns"]]
     assert declared == _csv_header("pacing_events")

@@ -158,48 +158,90 @@ them apart — which is what it was written to do. Full reasoning in
 
 ## Project layout
 
+Deployment code is grouped **one folder per Fabric workload**, not flat in a single
+`src/`. The rule is that the folder tells you which Fabric artifact the code produces,
+so `deploy_ontology.py` sits next to the graph it feeds and nowhere near the report.
+
+| Folder | Theme | Contents |
+|---|---|---|
+| `fabric/` | Fabric deployment code, one package per workload | `_shared`, `workspace`, `lakehouse`, `ontology`, `graph`, `realtime`, `data_agent`, `powerbi` |
+| `foundry/` | Azure AI Foundry — project, connection, agents | ARM + Agents data-plane scripts, `verify_foundry.py` |
+| `design/` | Specifications, not deployment | `contracts/` (source corpus), `notebooks/` (offline generator) |
+| `artifacts/` | Generated seed data, committed on purpose | `lakehouse_data/` — 11 CSVs |
+| `docs/` | Architecture and deploy order | `ARCHITECTURE.md`, `DEPLOYMENT.md` |
+| `tests/` | The mechanical gate | 192 tests, run before every deploy |
+| `taskflow/` | Workspace canvas | imported by hand, no REST API exists |
+
 ```
 Fab-Zava-Media/
-├── src/
-│   ├── config.example.yaml     names, anomalies, reference data — copy to config.yaml
-│   ├── generate_data.py        deterministic seeded generator (seed 42)
-│   ├── platform_env.py         PATH repair + UTF-8 stdout; every script bootstraps first
-│   ├── helpers.py              auth, async polling, item lookup, Kusto, OneLake tokens
-│   ├── notebook_utils.py       notebook definition builder (.py format, never ipynb)
-│   ├── deploy_all.py           one-shot idempotent orchestrator + pre-demo warm-up
-│   ├── deploy_workspace.py     workspace + capacity assignment (region sanity check)
-│   ├── deploy_lakehouse.py     lakehouse + CSV upload; owns BATCH_TABLES
-│   ├── deploy_setup_notebook.py  CSV → Delta, calendar columns forced to STRING
-│   ├── deploy_eventhouse.py    eventhouse, KQL table, streaming ingestion
-│   ├── preload_pacing.py       20 160 pacing rows + count verification
-│   ├── deploy_ontology.py      7 entities, 9 relationships, 1 TimeSeries binding
-│   ├── deploy_graph.py         graph population (the ontology does NOT do this)
-│   ├── refresh_graph.py        standalone RefreshGraph job
-│   ├── deploy_semantic_model.py  Direct Lake model, ~35 DAX measures, Prep for AI
-│   ├── deploy_report.py        Zava_Media_Report — 3 pages / 27 visuals, PBIR only
-│   ├── deploy_data_agent.py    Zava_Media_Analyst — ontology (GQL) + model (DAX)
-│   ├── foundry_common.py       ARM + Agents data-plane helpers (two api-versions, one 'v1')
+├── deploy_all.py               one-shot idempotent orchestrator + pre-demo warm-up
+├── config.example.yaml         names, anomalies, reference data — copy to config.yaml
+├── state.example.json          shape of the GUIDs each deploy step writes back
+├── fabric/
+│   ├── _shared/
+│   │   ├── paths.py            every filesystem location, resolved once
+│   │   ├── platform_env.py     PATH repair + UTF-8 stdout; every script bootstraps first
+│   │   └── helpers.py          auth, async polling, item lookup, Kusto, OneLake tokens
+│   ├── workspace/
+│   │   └── deploy_workspace.py       workspace + capacity assignment (region sanity check)
+│   ├── lakehouse/
+│   │   ├── deploy_lakehouse.py       lakehouse + CSV upload; owns BATCH_TABLES
+│   │   ├── deploy_setup_notebook.py  CSV → Delta, calendar columns forced to STRING
+│   │   └── notebook_utils.py         notebook definition builder (.py format, never ipynb)
+│   ├── ontology/
+│   │   └── deploy_ontology.py        7 entities, 9 relationships, 1 TimeSeries binding
+│   ├── graph/
+│   │   ├── deploy_graph.py           graph population (the ontology does NOT do this)
+│   │   └── refresh_graph.py          standalone RefreshGraph job
+│   ├── realtime/
+│   │   ├── deploy_eventhouse.py      eventhouse, KQL table, streaming ingestion
+│   │   └── preload_pacing.py         20 160 pacing rows + count verification
+│   ├── data_agent/
+│   │   └── deploy_data_agent.py      Zava_Media_Analyst — ontology (GQL) + model (DAX)
+│   └── powerbi/
+│       ├── deploy_semantic_model.py  Direct Lake model, ~35 DAX measures, Prep for AI
+│       ├── deploy_report.py          Zava_Media_Report — 3 pages / 27 visuals, PBIR only
+│       └── Zava_Media_Report.Report/ generated PBIR folder — rebuilt from scratch each run
+├── foundry/
+│   ├── foundry_common.py             ARM + Agents data-plane helpers (two api-versions, one 'v1')
 │   ├── deploy_foundry_project.py     RG + AI Services account + project + model deployment
 │   ├── deploy_foundry_connection.py  Fabric data agent connection, built from state GUIDs
 │   ├── deploy_foundry_agents.py      Zava-Media-Contracts + Zava-Media-Agent, A2A wiring
-│   └── verify_foundry.py       three routing probes + the answer contract, post-deploy
-├── data/
-│   ├── raw/                    11 generated CSVs — COMMITTED on purpose
-│   └── contracts/              5 framework contracts (English, fictional)
-├── docs/ARCHITECTURE.md
+│   └── verify_foundry.py             three routing probes + the answer contract, post-deploy
+├── design/
+│   ├── contracts/              5 framework contracts (English, fictional)
+│   └── notebooks/
+│       └── generate_data.py    deterministic seeded generator (seed 42)
+├── artifacts/
+│   └── lakehouse_data/         11 generated CSVs — COMMITTED on purpose
+├── docs/
+│   ├── ARCHITECTURE.md
+│   └── DEPLOYMENT.md           deploy order + what each step depends on
 ├── tests/
 │   ├── test_smoke.py           the demo storyline, locked mechanically
 │   ├── test_deploy_scripts.py  the seams between the deploy scripts
 │   ├── test_foundry_scripts.py the Foundry failures that deploy cleanly
-│   ├── test_report.py         the PBIR traps that VALIDATE cleanly
+│   ├── test_report.py          the PBIR traps that VALIDATE cleanly
 │   └── test_taskflow.py        the task flow schema traps
-├── report/
-│   └── Zava_Media_Report.Report/  generated PBIR folder — rebuilt from scratch each run
 └── taskflow/
     └── zava_media_taskflow.json  workspace canvas — imported by hand, no REST API exists
 ```
 
-`src/config.yaml` and `src/state.json` are gitignored — they carry tenant, capacity and
+### How to run a single step
+
+Every folder is a real Python package, so a script is run as a module **from the
+repository root**, which is what puts the root on `sys.path`:
+
+```bash
+python -m fabric.lakehouse.deploy_lakehouse
+python -m foundry.verify_foundry
+```
+
+`python fabric/lakehouse/deploy_lakehouse.py` does *not* work, deliberately: the
+alternative was a `sys.path` fix-up copy-pasted into all 22 scripts. `deploy_all.py`
+lives at the root precisely so `python deploy_all.py` needs no such ceremony.
+
+`config.yaml` and `state.json` are gitignored — they carry tenant, capacity and
 item GUIDs. `state.example.json` shows the shape; every ID in it is written by a
 `deploy_*.py` step, never by hand.
 
@@ -270,8 +312,8 @@ the suite fails — which is the intent. The demo can break while every file sti
 
 ```bash
 pip install -r requirements.txt
-cp src/config.example.yaml src/config.yaml     # then fill capacity_id + tenant_id
-python src/generate_data.py                    # regenerates data/raw/ (idempotent)
+cp config.example.yaml config.yaml     # then fill capacity_id + tenant_id
+python -m design.notebooks.generate_data                    # regenerates artifacts/lakehouse_data/ (idempotent)
 python -m pytest tests/ -v
 ```
 
@@ -286,7 +328,7 @@ python deploy_all.py                       # workspace → … → supervisor, t
 python deploy_all.py --fabric-only         # Fabric side only — the Foundry half is unproven
 python deploy_all.py --from ontology       # resume after a failure
 python deploy_all.py --warmup              # right before the demo: pay the cold start off-stage
-python verify_foundry.py                   # prove the routing, don't assume it
+python -m foundry.verify_foundry                   # prove the routing, don't assume it
 ```
 
 `verify_foundry.py` is not optional politeness. Every A2A subordinate emits the same call
@@ -294,7 +336,7 @@ type, so a type-based check passes happily while the supervisor asks the contrac
 a number. It asserts on connection **names**, and on each probe it checks both that the
 expected tool fired *and* that the other one did not.
 
-Deployment needs a real F-SKU capacity ID and tenant ID in `src/config.yaml`. Without
+Deployment needs a real F-SKU capacity ID and tenant ID in `config.yaml`. Without
 them, everything above still works offline. The full step table and the ordering rules
 that are not obvious are in [`docs/ARCHITECTURE.md` § 5](docs/ARCHITECTURE.md).
 

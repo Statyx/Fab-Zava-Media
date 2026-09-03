@@ -20,8 +20,9 @@ from pathlib import Path
 import pytest
 import yaml
 
-SRC = Path(__file__).resolve().parent.parent / "src"
-sys.path.insert(0, str(SRC))
+ROOT = Path(__file__).resolve().parent.parent
+FOUNDRY = ROOT / "foundry"
+sys.path.insert(0, str(ROOT))
 
 FOUNDRY_SCRIPTS = [
     "foundry_common.py",
@@ -33,7 +34,7 @@ FOUNDRY_SCRIPTS = [
 
 
 def source(name: str) -> str:
-    return (SRC / name).read_text(encoding="utf-8")
+    return (FOUNDRY / name).read_text(encoding="utf-8")
 
 
 def code_only(name: str) -> str:
@@ -66,12 +67,12 @@ def agents_mod():
     offline — which is what makes the contract testable in CI.
     """
     import importlib
-    return importlib.import_module("deploy_foundry_agents")
+    return importlib.import_module("foundry.deploy_foundry_agents")
 
 
 @pytest.fixture(scope="module")
 def config():
-    return yaml.safe_load((SRC / "config.example.yaml").read_text(encoding="utf-8"))
+    return yaml.safe_load((ROOT / "config.example.yaml").read_text(encoding="utf-8"))
 
 
 @pytest.fixture(scope="module")
@@ -182,7 +183,7 @@ def test_source_marker_is_identical_in_prompt_and_verifier(supervisor_prompt):
     The prompt mandates a marker; the verifier splits on it. If the two drift, a
     perfectly correct answer fails verification and someone 'fixes' the agent.
     """
-    import verify_foundry
+    from foundry import verify_foundry
     assert verify_foundry.SOURCE_MARKER in supervisor_prompt, (
         f"the verifier splits on {verify_foundry.SOURCE_MARKER!r} but the prompt does "
         f"not mandate that exact literal"
@@ -264,7 +265,7 @@ def test_a2a_target_is_the_base_path_not_the_card():
     project endpoint it is created happily — a connection is not validated at creation —
     and never resolves at invoke.
     """
-    import foundry_common
+    from foundry import foundry_common
     path = foundry_common.a2a_base_path(
         "https://<resource>.services.ai.azure.com/api/projects/p", "Some_Agent")
     assert path.endswith("/agents/Some_Agent/endpoint/protocols/a2a")
@@ -437,7 +438,7 @@ def test_agents_api_version_is_the_literal_v1():
     A date-shaped api-version on the Agents data plane returns 400 and reads as a broken
     route. ARM connections use a dated version — the two are not interchangeable.
     """
-    import foundry_common
+    from foundry import foundry_common
     assert foundry_common.AGENTS_API_VERSION == "v1"
     assert re.match(r"^\d{4}-\d{2}-\d{2}", foundry_common.ARM_API_VERSION), \
         "the ARM api-version should be date-shaped; only the Agents one is 'v1'"
@@ -616,7 +617,7 @@ def test_verifier_asserts_the_negative_case():
 
 
 def test_verifier_checks_the_answer_shape_not_just_the_routing():
-    import verify_foundry
+    from foundry import verify_foundry
     problems = verify_foundry.check_answer_contract("Some answer with no marker.")
     assert problems, "an answer with no SOURCE block must fail the contract"
 
@@ -626,7 +627,7 @@ def test_verifier_checks_the_answer_shape_not_just_the_routing():
 
 
 def test_verifier_rejects_identifiers_in_the_prose():
-    import verify_foundry
+    from foundry import verify_foundry
     leaked = ("Delivery ran ahead for [Delivered Impressions].\n"
               "### SOURCE\nmeasure: x")
     assert verify_foundry.check_answer_contract(leaked), \
@@ -634,7 +635,7 @@ def test_verifier_rejects_identifiers_in_the_prose():
 
 
 def test_verifier_rejects_a_duplicated_source_block():
-    import verify_foundry
+    from foundry import verify_foundry
     doubled = "Text.\n### SOURCE\na\nMore text.\n### SOURCE\nb"
     problems = verify_foundry.check_answer_contract(doubled)
     assert any("2 times" in p for p in problems), \
@@ -661,9 +662,9 @@ def test_foundry_agent_names_use_the_charset_the_service_accepts():
     normalising the file to one convention breaks the deploy in whichever direction they
     choose. Both names are asserted here, in opposite directions, on purpose.
     """
-    from foundry_common import FOUNDRY_AGENT_NAME_RE
+    from foundry.foundry_common import FOUNDRY_AGENT_NAME_RE
 
-    cfg = yaml.safe_load((SRC / "config.example.yaml").read_text(encoding="utf-8"))
+    cfg = yaml.safe_load((ROOT / "config.example.yaml").read_text(encoding="utf-8"))
     foundry = cfg["foundry"]
 
     for key in ("orchestrator_agent_name", "contracts_agent_name"):
@@ -683,8 +684,7 @@ def test_foundry_agent_names_use_the_charset_the_service_accepts():
 
 def test_illegal_agent_names_are_rejected_before_anything_is_created():
     """The validator must run before the client, and reject exactly what the service does."""
-    import foundry_common
-
+    from foundry import foundry_common
     for bad in ("Zava_Media_Agent", "-leading", "trailing-", "a" * 64, ""):
         with pytest.raises(SystemExit):
             foundry_common.check_agent_name(bad, "foundry.some_setting")
@@ -727,7 +727,7 @@ def test_the_a2a_connection_name_uses_dashes_not_underscores():
     So both names are asserted now, and "only the body's category differs" turned out to
     be the whole explanation rather than an aside.
     """
-    cfg = yaml.safe_load((SRC / "config.example.yaml").read_text(encoding="utf-8"))
+    cfg = yaml.safe_load((ROOT / "config.example.yaml").read_text(encoding="utf-8"))
 
     for key in ("contracts_connection_name", "fabric_connection_name"):
         name = cfg["foundry"][key]

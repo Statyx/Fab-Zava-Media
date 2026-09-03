@@ -206,34 +206,37 @@ One command runs the whole chain — Fabric then Foundry; every step is idempote
 resumes rather than duplicating:
 
 ```bash
-cd src
 python deploy_all.py                       # full deploy, then a warm-up
 python deploy_all.py --fabric-only         # stop at the published data agent
 python deploy_all.py --foundry-only        # only the Foundry half, against existing state
 python deploy_all.py --from ontology       # resume from a step to the end
 python deploy_all.py ontology graph        # run only these (canonical order kept)
 python deploy_all.py --warmup              # warm-up only, right before the demo
-python verify_foundry.py                   # three routing probes, after the deploy
+python -m foundry.verify_foundry           # three routing probes, after the deploy
 ```
+
+Run these from the repository root: deployment code is grouped one package per workload,
+so the root must be on `sys.path`. The runnable module path of every step is in
+[DEPLOYMENT.md](DEPLOYMENT.md); the table below is about *why* the order is what it is.
 
 The canonical order, and the artifact each step needs from the previous one:
 
 | # | Step | Script | Needs |
 |---|---|---|---|
-| 1 | Generate the dataset | `generate_data.py` | — (offline) |
-| 2 | Workspace + capacity | `deploy_workspace.py` | `capacity_id` |
-| 3 | Lakehouse + CSV upload | `deploy_lakehouse.py` | `workspace_id` |
-| 4 | CSV → Delta tables | `deploy_setup_notebook.py` | `lakehouse_id` |
-| 5 | Eventhouse + KQL table | `deploy_eventhouse.py` | `workspace_id` |
-| 6 | Ingest pacing events | `preload_pacing.py` | `query_service_uri`, `kql_db_name` |
-| 7 | Ontology (Fabric IQ) | `deploy_ontology.py` | Delta tables **and** the KQL table |
-| 8 | Graph population + refresh | `deploy_graph.py` | `ontology_id` |
-| 9 | Semantic model | `deploy_semantic_model.py` | `lakehouse_sql_endpoint` |
-| 10 | Power BI report | `deploy_report.py` | `semantic_model_id` |
-| 11 | Data agent (published) | `deploy_data_agent.py` | `ontology_id` **and** `semantic_model_id` |
-| 12 | Foundry project + model | `deploy_foundry_project.py` | subscription, region |
-| 13 | Fabric data agent connection | `deploy_foundry_connection.py` | **published** data agent |
-| 14 | Contracts agent + supervisor | `deploy_foundry_agents.py` | the connection |
+| 1 | Generate the dataset | `design/notebooks/generate_data.py` | — (offline) |
+| 2 | Workspace + capacity | `fabric/workspace/deploy_workspace.py` | `capacity_id` |
+| 3 | Lakehouse + CSV upload | `fabric/lakehouse/deploy_lakehouse.py` | `workspace_id` |
+| 4 | CSV → Delta tables | `fabric/lakehouse/deploy_setup_notebook.py` | `lakehouse_id` |
+| 5 | Eventhouse + KQL table | `fabric/realtime/deploy_eventhouse.py` | `workspace_id` |
+| 6 | Ingest pacing events | `fabric/realtime/preload_pacing.py` | `query_service_uri`, `kql_db_name` |
+| 7 | Ontology (Fabric IQ) | `fabric/ontology/deploy_ontology.py` | Delta tables **and** the KQL table |
+| 8 | Graph population + refresh | `fabric/graph/deploy_graph.py` | `ontology_id` |
+| 9 | Semantic model | `fabric/powerbi/deploy_semantic_model.py` | `lakehouse_sql_endpoint` |
+| 10 | Power BI report | `fabric/powerbi/deploy_report.py` | `semantic_model_id` |
+| 11 | Data agent (published) | `fabric/data_agent/deploy_data_agent.py` | `ontology_id` **and** `semantic_model_id` |
+| 12 | Foundry project + model | `foundry/deploy_foundry_project.py` | subscription, region |
+| 13 | Fabric data agent connection | `foundry/deploy_foundry_connection.py` | **published** data agent |
+| 14 | Contracts agent + supervisor | `foundry/deploy_foundry_agents.py` | the connection |
 
 Step 10 sits between the model and the data agent because it binds to the model by id,
 and because everything after it is Foundry — the report is the last purely-Fabric artifact.
@@ -297,7 +300,7 @@ Keep the Foundry project in **Sweden Central** too. The call path is already
 `orchestrator → tool → data agent → DAX`; a cross-region hop is latency added to a chain
 that is the accepted cost of the boundary rule, not a place to spend more.
 
-Both the capacity ID and tenant ID live in `src/config.yaml`, which is gitignored.
+Both the capacity ID and tenant ID live in `config.yaml`, which is gitignored.
 
 ---
 
