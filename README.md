@@ -1,5 +1,12 @@
 # Zava Media — Fabric IQ × Foundry demo
 
+![License](https://img.shields.io/github/license/Statyx/Fab-Zava-Media?style=flat-square)
+![Last commit](https://img.shields.io/github/last-commit/Statyx/Fab-Zava-Media?style=flat-square)
+![Python](https://img.shields.io/badge/python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)
+![Microsoft Fabric](https://img.shields.io/badge/Microsoft_Fabric-REST_API-6264A7?style=flat-square&logo=microsoft&logoColor=white)
+![Microsoft Foundry](https://img.shields.io/badge/Microsoft_Foundry-Agents_%2B_A2A-8661C5?style=flat-square&logo=microsoftazure&logoColor=white)
+![Console](https://img.shields.io/badge/console-React_%2B_Vite_7-61DAFB?style=flat-square&logo=react&logoColor=black)
+
 A media-agency demo built on Microsoft Fabric and Microsoft Foundry.
 
 It answers one question that neither system can answer alone:
@@ -15,24 +22,32 @@ a clause into a rule.
 That separation is the point of the demo, not an implementation detail — see
 [the boundary rule](#the-boundary-rule) below.
 
----
-
-## At a glance
-
-| | |
-|---|---|
-| **Domain** | Media agency — planning, delivery, billing, live pacing |
-| **Company** | Zava Media (fictional agency), five fictional advertisers |
-| **Fabric items** | Lakehouse · Eventhouse · Ontology (Fabric IQ) · Data Agent · Semantic model · Report |
-| **Foundry items** | Project · supervisor agent · contracts agent (A2A) · vector store over the contracts |
-| **Region** | Sweden Central (capacity and Foundry project must match) |
-| **Dataset** | 11 tables, ~65 000 rows, deterministic, committed to the repo |
-| **Contracts** | 5 framework contracts with **deliberately divergent** clauses |
-| **Runs without a tenant?** | Data generation and tests: yes. Deployment: no. |
+> **Synthetic data.** Zava Media is a fictional agency and the advertisers are Microsoft's
+> canonical fictional companies. All 11 tables are generated from seed 42 by
+> [`design/notebooks/generate_data.py`](design/notebooks/generate_data.py). No real customer,
+> GUID, endpoint or account path appears anywhere in this repository.
 
 ---
 
-## The demo question, and why it needs both halves
+## Contents
+
+- [The question the demo answers](#the-question-the-demo-answers)
+- [At a glance](#at-a-glance)
+- [The boundary rule](#the-boundary-rule)
+- [What it demonstrates](#what-it-demonstrates)
+- [Repository structure](#repository-structure)
+- [How it fits together](#how-it-fits-together)
+- [The dataset](#the-dataset)
+- [Prerequisites](#prerequisites)
+- [Quick start](#quick-start)
+- [Tests](#tests)
+- [Documentation](#documentation)
+- [Public-repo hygiene](#public-repo-hygiene)
+- [License](#license)
+
+---
+
+## The question the demo answers
 
 The dataset carries three delivery gaps. Their **numbers are nearly identical**.
 Their **contractual consequences are opposite**.
@@ -60,6 +75,21 @@ Every percentage above is **exact by construction**, not approximate. The genera
 normalises its daily weight vectors so each placement lands precisely on
 `planned × ratio`. That matters: in the room, the number has to survive being checked
 by hand on a napkin.
+
+---
+
+## At a glance
+
+| | |
+|---|---|
+| **Domain** | Media agency — planning, delivery, billing, live pacing |
+| **Company** | Zava Media (fictional agency), five fictional advertisers |
+| **Fabric items** | Lakehouse · Eventhouse · Ontology (Fabric IQ) · Data Agent · Semantic model · Report |
+| **Foundry items** | Project · supervisor agent · contracts agent (A2A) · vector store over the contracts |
+| **Region** | Sweden Central (capacity and Foundry project must match) |
+| **Dataset** | 11 tables, ~65 000 rows, deterministic, committed to the repo |
+| **Contracts** | 5 framework contracts with **deliberately divergent** clauses |
+| **Runs without a tenant?** | Data generation and tests: yes. Deployment: no. |
 
 ---
 
@@ -99,7 +129,110 @@ be shown. A number computed in DAX can.
 
 ---
 
-## Architecture
+## Repository structure
+
+Deployment code is grouped **one folder per Fabric workload**, not flat in a single `src/`.
+The folder tells you which Fabric artifact the code produces, so `deploy_ontology.py` sits next
+to the graph it feeds and nowhere near the report.
+
+| Path | What lives there |
+|---|---|
+| `deploy_all.py` | One-shot idempotent orchestrator, plus the pre-demo warm-up |
+| `fabric/` | Fabric deployment code, one package per workload — `_shared`, `workspace`, `lakehouse`, `ontology`, `graph`, `realtime`, `data_agent`, `powerbi` |
+| `foundry/` | Microsoft Foundry — project, connection, agents, and the post-deploy routing verifier |
+| `app/` | `zava-media-console` — React + Vite console embedding Fabric items (`@microsoft/fabric-embed`, MSAL, Rayfin) |
+| `design/` | Specifications, not deployment — `contracts/` (source corpus), `notebooks/` (offline generator) |
+| `artifacts/` | Generated seed data, committed on purpose — `lakehouse_data/`, 11 CSVs |
+| `docs/` | Architecture, deploy order, console spec, engineering notes |
+| `tests/` | The mechanical gate, run before every deploy |
+| `taskflow/` | Workspace canvas, imported by hand — no REST API exists |
+
+<details>
+<summary><b>Full tree</b></summary>
+
+```
+Fab-Zava-Media/
+├── deploy_all.py               one-shot idempotent orchestrator + pre-demo warm-up
+├── config.example.yaml         names, anomalies, reference data — copy to config.yaml
+├── state.example.json          shape of the GUIDs each deploy step writes back
+├── fabric/
+│   ├── _shared/
+│   │   ├── paths.py            every filesystem location, resolved once
+│   │   ├── platform_env.py     PATH repair + UTF-8 stdout; every script bootstraps first
+│   │   └── helpers.py          auth, async polling, item lookup, Kusto, OneLake tokens
+│   ├── workspace/
+│   │   └── deploy_workspace.py       workspace + capacity assignment (region sanity check)
+│   ├── lakehouse/
+│   │   ├── deploy_lakehouse.py       lakehouse + CSV upload; owns BATCH_TABLES
+│   │   ├── deploy_setup_notebook.py  CSV → Delta, calendar columns forced to STRING
+│   │   └── notebook_utils.py         notebook definition builder (.py format, never ipynb)
+│   ├── ontology/
+│   │   └── deploy_ontology.py        7 entities, 9 relationships, 1 TimeSeries binding
+│   ├── graph/
+│   │   ├── deploy_graph.py           graph population (the ontology does NOT do this)
+│   │   └── refresh_graph.py          standalone RefreshGraph job
+│   ├── realtime/
+│   │   ├── deploy_eventhouse.py      eventhouse, KQL table, streaming ingestion
+│   │   └── preload_pacing.py         20 160 pacing rows + count verification
+│   ├── data_agent/
+│   │   └── deploy_data_agent.py      Zava_Media_Analyst — ontology (GQL) + model (DAX)
+│   └── powerbi/
+│       ├── deploy_semantic_model.py  Direct Lake model, ~35 DAX measures, Prep for AI
+│       ├── deploy_report.py          Zava_Media_Report — 3 pages / 27 visuals, PBIR only
+│       └── Zava_Media_Report.Report/ generated PBIR folder — rebuilt from scratch each run
+├── foundry/
+│   ├── foundry_common.py             ARM + Agents data-plane helpers (two api-versions, one 'v1')
+│   ├── deploy_foundry_project.py     RG + AI Services account + project + model deployment
+│   ├── deploy_foundry_connection.py  Fabric data agent connection, built from state GUIDs
+│   ├── deploy_foundry_agents.py      Zava-Media-Contracts + Zava-Media-Agent, A2A wiring
+│   └── verify_foundry.py             three routing probes + the answer contract, post-deploy
+├── design/
+│   ├── contracts/              5 framework contracts (English, fictional)
+│   └── notebooks/
+│       └── generate_data.py    deterministic seeded generator (seed 42)
+├── artifacts/
+│   └── lakehouse_data/         11 generated CSVs — COMMITTED on purpose
+├── app/
+│   ├── manifest.json           Rayfin app manifest (auth + static hosting)
+│   └── src/                    zava-media-console - React + @microsoft/fabric-embed
+├── docs/
+│   ├── APP_SPEC.md             console specification
+│   ├── ARCHITECTURE.md
+│   ├── DEPLOYMENT.md           deploy order + what each step depends on
+│   └── ENGINEERING-NOTES.md    the failure modes the suite locks down
+├── tests/
+│   ├── test_smoke.py           the demo storyline, locked mechanically
+│   ├── test_deploy_scripts.py  the seams between the deploy scripts
+│   ├── test_foundry_scripts.py the Foundry failures that deploy cleanly
+│   ├── test_report.py          the PBIR traps that VALIDATE cleanly
+│   └── test_taskflow.py        the task flow schema traps
+└── taskflow/
+    └── zava_media_taskflow.json  workspace canvas — imported by hand, no REST API exists
+```
+
+</details>
+
+### Running a single step
+
+Every folder is a real Python package, so a script is run as a module **from the
+repository root**, which is what puts the root on `sys.path`:
+
+```bash
+python -m fabric.lakehouse.deploy_lakehouse
+python -m foundry.verify_foundry
+```
+
+`python fabric/lakehouse/deploy_lakehouse.py` does *not* work, deliberately: the
+alternative was a `sys.path` fix-up copy-pasted into all 22 scripts. `deploy_all.py`
+lives at the root precisely so `python deploy_all.py` needs no such ceremony.
+
+`config.yaml` and `state.json` are gitignored — they carry tenant, capacity and
+item GUIDs. `state.example.json` shows the shape; every ID in it is written by a
+`deploy_*.py` step, never by hand.
+
+---
+
+## How it fits together
 
 ```mermaid
 flowchart LR
@@ -144,191 +277,66 @@ the agent reasons over it. Attaching the ontology as a knowledge source *and* th
 Data Agent as a tool is legal, silent, and almost always wrong: nothing in the response
 tells you which path answered.
 
-**Why the contracts sit behind their own agent.** The obvious shape puts `file_search` on
-the supervisor directly. On a tenant, a supervisor holding a connection-backed tool *and*
-`file_search` never calls the connection — it answers everything, numbers included, out of
-the documents. `tool_choice="required"` does not rescue it; the model meets the constraint
-with the wrong tool. `file_search` describes its own purpose, a connection tool surfaces
-only under its name, and the model picks the tool it can read. Pushing the corpus behind
-A2A makes both tools opaque, so the routing contract in the prompt is the only thing telling
-them apart — which is what it was written to do. Full reasoning in
-[ARCHITECTURE § 4](docs/ARCHITECTURE.md).
+The reasoning behind that split — and why the contract corpus sits behind its own agent rather
+than on the supervisor — is in [`docs/ENGINEERING-NOTES.md`](docs/ENGINEERING-NOTES.md).
 
 ---
 
-## Project layout
+## The dataset
 
-Deployment code is grouped **one folder per Fabric workload**, not flat in a single
-`src/`. The rule is that the folder tells you which Fabric artifact the code produces,
-so `deploy_ontology.py` sits next to the graph it feeds and nowhere near the report.
+| Fact | Value |
+|---|---|
+| Generator seed | 42 — same input, same bytes |
+| Period covered | 2026-04-01 → 2027-03-31 (Q2 + Q3 active) |
+| Campaigns | 80 across 5 advertisers, 10 brands, 5 markets |
+| Delivery rows | 21 960 daily rows |
+| Pacing events | 20 160 hourly rows with a trailing 7-day pacing index |
+| Currency | EUR throughout, including the UK market (deliberate simplification) |
+| Language | English throughout — contracts, code and docs. The French transparency law is cited *in* the contracts (ADV-005) where it belongs, not used as the document language |
 
-| Folder | Theme | Contents |
+---
+
+## Prerequisites
+
+| Tool | Version | Needed for |
 |---|---|---|
-| `fabric/` | Fabric deployment code, one package per workload | `_shared`, `workspace`, `lakehouse`, `ontology`, `graph`, `realtime`, `data_agent`, `powerbi` |
-| `foundry/` | Azure AI Foundry — project, connection, agents | ARM + Agents data-plane scripts, `verify_foundry.py` |
-| `design/` | Specifications, not deployment | `contracts/` (source corpus), `notebooks/` (offline generator) |
-| `artifacts/` | Generated seed data, committed on purpose | `lakehouse_data/` — 11 CSVs |
-| `docs/` | Architecture and deploy order | `ARCHITECTURE.md`, `DEPLOYMENT.md` |
-| `tests/` | The mechanical gate | 192 tests, run before every deploy |
-| `taskflow/` | Workspace canvas | imported by hand, no REST API exists |
+| Python | 3.12 — the version the suite is run on | data generation, tests, every `deploy_*` step |
+| Node.js | ≥ 20.19, required by Vite 7 | the `app/` console only |
+| Fabric capacity | F-SKU, Sweden Central | deployment only |
+| Microsoft Foundry | project in the same region | the Foundry half only |
 
-```
-Fab-Zava-Media/
-├── deploy_all.py               one-shot idempotent orchestrator + pre-demo warm-up
-├── config.example.yaml         names, anomalies, reference data — copy to config.yaml
-├── state.example.json          shape of the GUIDs each deploy step writes back
-├── fabric/
-│   ├── _shared/
-│   │   ├── paths.py            every filesystem location, resolved once
-│   │   ├── platform_env.py     PATH repair + UTF-8 stdout; every script bootstraps first
-│   │   └── helpers.py          auth, async polling, item lookup, Kusto, OneLake tokens
-│   ├── workspace/
-│   │   └── deploy_workspace.py       workspace + capacity assignment (region sanity check)
-│   ├── lakehouse/
-│   │   ├── deploy_lakehouse.py       lakehouse + CSV upload; owns BATCH_TABLES
-│   │   ├── deploy_setup_notebook.py  CSV → Delta, calendar columns forced to STRING
-│   │   └── notebook_utils.py         notebook definition builder (.py format, never ipynb)
-│   ├── ontology/
-│   │   └── deploy_ontology.py        7 entities, 9 relationships, 1 TimeSeries binding
-│   ├── graph/
-│   │   ├── deploy_graph.py           graph population (the ontology does NOT do this)
-│   │   └── refresh_graph.py          standalone RefreshGraph job
-│   ├── realtime/
-│   │   ├── deploy_eventhouse.py      eventhouse, KQL table, streaming ingestion
-│   │   └── preload_pacing.py         20 160 pacing rows + count verification
-│   ├── data_agent/
-│   │   └── deploy_data_agent.py      Zava_Media_Analyst — ontology (GQL) + model (DAX)
-│   └── powerbi/
-│       ├── deploy_semantic_model.py  Direct Lake model, ~35 DAX measures, Prep for AI
-│       ├── deploy_report.py          Zava_Media_Report — 3 pages / 27 visuals, PBIR only
-│       └── Zava_Media_Report.Report/ generated PBIR folder — rebuilt from scratch each run
-├── foundry/
-│   ├── foundry_common.py             ARM + Agents data-plane helpers (two api-versions, one 'v1')
-│   ├── deploy_foundry_project.py     RG + AI Services account + project + model deployment
-│   ├── deploy_foundry_connection.py  Fabric data agent connection, built from state GUIDs
-│   ├── deploy_foundry_agents.py      Zava-Media-Contracts + Zava-Media-Agent, A2A wiring
-│   └── verify_foundry.py             three routing probes + the answer contract, post-deploy
-├── design/
-│   ├── contracts/              5 framework contracts (English, fictional)
-│   └── notebooks/
-│       └── generate_data.py    deterministic seeded generator (seed 42)
-├── artifacts/
-│   └── lakehouse_data/         11 generated CSVs — COMMITTED on purpose
-├── docs/
-│   ├── ARCHITECTURE.md
-│   └── DEPLOYMENT.md           deploy order + what each step depends on
-├── tests/
-│   ├── test_smoke.py           the demo storyline, locked mechanically
-│   ├── test_deploy_scripts.py  the seams between the deploy scripts
-│   ├── test_foundry_scripts.py the Foundry failures that deploy cleanly
-│   ├── test_report.py          the PBIR traps that VALIDATE cleanly
-│   └── test_taskflow.py        the task flow schema traps
-└── taskflow/
-    └── zava_media_taskflow.json  workspace canvas — imported by hand, no REST API exists
-```
+Python dependencies are floor-pinned in [`requirements.txt`](requirements.txt): `PyYAML>=6.0`,
+`pandas>=2.0`, `requests>=2.31`, `pytest>=7.4`.
 
-### How to run a single step
-
-Every folder is a real Python package, so a script is run as a module **from the
-repository root**, which is what puts the root on `sys.path`:
-
-```bash
-python -m fabric.lakehouse.deploy_lakehouse
-python -m foundry.verify_foundry
-```
-
-`python fabric/lakehouse/deploy_lakehouse.py` does *not* work, deliberately: the
-alternative was a `sys.path` fix-up copy-pasted into all 22 scripts. `deploy_all.py`
-lives at the root precisely so `python deploy_all.py` needs no such ceremony.
-
-`config.yaml` and `state.json` are gitignored — they carry tenant, capacity and
-item GUIDs. `state.example.json` shows the shape; every ID in it is written by a
-`deploy_*.py` step, never by hand.
-
----
-
-## Mandatory testing gate
-
-```bash
-python -m pytest tests/ -v --tb=short
-```
-
-**160 tests, no tenant required.** Four files, four different jobs.
-
-`test_smoke.py` guards the **dataset**. It asserts the exact anomaly percentages
-(+12.00 / +11.00 / −8.00), that background noise stays visibly below them, that spend
-does *not* move with the over-delivered impressions (otherwise the make-good clause
-would be the wrong question), that the unbilled gap is a real anti-join with no status
-flag leaking the answer, and that the three contracts still say three different things.
-
-`test_deploy_scripts.py` guards the **seams between the deploy scripts** — every failure
-it catches would otherwise ship as a deploy that succeeds and is wrong:
-
-- an ontology entity bound to a column that no longer exists in the CSV (→ empty graph,
-  no error)
-- a DAX measure the data agent tells the LLM to use, that is not in the semantic model
-  (→ the model invents plausible, unverifiable DAX)
-- a GQL few-shot citing an edge label that was renamed (→ returns nothing, successfully)
-- a data agent written to `draft/` only (→ invisible to Foundry, looks deployed)
-- a second join path to `dim_advertiser` (→ Power BI silently deactivates one and the
-  advertiser-level figure changes)
-- KQL columns reordered against the CSV (→ positional ingestion loads campaign IDs into
-  the channel column)
-- a column or measure whose *name* implies a contractual entitlement — that half of the
-  question belongs to Foundry, and the boundary is enforced in the model, not just in a
-  prompt
-
-`test_foundry_scripts.py` guards the **Foundry failures that deploy cleanly** — every one
-of them produces a green deploy followed by an agent that answers fluently from the wrong
-place:
-
-- a `file_search` attached to the supervisor (→ the Fabric tool never fires and the numbers
-  come out of a PDF)
-- a figure hardcoded in the supervisor prompt (→ an answer that looks sourced and is not)
-- the `### SOURCE` marker drifting between the prompt that mandates it and the verifier that
-  splits on it (→ a correct answer fails verification and someone "fixes" the agent)
-- an A2A connection pointed at the card path instead of the base path (→ created with HTTP
-  200, resolves at invoke, never before)
-- one protocol written without re-listing the others (→ merge-patch replaces the array and
-  silently disables `responses`)
-- a date-shaped api-version on the Agents data plane (→ 400, reads as a broken route)
-- a GUID hardcoded where a connection name belongs (→ works here, breaks on promotion)
-
-`test_taskflow.py` guards the **one artifact no API validates**. Task flows have no REST
-endpoint, so the workspace canvas is imported by hand in front of the customer and the
-portal either parses it or says "import failed" with no line number. The guard catches a
-non-ASCII character anywhere in the prose (invisible in a diff, fatal to the parser), a BOM,
-`taskType` instead of `type`, an edge pointing at an id no task declares (draws nothing,
-raises nothing), and an item renamed in `config.example.yaml` but not on the canvas. It also
-asserts the two Foundry agents stay *off* the canvas: a task flow maps Fabric items, and
-putting them there would imply Fabric owns them.
-
-Harmonise the clauses, smooth an anomaly, or rename a measure on one side of a seam, and
-the suite fails — which is the intent. The demo can break while every file still looks fine.
+Data generation and the full test suite run with **no tenant and no network**. Deployment does
+not: it needs a real F-SKU capacity ID and tenant ID in `config.yaml`.
 
 ---
 
 ## Quick start
 
+Offline first — no tenant, no network, five commands:
+
 ```bash
+git clone https://github.com/Statyx/Fab-Zava-Media.git
+cd Fab-Zava-Media
 pip install -r requirements.txt
-cp config.example.yaml config.yaml     # then fill capacity_id + tenant_id
-python -m design.notebooks.generate_data                    # regenerates artifacts/lakehouse_data/ (idempotent)
-python -m pytest tests/ -v
+python -m design.notebooks.generate_data     # regenerates artifacts/lakehouse_data/ (idempotent)
+python -m pytest tests/ -q                   # expect: 192 passed
 ```
 
-The generator prints the planted anomalies on completion, so whoever runs the demo knows
-the right answers before the agent gives them.
+The generator prints the planted anomalies on completion, so whoever runs the demo knows the
+right answers before the agent gives them.
 
 Then deploy — one command, idempotent, resumable, Fabric then Foundry:
 
 ```bash
-cd src
+cp config.example.yaml config.yaml         # then fill capacity_id + tenant_id
 python deploy_all.py                       # workspace → … → supervisor, then warm up
 python deploy_all.py --fabric-only         # Fabric side only — the Foundry half is unproven
 python deploy_all.py --from ontology       # resume after a failure
 python deploy_all.py --warmup              # right before the demo: pay the cold start off-stage
-python -m foundry.verify_foundry                   # prove the routing, don't assume it
+python -m foundry.verify_foundry           # prove the routing, don't assume it
 ```
 
 `verify_foundry.py` is not optional politeness. Every A2A subordinate emits the same call
@@ -346,6 +354,39 @@ run — it errors in a way that reads exactly like a routing bug.
 
 ---
 
+## Tests
+
+```bash
+python -m pytest tests/ -q
+```
+
+**192 tests, no tenant required** — reproduce the count yourself with
+`python -m pytest tests/ --collect-only -q`.
+
+Five files, five jobs: the dataset storyline (`test_smoke.py`), the seams between the deploy
+scripts (`test_deploy_scripts.py`), the Foundry failures that deploy cleanly
+(`test_foundry_scripts.py`), the PBIR traps that validate cleanly (`test_report.py`), and the
+task-flow schema that no API validates (`test_taskflow.py`).
+
+Harmonise the clauses, smooth an anomaly, or rename a measure on one side of a seam, and the
+suite fails — which is the intent. The demo can break while every file still looks fine.
+
+Every failure mode the suite locks down is catalogued in
+[`docs/ENGINEERING-NOTES.md`](docs/ENGINEERING-NOTES.md).
+
+---
+
+## Documentation
+
+| Document | For |
+|---|---|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Why the pieces are wired this way, and the ordering rules that are not obvious |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | The deploy steps, their dependencies, and what each writes back to `state.json` |
+| [`docs/APP_SPEC.md`](docs/APP_SPEC.md) | The `zava-media-console` specification |
+| [`docs/ENGINEERING-NOTES.md`](docs/ENGINEERING-NOTES.md) | The failure modes behind the test suite — read before changing a deploy script |
+
+---
+
 ## Public-repo hygiene
 
 Written to be publishable. The agency is **Zava Media**; the advertisers are Microsoft's
@@ -359,20 +400,6 @@ Verified with the umbrella scanner:
 ```bash
 python ../Azure-Brain/Meta-Brain/tools/scan_public_safety.py .
 ```
-
----
-
-## Key facts
-
-| Fact | Value |
-|---|---|
-| Generator seed | 42 — same input, same bytes |
-| Period covered | 2026-04-01 → 2027-03-31 (Q2 + Q3 active) |
-| Campaigns | 80 across 5 advertisers, 10 brands, 5 markets |
-| Delivery rows | 21 960 daily rows |
-| Pacing events | 20 160 hourly rows with a trailing 7-day pacing index |
-| Currency | EUR throughout, including the UK market (deliberate simplification) |
-| Language | English throughout — contracts, code and docs. The French transparency law is cited *in* the contracts (ADV-005) where it belongs, not used as the document language |
 
 ---
 
