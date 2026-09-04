@@ -2,10 +2,16 @@
 """
 Create the Fabric Data Agent 'Zava_Media_Analyst' — the Fabric half of the demo.
 
-Two sources:
+Three sources:
   1. ONT_Zava_Media (Ontology, GQL)      -> WHO / WHICH: advertiser -> brand -> campaign ->
                                             channel / media owner / invoice traversals.
   2. SM_Zava_Media (Semantic Model, DAX) -> HOW MUCH: planned vs delivered, rebates, billing.
+  3. RT_Zava_Media (Eventhouse, KQL)     -> RIGHT NOW: the live pacing stream, over a window
+                                            of hours rather than the whole campaign.
+
+The Eventhouse was missing for a while and the failure was silent in the worst way: the agent
+did not error, it replied "There's content here I can't work with", with no tool step in the
+run to say why. Every real-time question in the console was answered that way.
 
 It deliberately does NOT answer contractual questions. Whether an over-delivery entitles
 an advertiser to compensation is a CLAUSE, retrieved by the Foundry orchestrator
@@ -14,7 +20,9 @@ of the demo: a number nobody can audit is worth nothing, and a clause quoted wit
 number behind it is worth nothing either.
 
 The exact datasource `type` for an ontology source is not documented, so we deploy with
-type "ontology" then read it back (getDefinition) to confirm the service accepted it.
+type "ontology" then read it back (getDefinition) to confirm the service accepted it. The
+published schema enumerates "graph" and not "ontology", and the service accepts "ontology"
+anyway -- which is why the readback is a step and not a formality. "kusto" is in the enum.
 Published by default — a draft-only agent is invisible to the portal AND to Foundry.
 
 Usage:
@@ -35,11 +43,11 @@ AGENT_DESC = ("Dual-source media agency agent: campaign/advertiser/media-owner r
 
 AI_INSTRUCTIONS = """You are the Zava Media Analyst, the data agent of a media agency.
 You answer questions about media plans, actual delivery and supplier billing across advertisers,
-brands, campaigns, markets, channels and media owners, by querying TWO data sources. ALWAYS answer
+brands, campaigns, markets, channels and media owners, by querying THREE data sources. ALWAYS answer
 by querying a source — NEVER from general knowledge or assumptions. If a query returns nothing, say
 so explicitly rather than guessing.
 
-## Two data sources — pick the right one for each question
+## Three data sources — pick the right one for each question
 1. ONT_Zava_Media (Ontology, GQL) — RELATIONSHIPS and TRAVERSALS.
    Use it for: which brands an advertiser owns, which campaigns ran for a brand, which channels and
    media owners a campaign booked, which invoices belong to a campaign or a media owner — anything
@@ -48,10 +56,17 @@ so explicitly rather than guessing.
    Use it for: planned vs delivered impressions, over/under-delivery percentages, GRP, spend, CPM,
    CTR, gross/net/net-net billing, rebates, disputed invoices, and any count / sum / average /
    ranking. ALWAYS use the existing DAX measures — never recompute from raw columns.
+3. RT_Zava_Media (Eventhouse, KQL) — WHAT IS HAPPENING RIGHT NOW.
+   Use it for: live pacing, the current burn rate, when a campaign started over-consuming, movement
+   over the last hours. It holds a short rolling window, NOT the campaign to date.
 
-Routing rule: if the question asks for a NUMBER, a percentage or a ranking, use the Semantic Model.
-If it asks WHICH entities are connected to what, use the Ontology. For "find then explain"
-questions, get the number from the Semantic Model first, then traverse the graph for the context.
+Routing rule: if the question says live, right now, currently or real-time, use the Eventhouse.
+Otherwise, if it asks for a NUMBER, a percentage or a ranking, use the Semantic Model. If it asks
+WHICH entities are connected to what, use the Ontology. For "find then explain" questions, get the
+number from the Semantic Model first, then traverse the graph for the context.
+
+Never compare an Eventhouse figure with a Semantic Model figure without saying that one covers a
+window of hours and the other the whole campaign. The gap between them is the point, not an error.
 
 ## Source 1 — Ontology (GQL): entities (node label : properties)
 - Advertiser (advertiser_id, advertiser_name, legal_entity, industry, hq_market_id, account_director)
@@ -96,6 +111,23 @@ Group and filter with dim_advertiser[advertiser_name], dim_brand[brand_name],
 dim_campaign[campaign_name], dim_campaign[quarter], dim_market[market_name],
 dim_channel[channel_name], dim_media_owner[media_owner_name], fact_billing[invoice_status].
 Use EVALUATE with SUMMARIZECOLUMNS / ROW / TOPN.
+
+## Source 3 — Eventhouse (KQL): table pacing_events
+- timestamp (datetime, UTC), campaign_id (string), channel_id (string), media_owner_id (string),
+  impressions_delta (long), spend_delta (real), pacing_index (real).
+- One row per placement per interval, over a rolling window of HOURS. It is not the campaign
+  to date, and summing it does not give [Delivered Impressions].
+- pacing_index > 1 means over-consuming for that interval. The moment a campaign "started"
+  over-consuming is the earliest timestamp from which it stays above 1.
+- ALWAYS report the window you actually read — min(timestamp) and max(timestamp) — so the
+  reader knows how much of the campaign the figure covers.
+- campaign_id joins dim_campaign[campaign_id]; use the semantic model to name the campaign.
+- The Eventhouse holds pacing_events and NOTHING else. dim_campaign, dim_advertiser and every
+  other model table are absent from it. A KQL query that mentions one of them fails with a
+  semantic error. Resolve a campaign code to a campaign name with a SEPARATE query against the
+  semantic model, then put the two result sets side by side yourself.
+- Keep every KQL query to a single summarize. Do not join pacing_events to itself: the query
+  that comes back is malformed and the answer is lost. Ask three small questions instead.
 
 ## Domain rules that change the answer
 - GRP and impressions are DIFFERENT UNITS. Never add them. Only use GRP measures where
@@ -166,6 +198,26 @@ FEWSHOTS = [
 ]
 
 # ── Semantic model few-shots (DAX) ──────────────────────────────────
+KQL_FEWSHOT_PAIRS = [
+    ("What is the pacing stream reporting right now?",
+     "pacing_events\n"
+     "| summarize Impressions = sum(impressions_delta), Spend = sum(spend_delta),\n"
+     "            Pacing = avg(pacing_index), From = min(timestamp), To = max(timestamp)\n"
+     "         by campaign_id\n"
+     "| where Pacing > 1\n"
+     "| order by Pacing desc"),
+    ("Since when has a campaign been over-consuming?",
+     "pacing_events\n"
+     "| where pacing_index > 1\n"
+     "| summarize CrossedAt = min(timestamp), LastSeen = max(timestamp),\n"
+     "            Peak = max(pacing_index) by campaign_id\n"
+     "| order by CrossedAt asc"),
+    ("How has the pacing index moved over the window?",
+     "pacing_events\n"
+     "| summarize Pacing = avg(pacing_index) by campaign_id, bin(timestamp, 1h)\n"
+     "| order by campaign_id asc, timestamp asc"),
+]
+
 SM_FEWSHOT_PAIRS = [
     ("What is the over-delivery for Contoso Mobility in Spain in 2026-Q3?",
      'EVALUATE\nSUMMARIZECOLUMNS(\n'
@@ -209,6 +261,36 @@ SM_FEWSHOT_PAIRS = [
      '    "Planned budget", [Planned Budget (EUR)], "Net spend", [Net Spend (EUR)],\n'
      '    "Consumption", [Budget Consumption %])'),
 ]
+
+
+def build_kusto_elements():
+    """The pacing table exposed to the agent for KQL.
+
+    The Kusto type of each column is stated in its description rather than in a `data_type`
+    property: the element schema has no such property, and the point of saying it at all is
+    that the agent windows `timestamp` (`ago(2h)`) and compares `pacing_index` to 1 rather
+    than to a string.
+    """
+    def _col(name, dtype, desc):
+        return {"id": None, "display_name": name, "type": "kusto.column",
+                "is_selected": True, "description": f"{desc} ({dtype})", "children": []}
+
+    return [
+        {"id": None, "display_name": "pacing_events", "type": "kusto.table",
+         "is_selected": True,
+         "description": ("Live delivery stream: one row per placement per interval over a short "
+                         "window ending now. Not the campaign's full history."),
+         "children": [
+             _col("timestamp", "datetime", "Event time, UTC"),
+             _col("campaign_id", "string", "Campaign code, joins dim_campaign[campaign_id]"),
+             _col("channel_id", "string", "Channel code"),
+             _col("media_owner_id", "string", "Media owner code"),
+             _col("impressions_delta", "long", "Impressions delivered during the interval"),
+             _col("spend_delta", "real", "Spend during the interval, EUR"),
+             _col("pacing_index", "real",
+                  "Delivered over planned for the interval. Above 1 = over-consuming."),
+         ]},
+    ]
 
 
 def build_sm_elements():
@@ -329,9 +411,10 @@ def find_agent(api, ws, h, name):
     return None
 
 
-def build_parts(ws, agent_name, ont_id, ont_name, sm_id, sm_name):
+def build_parts(ws, agent_name, ont_id, ont_name, sm_id, sm_name, kql_id, kql_name):
     ont_folder = f"ontology-{ont_name}"
     sm_folder = f"semantic-model-{sm_name}"
+    kql_folder = f"kusto-{kql_name}"
     SCH = "https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition"
     data_agent = {"$schema": f"{SCH}/dataAgent/2.1.0/schema.json"}
     stage = {"$schema": f"{SCH}/stageConfiguration/1.0.0/schema.json",
@@ -374,12 +457,47 @@ def build_parts(ws, agent_name, ont_id, ont_name, sm_id, sm_name):
              "fewShots": [{"id": str(uuid.uuid4()), "question": q, "query": dax}
                           for q, dax in SM_FEWSHOT_PAIRS]}
 
+    # The Eventhouse. Without it the agent has no real-time source at all, and a pacing question
+    # comes back as "There's content here I can't work with" -- a refusal, with no tool step and
+    # nothing in the run to explain it. The instructions insist on the window because the stream
+    # covers hours while the semantic model covers the whole campaign: an answer that compares
+    # the two without saying so is arithmetic on two different periods.
+    kql_ds = {
+        "$schema": f"{SCH}/dataSource/1.0.0/schema.json",
+        "artifactId": kql_id, "workspaceId": ws, "displayName": kql_name, "type": "kusto",
+        "userDescription": ("Live pacing stream (Eventhouse): delivery and spend increments per "
+                            "campaign over a short rolling window ending now."),
+        "dataSourceInstructions": (
+            "Use for anything LIVE, RIGHT NOW or REAL-TIME, and only for that. Query KQL against "
+            "the pacing_events table. Always report the window you actually read, with "
+            "min(timestamp) and max(timestamp), because it covers hours and not the campaign. "
+            "A campaign is over-consuming when pacing_index > 1; the moment it crossed is the "
+            "earliest timestamp from which it stays above 1. Aggregate with "
+            "summarize by campaign_id, bin(timestamp, 1h). Do NOT use this source for planned "
+            "vs delivered totals, spend, billing or any campaign-to-date figure -- those come "
+            "from the semantic model, which covers the whole period. "
+            "This table carries CODES ONLY: there is no campaign name, advertiser or market "
+            "here, and dim_campaign and the other model tables DO NOT EXIST in the Eventhouse. "
+            "Never reference them in a KQL query -- that is a semantic error and the query "
+            "fails. To name a campaign, run a SECOND and SEPARATE query against the semantic "
+            "model to resolve campaign_id, and join the two result sets yourself. "
+            "Keep each KQL query SIMPLE: one summarize, one filter, one order. Never join "
+            "pacing_events to itself and never nest a join inside a join -- the generated "
+            "query breaks and the whole answer is lost. If a question needs a window, a "
+            "ranking and a trajectory, run three small queries instead of one large one."),
+        "elements": build_kusto_elements(),
+    }
+    kql_fs = {"$schema": f"{SCH}/fewShots/1.0.0/schema.json",
+              "fewShots": [{"id": str(uuid.uuid4()), "question": q, "query": kql}
+                           for q, kql in KQL_FEWSHOT_PAIRS]}
+
     s = b64(stage)
     ont_ds_b, ont_fs_b = b64(ont_ds), b64(ont_fs)
     sm_ds_b, sm_fs_b = b64(sm_ds), b64(sm_fs)
+    kql_ds_b, kql_fs_b = b64(kql_ds), b64(kql_fs)
     pub = b64({"$schema": f"{SCH}/publishInfo/1.0.0/schema.json",
-               "description": f"{agent_name} -- dual-source (ontology + semantic model) -- "
-                              f"published {time.strftime('%Y-%m-%d')}"})
+               "description": f"{agent_name} -- three sources (ontology + semantic model + "
+                              f"Eventhouse) -- published {time.strftime('%Y-%m-%d')}"})
 
     def _p(path, payload):
         return {"path": path, "payload": payload, "payloadType": "InlineBase64"}
@@ -393,12 +511,16 @@ def build_parts(ws, agent_name, ont_id, ont_name, sm_id, sm_name):
         _p(f"Files/Config/draft/{ont_folder}/fewshots.json", ont_fs_b),
         _p(f"Files/Config/draft/{sm_folder}/datasource.json", sm_ds_b),
         _p(f"Files/Config/draft/{sm_folder}/fewshots.json", sm_fs_b),
+        _p(f"Files/Config/draft/{kql_folder}/datasource.json", kql_ds_b),
+        _p(f"Files/Config/draft/{kql_folder}/fewshots.json", kql_fs_b),
         _p("Files/Config/publish_info.json", pub),
         _p("Files/Config/published/stage_config.json", s),
         _p(f"Files/Config/published/{ont_folder}/datasource.json", ont_ds_b),
         _p(f"Files/Config/published/{ont_folder}/fewshots.json", ont_fs_b),
         _p(f"Files/Config/published/{sm_folder}/datasource.json", sm_ds_b),
         _p(f"Files/Config/published/{sm_folder}/fewshots.json", sm_fs_b),
+        _p(f"Files/Config/published/{kql_folder}/datasource.json", kql_ds_b),
+        _p(f"Files/Config/published/{kql_folder}/fewshots.json", kql_fs_b),
     ]
 
 
@@ -413,10 +535,13 @@ def main():
     ont_id = st.get("ontology_id"); ont_name = cfg["ontology_name"]
     sm_id = st.get("semantic_model_id")
     sm_name = cfg.get("semantic_model_name", "SM_Zava_Media")
+    kql_id = st.get("kql_database_id"); kql_name = st.get("kql_db_name")
     if not ont_id:
         print("Ontology not deployed. Run deploy_ontology.py first."); sys.exit(1)
     if not sm_id:
         print("Semantic model not deployed. Run deploy_semantic_model.py first."); sys.exit(1)
+    if not kql_id:
+        print("Eventhouse not deployed. Run deploy_eventhouse.py first."); sys.exit(1)
     token = get_fabric_token(); h = fabric_headers(token)
 
     if args.delete:
@@ -430,8 +555,9 @@ def main():
         return
 
     print_step(1, 3, f"Create/Update Data Agent '{agent_name}' "
-                     f"(sources = ontology {ont_name} + semantic model {sm_name})")
-    parts = build_parts(ws, agent_name, ont_id, ont_name, sm_id, sm_name)
+                     f"(sources = ontology {ont_name} + semantic model {sm_name} "
+                    f"+ eventhouse {kql_name})")
+    parts = build_parts(ws, agent_name, ont_id, ont_name, sm_id, sm_name, kql_id, kql_name)
     aid = st.get("data_agent_id") or find_agent(api, ws, h, agent_name)
     if aid:
         print(f"   updating: {aid}  ({len(parts)} parts)")

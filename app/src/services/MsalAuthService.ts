@@ -1,6 +1,13 @@
 import { isFramed, withTimeout } from './authStartup';
 import type { AuthUser, IAuthService } from './IAuthService';
-import { activeAccount, ensureMsalReady, FABRIC_SCOPES, getToken, msal } from './msal';
+import {
+  activeAccount,
+  ensureMsalReady,
+  FABRIC_SCOPES,
+  FOUNDRY_SCOPES,
+  getToken,
+  msal,
+} from './msal';
 
 import type { AccountInfo } from '@azure/msal-browser';
 
@@ -28,7 +35,15 @@ export class MsalAuthService implements IAuthService {
     await ensureMsalReady();
     // Sign in and consent to the Fabric scopes in the same gesture, so the first data call does
     // not trigger a second popup the user did not ask for.
-    const r = await msal.loginPopup({ scopes: FABRIC_SCOPES });
+    //
+    // `extraScopesToConsent` carries Foundry through the same dialog. It cannot go in `scopes`:
+    // one token request is one audience, and mixing resources there makes MSAL throw. Without
+    // it the consent prompt lands on the *first crossing question* instead — which is the first
+    // card on the entry screen, mid-demo, in front of the room.
+    const r = await msal.loginPopup({
+      scopes: FABRIC_SCOPES,
+      extraScopesToConsent: FOUNDRY_SCOPES,
+    });
     if (r.account) msal.setActiveAccount(r.account);
     const a = activeAccount();
     if (!a) throw new Error('Sign-in returned no account.');

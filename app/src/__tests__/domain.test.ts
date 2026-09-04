@@ -10,6 +10,7 @@ import {
 } from '@/domain/nav';
 import { HOUSE_STYLE, OPENERS, followUps, selectOpeners, starters } from '@/domain/openers';
 import type { OpenerFamily } from '@/domain/openers';
+import frozenQuestions from '@/data/frozen-questions.generated.json';
 
 /**
  * The 32 measures the semantic model actually carries.
@@ -129,6 +130,133 @@ describe('the question registry', () => {
     const rest = followUps([first.id]);
     expect(rest.some((o) => o.id === first.id)).toBe(false);
     expect(rest.length).toBeLessThanOrEqual(3);
+  });
+
+  /**
+   * The routing rule, and the one that had a live defect behind it.
+   *
+   * Five questions asked for a contract clause and were routed to the Fabric data agent, which
+   * cannot see the corpus. It did not fail: it answered, at length, explaining on screen that
+   * "I cannot see any delivery clauses or client entitlements in this dataset". Correct, and
+   * useless in front of a room — the console had asked the wrong console.
+   *
+   * The invariant is a biconditional on purpose. Checking only one direction lets the opposite
+   * defect through: a `fabric` question that mentions the agreements silently loses the clause,
+   * and a `foundry` question that does not need one pays 40 extra seconds and adds a hop that
+   * contributes nothing.
+   */
+  it('sends every question that reads a contract to the supervisor', () => {
+    const readsContracts = /master agreement|advertiser's contract|indexed master|the contracts?\b/i;
+    for (const o of OPENERS) {
+      const mentions = readsContracts.test(o.prompt);
+      expect(o.backend, `${o.id} asks for a clause but is routed to Fabric`).toBe(
+        mentions ? 'foundry' : 'fabric'
+      );
+    }
+  });
+
+  /**
+   * Depth 2 is where the second click lives, and it is only worth a click if it goes somewhere
+   * new. An earlier version had two Fabric children on four families out of six while the file
+   * comment claimed otherwise, so the follow-up only ever produced more of the same table.
+   */
+  it('gives every opener exactly two follow-ups, one of which crosses', () => {
+    const entries = OPENERS.filter((o) => o.depth === 1);
+    expect(entries.length).toBeGreaterThan(0);
+
+    for (const parent of entries) {
+      const children = OPENERS.filter((o) => o.depth === 2 && o.parent === parent.id);
+      expect(children.length, `${parent.id} has ${children.length} follow-ups`).toBe(2);
+      expect(
+        children.some((c) => c.kind === 'mixed'),
+        `neither follow-up of ${parent.id} crosses a second source`
+      ).toBe(true);
+    }
+  });
+
+  it('leaves no depth-2 question orphaned', () => {
+    // An orphan is unreachable rather than broken: `deeper()` matches on the parent id, so a
+    // typo there removes the question from the console without removing it from the file.
+    const ids = new Set(OPENERS.map((o) => o.id));
+    for (const o of OPENERS) {
+      if (o.depth === 1) {
+        expect(o.parent, `${o.id} is an entry point but names a parent`).toBeUndefined();
+        continue;
+      }
+      expect(o.parent, `${o.id} has no parent`).toBeTruthy();
+      expect(ids.has(o.parent!), `${o.id} points at a parent that does not exist`).toBe(true);
+      expect(
+        OPENERS.find((p) => p.id === o.parent)?.depth,
+        `${o.id} hangs off another follow-up rather than an entry point`
+      ).toBe(1);
+    }
+  });
+
+  /**
+   * A prompt carries two bracketed namespaces that look identical and are not: `[Delivery Gap]`
+   * is a measure the semantic model resolves, `-[AdvertiserHasBrand]->` is an edge the ontology
+   * traverses. Checking one against the other reports a false failure; checking neither lets a
+   * typo through, and a typo here is not an error — the agent answers around the missing name
+   * and produces a confident number for something else.
+   */
+  const graphEdge = /<?-\[:?([A-Za-z]+)\]->?/g;
+
+  it('cites only measures the semantic model carries', () => {
+    const known = new Set(MEASURES);
+    for (const o of OPENERS) {
+      for (const cited of measuresCited(o.prompt.replace(graphEdge, ' '))) {
+        expect(known.has(cited), `${o.id} cites an unknown measure [${cited}]`).toBe(true);
+      }
+    }
+  });
+
+  it('traverses only relationships the ontology declares', () => {
+    // Transcribed from RELATIONSHIPS in fabric/ontology/deploy_ontology.py.
+    const known = new Set([
+      'AdvertiserHasBrand',
+      'BrandHasCampaign',
+      'CampaignForAdvertiser',
+      'CampaignInMarket',
+      'CampaignUsesChannel',
+      'CampaignBooksMediaOwner',
+      'InvoiceForCampaign',
+      'InvoiceFromMediaOwner',
+      'MediaOwnerSellsChannel',
+    ]);
+
+    const seen = new Set<string>();
+    for (const o of OPENERS) {
+      for (const [, name] of o.prompt.matchAll(graphEdge)) {
+        seen.add(name);
+        expect(known.has(name), `${o.id} follows an edge the graph has no [${name}]`).toBe(true);
+      }
+    }
+    expect(seen.size, 'no question walks the graph at all').toBeGreaterThan(0);
+  });
+});
+
+/**
+ * The recorder is Python and the registry is TypeScript, so the capture list is generated.
+ *
+ * A prompt that drifts by one word does not fail loudly: `frozenAnswer()` keys on the exact
+ * prompt sent, so a stale entry simply never matches. The recording stays in the file, the app
+ * goes back to waiting a minute per click, and nothing anywhere says why.
+ */
+describe('the frozen capture list', () => {
+  it('matches the question registry exactly', () => {
+    expect(
+      frozenQuestions.entries.length,
+      'run `cd app && npx tsx scripts/freeze-questions.ts`'
+    ).toBe(OPENERS.length);
+
+    const generated = new Map(frozenQuestions.entries.map((e) => [e.id, e]));
+    for (const o of OPENERS) {
+      const e = generated.get(o.id);
+      expect(e, `${o.id} is missing from the generated list`).toBeTruthy();
+      expect(e!.prompt, `${o.id} has drifted from the generated list`).toBe(o.prompt);
+      expect(e!.backend, `${o.id} is recorded against the wrong console`).toBe(o.backend);
+      expect(e!.depth).toBe(o.depth);
+    }
   });
 });
 

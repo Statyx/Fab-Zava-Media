@@ -32,6 +32,20 @@ export const FABRIC_SCOPES = ['https://api.fabric.microsoft.com/.default'];
 export const POWERBI_SCOPES = ['https://analysis.windows.net/powerbi/api/.default'];
 
 /**
+ * Azure AI Foundry data plane — the supervisor and, through it, the contract corpus.
+ *
+ * The audience is `https://ai.azure.com`, which does not announce itself: in Entra that
+ * resource is the service principal named **Azure Machine Learning Services**
+ * (`18a66f5f-dbdf-4c17-9dd7-1634712a9cbe`), a name that predates Foundry and survives it.
+ * Searching the tenant for "Foundry" or "AI Services" finds nothing.
+ *
+ * The near-miss worth recording: `https://cognitiveservices.azure.com` is the obvious guess,
+ * the account really is a `Microsoft.CognitiveServices/accounts` resource, and a token minted
+ * for it is rejected 401 by this endpoint. The two are separate audiences.
+ */
+export const FOUNDRY_SCOPES = ['https://ai.azure.com/.default'];
+
+/**
  * Kusto data-plane scopes, most specific first.
  *
  * A Fabric Eventhouse accepts a token minted for its own cluster URI, but that is not

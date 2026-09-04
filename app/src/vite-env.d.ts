@@ -28,6 +28,15 @@ interface ImportMetaEnv {
   readonly VITE_ZAVA_WORKSPACE_ID?: string;
   readonly VITE_ZAVA_DATA_AGENT_ID?: string;
 
+  /**
+   * The Foundry supervisor, which is the only route to the contract corpus.
+   *
+   * Absent, every question that has to read a master agreement fails with a stated
+   * configuration error instead of being quietly sent to an agent that cannot answer it.
+   */
+  readonly VITE_FOUNDRY_ENDPOINT?: string;
+  readonly VITE_FOUNDRY_SUPERVISOR_AGENT?: string;
+
   /** Rayfin-hosted auth, used when the app runs outside a Fabric item. */
   readonly VITE_RAYFIN_API_URL?: string;
   readonly VITE_RAYFIN_PUBLISHABLE_KEY?: string;

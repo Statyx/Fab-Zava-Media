@@ -48,6 +48,8 @@ const ENV_KEYS = [
   'VITE_SEMANTIC_MODEL_ID',
   'VITE_ZAVA_WORKSPACE_ID',
   'VITE_ZAVA_DATA_AGENT_ID',
+  'VITE_FOUNDRY_ENDPOINT',
+  'VITE_FOUNDRY_SUPERVISOR_AGENT',
 ] as const;
 
 /** Audience and granted scopes — the difference between "a token came back" and "the right token came back". */

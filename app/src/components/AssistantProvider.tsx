@@ -5,9 +5,14 @@ import {
   dataAgentConfigured,
   DataAgentNotConfiguredError,
 } from '@/services/dataAgent';
+import {
+  askSupervisor,
+  supervisorConfigured,
+  SupervisorNotConfiguredError,
+} from '@/services/foundryAgent';
 import { AssistantContext, type AssistantApi, type Turn } from '@/domain/assistant';
 import { frozenAnswer, REPLAY_MS } from '@/services/frozen';
-import { followUps, starters, type Opener } from '@/domain/openers';
+import { deeper, followUps, starters, type Opener, type OpenerBackend } from '@/domain/openers';
 
 /**
  * Owns the conversation for the whole console.
@@ -18,6 +23,12 @@ import { followUps, starters, type Opener } from '@/domain/openers';
 export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [asked, setAsked] = useState<string[]>([]);
+  /**
+   * The opener the answer on screen came from, so the rail can offer questions that dig into
+   * *that* answer. Null after a typed question, which is correct: the console has no depth-2
+   * questions for a sentence it did not write.
+   */
+  const [lastOpener, setLastOpener] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   /** Id of the turn currently in flight, so the clock knows what to tick. */
@@ -41,9 +52,16 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [busy]);
 
   const run = useCallback(
-    async (question: string, prompt: string, exercises: string | null, openerId?: string) => {
+    async (
+      question: string,
+      prompt: string,
+      exercises: string | null,
+      backend: OpenerBackend,
+      openerId?: string
+    ) => {
       if (busy) return;
       setBusy(true);
+      setLastOpener(openerId ?? null);
       if (openerId) setAsked((a) => [...a, openerId]);
 
       const id = `turn-${++seq.current}`;
@@ -84,9 +102,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           replay: { capturedAt: recorded.capturedAt, liveSeconds: recorded.seconds },
           answer: {
             text: recorded.text,
-            citations: [],
+            citations: recorded.citations ?? [],
             toolsFired: recorded.toolsFired,
             durationMs: recorded.seconds * 1000,
+            generatedQuery: recorded.generatedQuery,
           },
         });
         runningId.current = null;
@@ -95,7 +114,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const answer = await askDataAgent(prompt, (s) => patch({ progress: s }));
+        const askAgent = backend === 'foundry' ? askSupervisor : askDataAgent;
+        const answer = await askAgent(prompt, (s) => patch({ progress: s }));
         patch({ status: 'done', answer, progress: '' });
       } catch (err) {
         patch({
@@ -104,9 +124,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           error:
             err instanceof DataAgentNotConfiguredError
               ? 'The Data Agent is not configured in this build. The question above is the one that would be sent to it.'
-              : err instanceof Error
-                ? err.message
-                : String(err),
+              : err instanceof SupervisorNotConfiguredError
+                ? 'The Foundry supervisor is not configured in this build, and this question needs the contracts. The question above is the one that would be sent to it.'
+                : err instanceof Error
+                  ? err.message
+                  : String(err),
         });
       } finally {
         runningId.current = null;
@@ -117,21 +139,29 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   );
 
   const ask = useCallback(
-    (opener: Opener) => void run(opener.label, opener.prompt, opener.exercises, opener.id),
+    (opener: Opener) =>
+      void run(opener.label, opener.prompt, opener.exercises, opener.backend, opener.id),
     [run]
   );
 
   /**
-   * Free text goes through unchanged.
+   * Free text goes through unchanged, and goes to the supervisor.
    *
-   * Dressing a typed question up with schema hints would make the app look
+   * Unchanged, because dressing a typed question up with schema hints would make the app look
    * cleverer than it is and would silently change what the user asked.
+   *
+   * To the supervisor, because we cannot know what a typed question is about. The supervisor
+   * holds the Fabric data agent as one of its tools, so it reaches everything the direct path
+   * reaches *plus* the contracts — it is a superset, and the only route that cannot be wrong
+   * about scope. It costs roughly forty seconds more on a question that turns out to be pure
+   * data, which is the right trade for the alternative: a typed contract question answered by
+   * an agent that then explains, on screen, that it cannot see contracts.
    */
   const askText = useCallback(
     (text: string) => {
       const trimmed = text.trim();
       if (!trimmed) return;
-      void run(trimmed, trimmed, null);
+      void run(trimmed, trimmed, null, 'foundry');
     },
     [run]
   );
@@ -140,12 +170,15 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     () => ({
       turns,
       busy,
+      deeper: turns.length === 0 ? [] : deeper(lastOpener, asked),
       suggestions: turns.length === 0 ? starters() : followUps(asked),
-      configured: dataAgentConfigured(),
+      // Both consoles are needed: nine of the eighteen questions cannot be answered without
+      // the contracts, including the first card on the entry screen.
+      configured: dataAgentConfigured() && supervisorConfigured(),
       ask,
       askText,
     }),
-    [turns, busy, asked, ask, askText]
+    [turns, busy, asked, lastOpener, ask, askText]
   );
 
   return <AssistantContext.Provider value={value}>{children}</AssistantContext.Provider>;

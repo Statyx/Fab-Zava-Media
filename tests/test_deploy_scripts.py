@@ -585,14 +585,52 @@ def test_data_agent_is_published_not_just_drafted():
     Foundry tool. It looks deployed and is unusable."""
     import fabric.data_agent.deploy_data_agent as dda
     parts = dda.build_parts("ws", "Zava_Media_Analyst", "ont", "ONT_Zava_Media",
-                            "sm", "SM_Zava_Media")
+                            "sm", "SM_Zava_Media", "kql", "RT_Zava_Media")
     paths = [p["path"] for p in parts]
-    assert len(paths) == 12, f"expected 12 definition parts, got {len(paths)}"
+    assert len(paths) == 16, f"expected 16 definition parts, got {len(paths)}"
     draft = {p.split("/draft/", 1)[1] for p in paths if "/draft/" in p}
     published = {p.split("/published/", 1)[1] for p in paths if "/published/" in p}
     assert draft and draft == published, \
         f"draft/ and published/ trees differ: {draft ^ published}"
     assert "Files/Config/publish_info.json" in paths
+
+
+def test_data_agent_carries_the_eventhouse_source():
+    """Without it, every real-time question comes back as a refusal -- and not a loud one:
+    the agent says "There's content here I can't work with", the run holds no tool step,
+    and nothing in the deployment output says a source is missing."""
+    import base64, json as _json
+    import fabric.data_agent.deploy_data_agent as dda
+    parts = dda.build_parts("ws", "Zava_Media_Analyst", "ont", "ONT_Zava_Media",
+                            "sm", "SM_Zava_Media", "kql", "RT_Zava_Media")
+    by_path = {p["path"]: p for p in parts}
+    ds_path = "Files/Config/published/kusto-RT_Zava_Media/datasource.json"
+    assert ds_path in by_path, f"no Eventhouse datasource among {sorted(by_path)}"
+    ds = _json.loads(base64.b64decode(by_path[ds_path]["payload"]))
+    # "kusto" is the value the schema enumerates AND the value the service echoes back on
+    # getDefinition. Anything else deploys quietly and answers nothing.
+    assert ds["type"] == "kusto", f"datasource type is {ds['type']!r}, not 'kusto'"
+    tables = [e["display_name"] for e in ds["elements"]]
+    assert tables == ["pacing_events"], f"exposed tables are {tables}"
+
+    instructions = ds["dataSourceInstructions"]
+    # The stream carries codes only while every opener forbids showing an identifier. Left to
+    # itself the agent reaches for dim_campaign inside the KQL -- a semantic error, and the
+    # answer is lost. Two separate queries is the only shape that works.
+    assert "dim_campaign" in instructions and "DO NOT EXIST" in instructions
+    # nl2code answers a three-part question with a nested self-join and invalid KQL.
+    assert "Never join" in instructions
+
+
+def test_kql_fewshots_stay_single_summarize():
+    """The few-shots are what nl2code imitates. One that joined would teach the shape that
+    breaks: the generated query fails to parse and the whole answer is a refusal."""
+    import fabric.data_agent.deploy_data_agent as dda
+    assert dda.KQL_FEWSHOT_PAIRS, "no KQL few-shots to steer the generated query"
+    for question, kql in dda.KQL_FEWSHOT_PAIRS:
+        assert "pacing_events" in kql, f"few-shot '{question}' does not read the stream"
+        assert "join" not in kql.lower(), f"few-shot '{question}' teaches a join"
+        assert kql.count("summarize") <= 1, f"few-shot '{question}' chains summarize"
 
 
 def test_data_agent_refuses_contract_questions():
@@ -612,3 +650,15 @@ def test_kql_columns_match_the_csv_in_order():
     cfg = yaml.safe_load((ROOT / "config.example.yaml").read_text(encoding="utf-8"))
     declared = [c["name"] for c in cfg["kql_tables"]["pacing_events"]["columns"]]
     assert declared == _csv_header("pacing_events")
+
+
+def test_data_agent_sees_the_columns_the_table_actually_has():
+    """The agent generates KQL from these element names alone. One name that drifts from the
+    table produces a query that parses and then fails at execution -- and the agent reports
+    that as "I have no trustworthy view", not as a deployment fault."""
+    import fabric.data_agent.deploy_data_agent as dda
+    cfg = yaml.safe_load((ROOT / "config.example.yaml").read_text(encoding="utf-8"))
+    declared = [c["name"] for c in cfg["kql_tables"]["pacing_events"]["columns"]]
+    table = dda.build_kusto_elements()[0]
+    exposed = [c["display_name"] for c in table["children"]]
+    assert exposed == declared, f"agent sees {exposed}, table has {declared}"

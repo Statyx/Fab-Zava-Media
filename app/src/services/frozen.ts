@@ -37,9 +37,24 @@ export interface FrozenAnswer {
   text: string;
   /** Sources that really fired during the capture. Never edited, never padded. */
   toolsFired: string[];
+  /**
+   * Grounding Fabric exposed during the capture, and the query it generated.
+   *
+   * Recorded and replayed for the same reason the prose is: a replay that dropped them would
+   * render as an answer with no provenance next to a live one that has it, and the room would
+   * read the *recording* as the unsourced case. Empty stays empty — nothing is padded to make
+   * the replay look better than the run it stands in for.
+   */
+  citations: FrozenCitation[];
+  generatedQuery?: string;
   /** Seconds the LIVE agent took when this was recorded — never the replay delay. */
   seconds: number;
   capturedAt: string;
+}
+
+export interface FrozenCitation {
+  label: string;
+  detail?: string;
 }
 
 /**

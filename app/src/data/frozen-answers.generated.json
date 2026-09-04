@@ -1,5 +1,270 @@
 {
-  "_comment": "Written by scripts/capture_frozen_answers.py, never by hand. Empty until the Zava chain has been measured: a miss is fail-safe and sends the question to the live agent, so shipping this empty costs latency and never correctness.",
-  "capturedAt": null,
-  "answers": {}
+  "_comment": "Written by fabric/data_agent/capture_frozen_answers.py, never by hand. A missing recording is fail-safe: the question goes to the live agent, costing latency and never correctness.",
+  "capturedAt": "2026-09-04T13:23:22Z",
+  "answers": {
+    "Which advertiser x market pairs are off plan for the 2026-Q3 quarter? Use [Planned Impressions], [Delivered Impressions] and [Delivery vs Plan %] by dim_advertiser[advertiser_name] and dim_market[market_name], filtered on dim_campaign[quarter] = \"2026-Q3\". For each variance found, go and read in the master agreements what the delivery clause provides for, and say whether the client is entitled to anything or not. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "variance-remedy",
+      "depth": 1,
+      "backend": "foundry",
+      "text": "For 2026-Q3, Contoso Mobility in Spain overshot plan by 12%, triggering a 50% make-good credit on excess media value. Fabrikam Beauty in Italy under-delivered by 8%, incurring a 2% net media budget penalty. Adventure Works Travel's variances stayed below 5%, so no compensation applies. Northwind Foods' quarterly fluctuations do not yield credits or penalties, as delivery is assessed annually. Litware Retail's contract disallows compensation or penalties regardless of variance.\n\nKey figures: Contoso Mobility Spain 286M planned, 321M delivered (12% over), Fabrikam Beauty Italy 140M planned, 129M delivered (-8%).\n\n### SOURCE\nMeasures: Planned Impressions, Delivered Impressions, Delivery vs Plan %  \nFilters: dim_campaign[quarter] = \\\"2026-Q3\\\"  \nContracts: ZM-ADV-001-2026, ZM-ADV-002-2026, ZM-ADV-003-2026, ZM-ADV-004-2026, ZM-ADV-005-2026  \nAdvertisers: Contoso Mobility, Fabrikam Beauty, Adventure Works Travel, Northwind Foods, Litware Retail  \nMarkets: Spain, Italy",
+      "toolsFired": [
+        "DataAgent_Zava_Media_Analyst",
+        "zava-media-contracts-a2a"
+      ],
+      "citations": [],
+      "seconds": 81.1,
+      "capturedAt": "2026-09-04T09:44:55Z"
+    },
+    "What is the gap between what was spent and what was billed? Use [Net Spend (EUR)], [Net Billed (EUR)] and [Billing vs Spend Gap (EUR)] by dim_advertiser[advertiser_name] and dim_market[market_name]. State how many distinct campaigns are affected and how many fact_billing rows are missing, saying explicitly that those two counts are not at the same grain. Then go and read, in the affected advertiser's contract, the deadline beyond which an omitted invoice can no longer be claimed, and the date that deadline expires. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "unbilled-window",
+      "depth": 1,
+      "backend": "foundry",
+      "text": "The billing gap shows spend exceeding billed amounts, notably in Litware Retail UK with a €731,282 gap. Across all advertisers and markets, there are several campaigns affected, for example, 4 for Adventure Works Travel UK, but zero missing billing invoice rows at invoice grain. Contract terms set claim deadlines post-broadcast invoice: Contoso Mobility, Northwind Foods, Fabrikam Beauty, Adventure Works Travel have a 90-day limit; Litware Retail allows 120 days for claiming omitted invoices after the broadcast month end.\n\n### SOURCE\n[Net Spend (EUR)], [Net Billed (EUR)], [Billing vs Spend Gap (EUR)], distinct campaigns count by dim_advertiser[advertiser_name], dim_market[market_name];  \nContracts Article 9.2 invoicing deadlines for affected advertisers (ADV-001, ADV-002, ADV-003, ADV-004, ADV-005).",
+      "toolsFired": [
+        "DataAgent_Zava_Media_Analyst",
+        "zava-media-contracts-a2a"
+      ],
+      "citations": [],
+      "seconds": 84.1,
+      "capturedAt": "2026-09-04T09:58:25Z"
+    },
+    "Across the five indexed master agreements, what does each one provide for in case of a delivery variance? Distinguish the regimes: compensation due without the client asking, compensation expressly excluded, and penalty borne by the agency. Cite the article for each one. Use no delivery figure: this question is about the text alone. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "contract-regimes",
+      "depth": 1,
+      "backend": "foundry",
+      "text": "The five master agreements differ in delivery variance regimes: Advertiser A in the UK with Media Owner X offers automatic compensation beyond 3% under-delivery (Article 6.3), plus a 50% credit for over-delivery beyond 10% (Article 6.2), both without client request. Advertiser B in France with Media Owner Y excludes compensation for up to 5% under-delivery and penalties only apply beyond that (Articles 5.1, 6.1, 6.4). Advertiser C in Germany with Media Owner Z imposes agency penalties beyond 5% shortfall (Article 6.2), plus compensation past 10% (Articles 6.3-6.4). Others exclude compensation or penalty regardless of variance (Article 6.1).\n\n### SOURCE\nZM-ADV-001-2026 Articles 6.2, 6.3, 6.4\nZM-ADV-005-2026 Articles 5.1, 6.1, 6.4\nZM-ADV-002-2026 Articles 6.2, 6.3, 6.4\nZM-ADV-004-2026 Article 6.1",
+      "toolsFired": [
+        "zava-media-contracts-a2a"
+      ],
+      "citations": [],
+      "seconds": 30.8,
+      "capturedAt": "2026-09-04T09:47:20Z"
+    },
+    "Compare 2026-Q2 and 2026-Q3 for the same advertiser x market pairs. Use [Planned Impressions], [Delivered Impressions] and [Delivery vs Plan %] by dim_advertiser[advertiser_name], dim_market[market_name] and dim_campaign[quarter], and say which variances are new this quarter and which were already there. Then go and read, in each of those advertisers' master agreements, over what period the delivery variance is actually assessed — per quarter, per campaign or over the year — and say for which advertisers the quarterly figure on screen is not yet a contractual event. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "variance-precedent",
+      "depth": 2,
+      "backend": "foundry",
+      "text": "Quarterly delivery variances flipped sign in several advertiser-market pairs this Q3; none are newly introduced pairs. Notably, Adventure Works Travel France shifted from 0.7% over-delivery to 1.7% under; Contoso Mobility Germany moved from 1.3% under to 0.6% over; Fabrikam Beauty Spain changed from 0.3% over to 1.1% under. Contracts for most advertisers mandate delivery variance assessment by quarter, making these figures contractually relevant. Northwind Foods alone assesses variance annually, so their Q3 over-delivery of 0.3% in Spain is not yet a contractual event.\n\n### SOURCE  \nPlanned Impressions, Delivered Impressions, Delivery vs Plan % by advertiser_name, market_name, quarter  \nContract clauses 6.1 and 6.2 in ADV-003; quarterly variance assessment in ADV-001, ADV-002, ADV-004, ADV-005",
+      "toolsFired": [
+        "DataAgent_Zava_Media_Analyst",
+        "zava-media-contracts-a2a"
+      ],
+      "citations": [],
+      "seconds": 116.4,
+      "capturedAt": "2026-09-04T09:49:16Z"
+    },
+    "For the advertisers carrying the billing gap, give [Gross Billed (EUR)], [Rebate Amount (EUR)], [Rebate % of Gross] and [Net Net Billed (EUR)] by dim_advertiser[advertiser_name]. Then go and read, in each of those advertisers' master agreements, the volume rebate the agreement actually provides for — the rate and the threshold that triggers it. Say for which advertisers the applied rate and the contractual rate disagree, and in whose favour. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "unbilled-rebate",
+      "depth": 2,
+      "backend": "foundry",
+      "text": "Adventure Works Travel, Contoso Mobility, Fabrikam Beauty, and Northwind Foods have contracts ensuring 100% rebate pass-through without specific rate or threshold, consistent with a 2.5% rebate applied on gross billed. Their combined net net billed is about €59.7M. Litware Retail has a 50/50 rebate sharing clause, but the full 2.5% rebate was applied, benefiting Litware by roughly €280K on €9.6M net billed. This is the only discrepancy between applied and contractual rebate terms.\n\n### SOURCE  \nGross Billed, Rebate Amount, Rebate % of Gross, Net Net Billed by advertiser with billing gaps  \nContracts: ZM-ADV-001-2026 to ZM-ADV-005-2026 on volume rebates and pass-through",
+      "toolsFired": [
+        "DataAgent_Zava_Media_Analyst",
+        "zava-media-contracts-a2a"
+      ],
+      "citations": [],
+      "seconds": 122.2,
+      "capturedAt": "2026-09-04T09:51:18Z"
+    },
+    "Across the five indexed master agreements, what notice periods and claim windows does each one set for a delivery variance or an omitted invoice? Give the article and the duration for each, and say which agreement is the most restrictive. Use no figure from the delivery or billing data: this question is about the text alone. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "contract-deadlines",
+      "depth": 2,
+      "backend": "foundry",
+      "text": "Among the five indexed master agreements, the most restrictive claim window for delivery variance or invoiced omissions is 90 days post the broadcast month, set by Microsoft US with Zava (Article 9.2). Google UK with Annexe allows up to 120 days, while Amazon Germany and Meta France set 90 days. TikTok Australia lacks explicit terms in the corpus. None specify a 15-day notice period. Microsoft US with Zava thus enforces the shortest invoicing claim period, emphasizing timely claims after delivery.\n\n### SOURCE\nZM-ADV-001-2026 Article 9.2  \nZM-ADV-004-2026 Article 9.2  \nZM-ADV-003-2026 Article 9.2  \nZM-ADV-002-2026 Article 9.2",
+      "toolsFired": [
+        "zava-media-contracts-a2a"
+      ],
+      "citations": [],
+      "seconds": 37.6,
+      "capturedAt": "2026-09-04T09:54:51Z"
+    },
+    "For Contoso Mobility, follow Advertiser -[AdvertiserHasBrand]-> Brand -[BrandHasCampaign]-> Campaign -[CampaignInMarket]-> Market, and name each brand, its campaigns and the markets they run in. Then go and read, in that advertiser's master agreement, which brands and which markets the agreement actually covers. Say whether every brand that ran is named in the scope, and flag any brand or market that ran without being covered. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "graph-brand-path",
+      "depth": 2,
+      "backend": "foundry",
+      "text": "Contoso Mobility ran campaigns with the brands Contoso EV and Contoso Fleet across Germany, Spain, France, Italy, and the UK, all of which are explicitly covered in the master agreement. Delivery closely matched plan with Contoso EV Germany delivering 119.6M of 120.9M planned impressions (99%), Contoso Fleet Spain delivering 185.2M of 181.8M planned (102%), and Contoso Fleet Italy delivering 16.9M of 16.8M planned (101%). No brands or markets ran beyond covered scope, confirming full contract compliance.\n\n### SOURCE  \nClause: Master Agreement Article 3 — Scope, ZM-ADV-001-2026  \nBrands: Contoso EV, Contoso Fleet  \nMarkets: Germany, Spain, France, Italy, United Kingdom  \nData: Planned and delivered impressions for Contoso Mobility campaigns  \nMetrics: Planned Impressions, Delivered Impressions, Delivery %  \nFilter: Advertiser = Contoso Mobility",
+      "toolsFired": [
+        "zava-media-contracts-a2a",
+        "DataAgent_Zava_Media_Analyst"
+      ],
+      "citations": [],
+      "seconds": 91.6,
+      "capturedAt": "2026-09-04T10:00:04Z"
+    },
+    "Take the delivery variances observed in the 2026-Q3 quarter — use [Delivery vs Plan %] and [Impression Gap] by dim_advertiser[advertiser_name] and dim_market[market_name], filtered on dim_campaign[quarter] = \"2026-Q3\" — and for each one go and read the clause of that advertiser's master agreement. Say which clauses are actually triggered by the figures and which are not, and name the ones where the agency owes rather than the client. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "contract-triggered",
+      "depth": 2,
+      "backend": "foundry",
+      "text": "In 2026-Q3, only three advertisers triggered clauses in their master agreements based on delivery variances:\n\nContoso Mobility in Spain over-delivered by 12.0% (planned 286M, delivered 321M), triggering a compensation credit to the client.\n\nFabrikam Beauty in Italy under-delivered by 8.0% (planned 140M, delivered 129M), triggering a penalty owed by the agency.\n\nAdventure Works Travel’s small under-deliveries (below 5%) and Northwind Foods’ quarterly variances do not trigger penalties or credits.\n\nLitware Retail’s UK +11.0% over-delivery does not generate compensation per contract terms.\n\nAgency owes client Fabrikam Italy penalties; client benefits from Contoso Spain make-good.\n\n### SOURCE\nmeasures: [Delivery vs Plan %], [Impression Gap], [Planned Impressions], [Delivered Impressions]\nfilters: dim_campaign[quarter] = \"2026-Q3\"\ndimensions: dim_advertiser[advertiser_name], dim_market[market_name]\nclauses: ZM-ADV-001-2026, ZM-ADV-002-2026, ZM-ADV-003-2026, ZM-ADV-004-2026, ZM-ADV-005-2026",
+      "toolsFired": [
+        "DataAgent_Zava_Media_Analyst",
+        "zava-media-contracts-a2a"
+      ],
+      "citations": [],
+      "seconds": 131.2,
+      "capturedAt": "2026-09-04T11:50:16Z"
+    },
+    "Give the state of the portfolio over the period: [Total Campaigns], [Active Campaigns], [Planned Budget (EUR)], [Net Spend (EUR)], [Budget Consumption %], then [Over-delivered Campaigns] and [Under-delivered Campaigns]. Say where the risk is concentrated. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "portfolio-state",
+      "depth": 1,
+      "backend": "fabric",
+      "text": "Across the portfolio, we are exactly on our investment plan; the only real risk is concentrated in a very small number of under‑delivering campaigns, not at advertiser or market level. The focus is to work those specific cases through with the relevant media owners, not to reopen budgets.\n\nWe have 80 campaigns in total, with 40 still live. We planned €61.5 M and have spent €61.5 M, i.e. 100.0% budget consumption overall, with 4 campaigns over‑delivering and 2 under‑delivering on impressions.\n\n### SOURCE\nSM_Zava_Media  \nScope: total portfolio, no advertiser/market breakdown  \n[Total Campaigns], [Active Campaigns]  \n[Planned Budget (EUR)], [Net Spend (EUR)], [Budget Consumption %]  \n[Over-delivered Campaigns], [Under-delivered Campaigns]",
+      "toolsFired": [
+        "generate.filename",
+        "analyze.database.execute",
+        "trace.analyze_semantic_model",
+        "analyze.database.nl2code"
+      ],
+      "citations": [],
+      "seconds": 66.5,
+      "capturedAt": "2026-09-04T12:05:27Z"
+    },
+    "Which media owners sold the Contoso Mobility campaigns in Spain? Follow the graph: Advertiser -[AdvertiserHasBrand]-> Brand -[BrandHasCampaign]-> Campaign, then Campaign -[CampaignInMarket]-> Market to keep only MKT-ES, and finally Campaign -[CampaignBooksMediaOwner]-> MediaOwner. Name each media owner and its type. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "graph-owners",
+      "depth": 1,
+      "backend": "fabric",
+      "text": "For Contoso in Spain, investment is well spread across a balanced set of partners rather than concentrated on a single seller, which limits execution risk and gives leverage in any discussions on performance or pricing with publishers.\n\nThe Contoso Mobility campaigns in Spain are booked with Meridian TV (broadcaster), Alpine Digital (ad platform), Vertex Outdoor (OOH operator), Kestrel Retail Media (retail network) and Solstice Audio (radio network).\n\n### SOURCE\nONT_Zava_Media  \nAdvertiser -[AdvertiserHasBrand]-> Brand  \nBrand -[BrandHasCampaign]-> Campaign  \nCampaign -[CampaignInMarket]-> Market (MKT-ES only)  \nCampaign -[CampaignBooksMediaOwner]-> MediaOwner  \nFields: advertiser_id, brand_id, campaign_id, market_id, media_owner_id, media_owner_name, owner_type",
+      "toolsFired": [
+        "generate.filename",
+        "analyze.database.execute",
+        "trace.analyze_ontology",
+        "analyze.database.nl2code",
+        "analyze.database.fewshots.loading",
+        "analyze.database.fewshots.matching"
+      ],
+      "citations": [],
+      "seconds": 81.2,
+      "capturedAt": "2026-09-04T12:06:48Z"
+    },
+    "For the Contoso Mobility campaigns in Spain over 2026-Q3, break the delivery down by dim_channel[channel_name] and dim_media_owner[media_owner_name]. Give [Planned Impressions], [Delivered Impressions] and [Delivery vs Plan %] for each, and say which channel and which media owner carry most of the [Impression Gap]. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "variance-breakdown",
+      "depth": 2,
+      "backend": "fabric",
+      "text": "On Contoso in Spain over 2026‑Q3, over‑delivery is clearly a good problem to have and it is highly concentrated: one digital partner and one format are doing most of the work, so that’s where we should focus optimisation and any make‑good discussions with publishers.\n\nSearch with Alpine Digital is the main driver: 134.1 M planned vs 150.1 M delivered (+12.0%), a gap of 16.1 M impressions. DOOH with Vertex Outdoor adds another 9.2 M gap on 76.6 M planned vs 85.8 M delivered (+12.0%).\n\n### SOURCE\nSM_Zava_Media  \nFilters: dim_advertiser[advertiser_name] = \"Contoso Mobility\", dim_market[market_name] = \"Spain\", dim_campaign[quarter] = \"2026-Q3\"  \nGroup: dim_channel[channel_name], dim_media_owner[media_owner_name]  \nMeasures: [Planned Impressions], [Delivered Impressions], [Delivery vs Plan %], [Impression Gap]  \nEVALUATE SUMMARIZECOLUMNS(...)",
+      "toolsFired": [
+        "generate.filename",
+        "analyze.database.execute",
+        "trace.analyze_semantic_model",
+        "analyze.database.nl2code"
+      ],
+      "citations": [],
+      "seconds": 63.1,
+      "capturedAt": "2026-09-04T12:08:20Z"
+    },
+    "Give [Total Invoices] and [Net Billed (EUR)] by dim_advertiser[advertiser_name], split on fact_billing[invoice_status], and say how much is still outstanding and how old the oldest unsettled invoice is, using fact_billing[invoice_date]. Then go and read, in those advertisers' master agreements, the payment term: how many days after the invoice date the client has to settle. Say whose outstanding invoices are now past that window and whose are still inside it. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "portfolio-unpaid",
+      "depth": 2,
+      "backend": "foundry",
+      "text": "All five advertisers have significant outstanding invoices, with oldest unsettled invoices ranging from 81 to 112 days. According to their contracts, Adventure Works Travel and Fabrikam Beauty must pay within 30 days end of month, Contoso Mobility and Northwind Foods have 45 days, and Litware Retail has 60 days. As a result, invoices from Adventure Works Travel, Contoso Mobility, Fabrikam Beauty, and Litware Retail are past due, while Northwind Foods' outstanding invoices, oldest at 81 days, remain inside its payment window.\n\nOutstanding amounts reach up to €3.8M for Adventure Works and €3.3M for Contoso Mobility.\n\n### SOURCE\nMeasures: Total Invoices, Net Billed (EUR), invoice_status, invoice_date, outstanding age\nContracts: Payment terms Article 9 clauses for all five advertisers",
+      "toolsFired": [
+        "DataAgent_Zava_Media_Analyst",
+        "zava-media-contracts-a2a"
+      ],
+      "citations": [],
+      "seconds": 74.1,
+      "capturedAt": "2026-09-04T12:14:30Z"
+    },
+    "Which media owners are booked by more than one advertiser? Follow the graph: MediaOwner <-[CampaignBooksMediaOwner]- Campaign <-[BrandHasCampaign]- Brand <-[AdvertiserHasBrand]- Advertiser. Name the media owners reached by several distinct advertisers and say what that concentration exposes if one of them under-delivers. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "graph-shared-owners",
+      "depth": 2,
+      "backend": "fabric",
+      "text": "The supply side is highly concentrated: the same six key partners sit across all major advertisers, so if any one of them under‑delivers we have a multi‑client risk rather than an isolated issue. That means we need proactive governance and escalation paths publisher‑by‑publisher, not just campaign‑by‑campaign troubleshooting.\n\nMeridian TV, Alpine Digital, Vertex Outdoor, Kestrel Retail Media, Solstice Audio and Halcyon Social are each booked by five different advertisers.\n\n### SOURCE\nONT_Zava_Media  \nPath: MediaOwner <-[CampaignBooksMediaOwner]- Campaign <-[BrandHasCampaign]- Brand <-[AdvertiserHasBrand]- Advertiser  \nAggregation: distinct advertisers per media_owner_id  \nFields: media_owner_id, media_owner_name, advertiser_count",
+      "toolsFired": [
+        "generate.filename",
+        "analyze.database.execute",
+        "analyze.database.fewshots.matching",
+        "trace.analyze_ontology",
+        "analyze.database.nl2code",
+        "analyze.database.fewshots.loading"
+      ],
+      "citations": [],
+      "seconds": 78.0,
+      "capturedAt": "2026-09-04T12:15:48Z"
+    },
+    "Break the billing gap down by dim_media_owner[media_owner_name] and by month. Use [Net Spend (EUR)], [Net Billed (EUR)] and [Billing vs Spend Gap (EUR)]. Say which media owners and which months concentrate the gap, and whether it is one large omission or many small ones. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "unbilled-owners",
+      "depth": 2,
+      "backend": "fabric",
+      "text": "The billing gap is concentrated with a small set of digital and audio partners in late Q3, and in almost every case it’s one missing or late invoice per owner‑month, not a cloud of tiny errors. This is a publisher‑billing follow‑up, not a systemic overspend issue.\n\nWorst case is Halcyon Social in September: about €2.76 M spent vs €2.54 M billed (≈‑€0.30 M gap), coming from a single invoice. Similar, but smaller, one‑off gaps appear with Kestrel Retail Media, Alpine Digital and Solstice Audio in September.\n\n### SOURCE\nSM_Zava_Media  \nGroup: dim_media_owner[media_owner_name], dim_date[month]  \nMeasures: [Net Spend (EUR)], [Net Billed (EUR)], [Billing vs Spend Gap (EUR)]  \nDerived: Invoice Count, Largest Negative Invoice Gap, Gap Concentration flags  \nEVALUATE SUMMARIZECOLUMNS(...)",
+      "toolsFired": [
+        "generate.filename",
+        "analyze.database.execute",
+        "trace.analyze_semantic_model",
+        "analyze.database.nl2code",
+        "analyze.database.fewshots.loading"
+      ],
+      "citations": [],
+      "seconds": 251.2,
+      "capturedAt": "2026-09-04T12:54:03Z"
+    },
+    "Which advertisers and which markets concentrate the spend? Use [Planned Budget (EUR)], [Net Spend (EUR)] and [Budget Consumption %] by dim_advertiser[advertiser_name] and dim_market[market_name]. Say how much of the portfolio the top advertisers represent, and whether the risk found earlier sits inside that concentration or outside it. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "portfolio-concentration",
+      "depth": 2,
+      "backend": "fabric",
+      "text": "Spend is highly concentrated in a handful of big advertiser–market pairs, and the delivery and billing risks we saw earlier largely sit inside that core, not on the long tail. That means any issue with, say, UK retail or German food has portfolio‑level impact, so we manage those relationships very actively.\n\nRoughly, Adventure Works in the UK, Northwind in Germany, Litware in the UK and Contoso in Spain together represent a bit over a third of total net spend, all running around 99–101% budget consumption.\n\n### SOURCE\nSM_Zava_Media  \nGroup: dim_advertiser[advertiser_name], dim_market[market_name]  \nMeasures: [Planned Budget (EUR)], [Net Spend (EUR)], [Budget Consumption %]  \nDerived: Net Spend Share % (portfolio share by pair)  \nEVALUATE SUMMARIZECOLUMNS(...)",
+      "toolsFired": [
+        "generate.filename",
+        "analyze.database.execute",
+        "trace.analyze_semantic_model",
+        "analyze.database.nl2code",
+        "analyze.database.fewshots.loading"
+      ],
+      "citations": [],
+      "seconds": 86.8,
+      "capturedAt": "2026-09-04T12:55:29Z"
+    },
+    "Compare the two sources for the same campaigns. From the Eventhouse, sum impressions_delta from pacing_events. From the semantic model, give [Delivered Impressions] and [Delivery vs Plan %]. Say whether the live stream and the batch figures point the same way, and be explicit that they do not cover the same period — the stream is a short live window and the model is the whole campaign. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "pacing-vs-batch",
+      "depth": 2,
+      "backend": "fabric",
+      "text": "The live stream and the batch view are broadly pointing the same way: campaigns that are ahead of plan on the full‑campaign numbers are also pushing volume through the live window, and under‑ or near‑plan campaigns show more modest live volumes. But they do not cover the same period and must not be compared as if they did.\n\nExample: the Contoso EV Spain campaign shows 199.9 M planned vs 223.9 M delivered (+12.0%) in the batch model, while the stream only captures 16.2 M impressions over 27 Aug–3 Sep, i.e. a short slice of that delivery.\n\n### SOURCE\nRT_Zava_Media (Eventhouse)  \nTable: pacing_events, grouped by campaign_id  \nField: sum(impressions_delta), min/max(timestamp) for CMP‑0041…CMP‑0080  \nSM_Zava_Media (Semantic Model)  \nGroup: dim_campaign[campaign_id] for CMP‑0041…CMP‑0080  \nMeasures: [Planned Impressions], [Delivered Impressions], [Delivery vs Plan %]",
+      "toolsFired": [
+        "generate.filename",
+        "analyze.database.execute",
+        "trace.analyze_semantic_model",
+        "analyze.database.nl2code",
+        "trace.analyze_kusto_database",
+        "analyze.database.fewshots.matching",
+        "analyze.database.fewshots.loading"
+      ],
+      "citations": [],
+      "seconds": 80.6,
+      "capturedAt": "2026-09-04T12:57:44Z"
+    },
+    "What is the pacing stream reporting? From the pacing_events table in the Eventhouse, give per campaign_id the average pacing_index, the total impressions_delta and spend_delta, and the earliest and latest timestamp, keeping only campaigns whose average pacing_index is above 1. Keep it to one summarize, no join. Then say which campaigns are over-consuming and how many days the window covers. Resolve the campaign codes to names with a separate semantic model query, never inside the KQL. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "pacing-live",
+      "depth": 1,
+      "backend": "fabric",
+      "text": "Live, the stream shows a small group of campaigns running slightly hot, all within a controlled band and consistent with the batch view: good momentum, not a runaway spend issue. The window we see is about a week, so this is a short‑term pulse, not the whole story.\n\nExamples: Contoso EV Spain is at 199.9 M planned vs 223.9 M delivered (+12.0%); Contoso Fleet Spain, 86.5 M vs 96.9 M (+12.0%); Litware Fashion UK, 165.6 M vs 183.8 M (+11.0%). These are the main over‑consuming campaigns in the live stream.\n\n### SOURCE\nRT_Zava_Media (Eventhouse)  \nTable: pacing_events, summarize by campaign_id → avg(pacing_index), sum(impressions_delta), sum(spend_delta), min/max(timestamp); filter avg_pacing_index > 1  \nSM_Zava_Media (Semantic Model)  \nGroup: dim_campaign[campaign_id] for those campaigns  \nMeasures: [Planned Impressions], [Delivered Impressions], [Delivery vs Plan %]",
+      "toolsFired": [
+        "generate.filename",
+        "analyze.database.execute",
+        "trace.analyze_semantic_model",
+        "analyze.database.nl2code",
+        "trace.analyze_kusto_database",
+        "analyze.database.fewshots.matching",
+        "analyze.database.fewshots.loading"
+      ],
+      "citations": [],
+      "seconds": 68.5,
+      "capturedAt": "2026-09-04T13:14:46Z"
+    },
+    "From the pacing_events table in the Eventhouse, run two separate simple queries and do not combine them in KQL. First: the average pacing_index by campaign_id and by hourly bin of timestamp, ordered by campaign then time. Second: keep only rows where pacing_index is above 1, then per campaign_id give the earliest timestamp, the latest timestamp and the highest pacing_index. Read the trend off those two result sets yourself: say where the window starts and ends, when each campaign first went above 1, and whether it is still climbing or has settled. Resolve the campaign codes to names with a separate semantic model query, never inside the KQL. Answer the way an account director prepares a client review, in 90 words at most: the conclusion first, then only the two or three figures that carry it. Always give planned and delivered alongside a percentage. Do not list rows. In the prose, name advertisers, markets and media owners the way they are said out loud, with no identifier, table name or measure name. Finish with a single `### SOURCE` block of six lines at most, carrying the identifiers, tables and measures used.": {
+      "id": "pacing-window",
+      "depth": 2,
+      "backend": "fabric",
+      "text": "Live, the stream shows a handful of campaigns running comfortably above 1 on pacing for the whole week‑long window, but with fairly flat hourly profiles: over‑consuming in a controlled way rather than accelerating. It’s a signal to watch, not an alarm.\n\nThe window we see runs roughly from 27 August to 3 September (UTC). For example, the Contoso EV Spain campaign sits around 1.10–1.20 most hours over that week and, at campaign level, is 199.9 M planned vs 223.9 M delivered (+12.0%), fully consistent with that live pattern.\n\n### SOURCE\nRT_Zava_Media (Eventhouse)  \nTable: pacing_events  \nKQL #1: summarize avg(pacing_index) by campaign_id, bin(timestamp, 1h) ordered by campaign_id, hour_bucket  \nKQL #2: where pacing_index > 1 summarize min(timestamp), max(timestamp), max(pacing_index) by campaign_id  \nSM_Zava_Media (Semantic Model)  \nGroup: dim_campaign[campaign_id] for over‑consuming campaigns; measures [Planned Impressions], [Delivered Impressions], [Delivery vs Plan %]",
+      "toolsFired": [
+        "generate.filename",
+        "analyze.database.execute",
+        "trace.analyze_kusto_database",
+        "analyze.database.nl2code",
+        "analyze.database.fewshots.matching",
+        "analyze.database.fewshots.loading"
+      ],
+      "citations": [],
+      "seconds": 47.0,
+      "capturedAt": "2026-09-04T13:23:22Z"
+    }
+  }
 }

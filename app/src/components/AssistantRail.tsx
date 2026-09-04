@@ -42,12 +42,13 @@ import { badgeForFamily } from '@/domain/nav';
  */
 
 /**
- * Fabric's own vocabulary, translated for the operations floor.
+ * Machine vocabulary, translated for the operations floor.
  *
- * The names on the left are what the run steps return. The names on the right are what the
- * room needs: which body of data was consulted. Anything unrecognised passes through
- * unchanged — an unfamiliar true name is far better than a friendly wrong one, and a silent
- * fallback to "data" would erase exactly the evidence this badge exists to show.
+ * The names on the left are what a run reports — Fabric's own step names, and the subordinate
+ * names the Foundry supervisor uses. The names on the right are what the room needs: which
+ * body of data was consulted. Anything unrecognised passes through unchanged — an unfamiliar
+ * true name is far better than a friendly wrong one, and a silent fallback to "data" would
+ * erase exactly the evidence this badge exists to show.
  *
  * The first block was written against `itemReference.itemType`, which is what the runs were
  * expected to report. Six real captures report **none of it**: every one comes back as
@@ -67,6 +68,13 @@ export const SOURCE_LABEL: Record<string, string> = {
   'analyze.database.execute': 'the campaign data',
   'trace.analyze_ontology': 'the relationship graph',
   'trace.analyze_semantic_model': 'the semantic model',
+
+  // The supervisor names its subordinates, so a crossing answer arrives labelled with two
+  // deployment identifiers. Passing those through is right for a name nobody has seen yet and
+  // wrong for these: they are the two halves of the argument, and the line that carries it
+  // would read "zava-media-contracts-a2a · cross-referenced" on a wall screen.
+  DataAgent_Zava_Media_Analyst: 'the campaign data',
+  'zava-media-contracts-a2a': 'the signed agreements',
 };
 
 /**
@@ -425,7 +433,7 @@ function SuggestionButton({
 }
 
 export function AssistantRail() {
-  const { turns, busy, suggestions, configured, ask, askText } = useAssistant();
+  const { turns, busy, deeper, suggestions, configured, ask, askText } = useAssistant();
   const [draft, setDraft] = useState('');
   const [showFollowUps, setShowFollowUps] = useState(false);
   const tail = useRef<HTMLDivElement>(null);
@@ -505,7 +513,7 @@ export function AssistantRail() {
         line until asked for, and asking one closes them again — the answer that follows should
         land in a full-height panel, not behind the menu that produced it.
       */}
-      {suggestions.length > 0 ? (
+      {suggestions.length > 0 || deeper.length > 0 ? (
         turns.length === 0 ? (
           <div className="border-t px-4 pt-3 pb-1" style={{ borderColor: 'var(--border)' }}>
             <p className="mb-2 text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
@@ -540,21 +548,60 @@ export function AssistantRail() {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
-              Go further · {suggestions.length}
+              Go further · {deeper.length + suggestions.length}
             </button>
             {showFollowUps ? (
               <div className="max-h-[45vh] space-y-1.5 overflow-y-auto px-4 pb-3">
-                {suggestions.map((s) => (
-                  <SuggestionButton
-                    key={s.id}
-                    opener={s}
-                    busy={busy}
-                    onAsk={(o) => {
-                      setShowFollowUps(false);
-                      ask(o);
-                    }}
-                  />
-                ))}
+                {/*
+                  Two groups, and they are labelled because they are not the same offer. The
+                  first pair interrogates the answer on screen; the rest change the subject.
+                  An unlabelled list of five would read as five equivalent next questions and
+                  lose exactly the thing that makes the second click interesting.
+                */}
+                {deeper.length > 0 ? (
+                  <>
+                    <p
+                      className="pt-0.5 text-2xs font-medium uppercase tracking-wide"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      Go deeper
+                    </p>
+                    {deeper.map((s) => (
+                      <SuggestionButton
+                        key={s.id}
+                        opener={s}
+                        busy={busy}
+                        onAsk={(o) => {
+                          setShowFollowUps(false);
+                          ask(o);
+                        }}
+                      />
+                    ))}
+                  </>
+                ) : null}
+                {suggestions.length > 0 ? (
+                  <>
+                    {deeper.length > 0 ? (
+                      <p
+                        className="pt-1.5 text-2xs font-medium uppercase tracking-wide"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
+                        Change subject
+                      </p>
+                    ) : null}
+                    {suggestions.map((s) => (
+                      <SuggestionButton
+                        key={s.id}
+                        opener={s}
+                        busy={busy}
+                        onAsk={(o) => {
+                          setShowFollowUps(false);
+                          ask(o);
+                        }}
+                      />
+                    ))}
+                  </>
+                ) : null}
               </div>
             ) : null}
           </div>

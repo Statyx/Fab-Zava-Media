@@ -39,7 +39,12 @@ export interface Turn {
 export interface AssistantApi {
   turns: Turn[];
   busy: boolean;
-  /** Suggestions appropriate to the current state: starters, then follow-ups. */
+  /**
+   * The two questions that dig into the answer on screen. Empty before the first answer and
+   * after a typed question — see `deeper()` for why that emptiness is not a gap.
+   */
+  deeper: Opener[];
+  /** Other subjects still on the table: starters before the first question, then the rest. */
   suggestions: Opener[];
   /** Whether the Fabric Data Agent is wired in this build. */
   configured: boolean;
