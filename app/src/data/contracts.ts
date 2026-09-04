@@ -36,17 +36,17 @@ export const REGIME_STYLE: Record<Regime, { label: string; tone: string; note: s
   due: {
     label: 'Compensation due',
     tone: 'var(--sev-critical)',
-    note: "Due sans demande du client — l'agence doit l'initier.",
+    note: 'Due without the client asking — the agency has to initiate it.',
   },
   excluded: {
-    label: 'Compensation exclue',
+    label: 'Compensation excluded',
     tone: 'var(--sev-low)',
-    note: 'Compensation, avoir et report expressément exclus.',
+    note: 'Make-good, credit note and carry-over all expressly excluded.',
   },
   penalty: {
-    label: 'Pénalité à la charge de l’agence',
+    label: 'Penalty borne by the agency',
     tone: 'var(--sev-high)',
-    note: 'Due sans mise en demeure préalable.',
+    note: 'Due without prior formal notice.',
   },
 };
 
@@ -57,8 +57,8 @@ export const AGREEMENTS: Agreement[] = [
     regime: 'due',
     article: 'art. 6.1–6.2',
     summary:
-      "L'excédent au-delà de la tolérance n'est pas facturable, et ouvre droit à une " +
-      "compensation en espace de 50 % de cet excédent, à livrer sous 45 jours.",
+      'Excess beyond the tolerance is not billable, and entitles the client to a make-good ' +
+      'in space worth 50% of that excess, to be delivered within 45 days.',
   },
   {
     id: 'ADV-002',
@@ -66,15 +66,15 @@ export const AGREEMENTS: Agreement[] = [
     regime: 'penalty',
     article: 'art. 6.2',
     summary:
-      "Une sous-livraison au-delà de la tolérance déclenche une pénalité de 2 % du budget " +
-      "média net, due par l'agence.",
+      'Under-delivery beyond the tolerance triggers a penalty of 2% of the net media ' +
+      'budget, borne by the agency.',
   },
   {
     id: 'ADV-003',
     advertiser: 'Northwind Foods',
     regime: 'due',
     article: 'art. 6.1',
-    summary: "L'écart au-delà de la tolérance donne lieu à régularisation.",
+    summary: 'A variance beyond the tolerance gives rise to an adjustment.',
   },
   {
     id: 'ADV-004',
@@ -82,15 +82,15 @@ export const AGREEMENTS: Agreement[] = [
     regime: 'excluded',
     article: 'art. 6.3',
     summary:
-      "La sur-livraison est réputée sans effet : ni compensation, ni avoir, ni report. " +
-      "L'article 9.2 ferme par ailleurs toute réclamation de facture passé 120 jours.",
+      'Over-delivery is deemed to have no effect: no make-good, no credit note, no ' +
+      'carry-over. Article 9.2 separately closes any invoice claim after 120 days.',
   },
   {
     id: 'ADV-005',
     advertiser: 'AdventureWorks Travel',
     regime: 'due',
     article: 'art. 6.1',
-    summary: "L'écart au-delà de la tolérance donne lieu à régularisation.",
+    summary: 'A variance beyond the tolerance gives rise to an adjustment.',
   },
 ];
 

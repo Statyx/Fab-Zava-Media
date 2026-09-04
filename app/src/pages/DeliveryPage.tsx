@@ -5,7 +5,7 @@ import { CHANNEL_DAX, VARIANCE_DAX, mapChannels, mapVariance } from '@/data/quer
 import type { MarketVariance } from '@/data/queries';
 import { useAssistant } from '@/domain/assistant';
 import { OPENERS } from '@/domain/openers';
-import { fmtDec, fmtEur, fmtInt, fmtPct } from '@/lib/format';
+import { fmtEur, fmtInt, fmtPct } from '@/lib/format';
 import { useDax } from '@/hooks/useDax';
 
 /**
@@ -14,8 +14,18 @@ import { useDax } from '@/hooks/useDax';
  * Rendered as a line on the chart rather than used to filter the query: the point of the panel
  * is that the reader sees where the band is and judges the overshoot themselves. A table
  * pre-filtered to "the bad ones" asks the room to trust the filter.
+ *
+ * Expressed as a RATIO, because that is what the model returns: [Delivery vs Plan %] evaluates
+ * to 0.12 for a twelve-percent overshoot, and only `fmtPct` multiplies by a hundred on the way
+ * to the screen. Writing 5 here instead of 0.05 costs nothing visible and breaks two things at
+ * once — `Math.abs(0.12) > 5` is false, so every row reads as within tolerance while the label
+ * beside it says +12.00 %, and `scale()` floors the axis at 10 so every bar collapses to a
+ * sliver. Neither failure raises anything: the figures stay right and the judgement goes wrong.
+ *
+ * Because it is a ratio, it must never be printed raw. Every label below routes it through
+ * `fmtPct`, which is the only thing that turns 0.05 into the "5 %" the contracts talk about.
  */
-const TOLERANCE = 5;
+const TOLERANCE = 0.05;
 
 /** The widest bar in the chart, so every row is drawn on the same scale. */
 function scale(rows: MarketVariance[]): number {
@@ -32,7 +42,7 @@ function scale(rows: MarketVariance[]): number {
  * The three cases that matter are never named in this file. They have to emerge from the same
  * ranking as everything else — naming them here would turn a finding into a lookup.
  */
-export function LivraisonPage() {
+export function DeliveryPage() {
   const { ask, askText } = useAssistant();
   const variance = useDax(VARIANCE_DAX, mapVariance);
   const channels = useDax(CHANNEL_DAX, mapChannels);
@@ -44,12 +54,12 @@ export function LivraisonPage() {
   return (
     <>
       <Section
-        id="ecarts"
-        title="Écart entre le plan et la diffusion"
-        provenance="Modèle sémantique — Delivery vs Plan %, signé : positif = sur-livraison"
+        id="variance"
+        title="Plan against delivery"
+        provenance="Semantic model — Delivery vs Plan %, signed: positive = over-delivery"
         action={
           <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            tolérance ±{TOLERANCE} %
+            tolerance ±{fmtPct(TOLERANCE, 0)}
           </span>
         }
       >
@@ -60,8 +70,8 @@ export function LivraisonPage() {
           onRetry={variance.reload}
         >
           <p className="mb-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-            {breaches.length} couple(s) hors tolérance. Cliquez une ligne pour demander ce que
-            le contrat prévoit en face.
+            {breaches.length} pair(s) outside tolerance. Click a row to ask what the contract
+            provides for in that case.
           </p>
 
           <div className="space-y-1">
@@ -75,11 +85,11 @@ export function LivraisonPage() {
                   key={`${r.advertiser}-${r.market}-${r.quarter}`}
                   onClick={() =>
                     askText(
-                      `Pour ${r.advertiser} sur le marché ${r.market} au trimestre ${r.quarter}, ` +
-                        `l'écart mesuré est de ${fmtPct(r.variance, 2)} entre ` +
-                        `[Planned Impressions] et [Delivered Impressions]. Que prévoit le contrat ` +
-                        `cadre de cet annonceur en pareil cas, et le client a-t-il droit à quelque ` +
-                        `chose ? Cite l'article.`,
+                      `For ${r.advertiser} in ${r.market} during ${r.quarter}, the measured ` +
+                        `variance between [Planned Impressions] and [Delivered Impressions] is ` +
+                        `${fmtPct(r.variance, 2)}. What does this advertiser's master agreement ` +
+                        `provide for in that case, and is the client entitled to anything? ` +
+                        `Cite the article.`,
                     )
                   }
                   className="grid w-full grid-cols-[1fr_auto] items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-[var(--bg-secondary)] focus-visible:outline-2 focus-visible:outline-offset-2"
@@ -130,14 +140,14 @@ export function LivraisonPage() {
                     </div>
 
                     <span className="mt-1 block text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {fmtInt(r.planned)} planifiées · {fmtInt(r.delivered)} diffusées
+                      {fmtInt(r.planned)} planned · {fmtInt(r.delivered)} delivered
                     </span>
                   </div>
 
                   <span
                     className="text-sm font-semibold tabular-nums"
                     style={{ color: breach ? 'var(--sev-critical)' : 'var(--text-secondary)' }}
-                    title="Mesure Delivery vs Plan % — modèle sémantique"
+                    title="Delivery vs Plan % measure — semantic model"
                   >
                     {r.variance >= 0 ? '+' : ''}
                     {fmtPct(r.variance, 2)}
@@ -177,8 +187,8 @@ export function LivraisonPage() {
 
       <Section
         id="pacing"
-        title="Efficacité par levier"
-        provenance="Modèle sémantique — CTR %, Effective CPM (EUR). GRP volontairement absent."
+        title="Efficiency by channel"
+        provenance="Semantic model — CTR %, Effective CPM (EUR)."
         action={
           <button
             onClick={() => {
@@ -188,7 +198,7 @@ export function LivraisonPage() {
             className="rounded-md px-2.5 py-1 text-xs font-medium"
             style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
           >
-            Interroger le pacing
+            Ask the pacing stream
           </button>
         }
       >
@@ -201,10 +211,10 @@ export function LivraisonPage() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ color: 'var(--text-muted)' }}>
-                <th className="pb-2 text-left text-xs font-medium">Levier</th>
-                <th className="pb-2 text-right text-xs font-medium">Diffusées</th>
+                <th className="pb-2 text-left text-xs font-medium">Channel</th>
+                <th className="pb-2 text-right text-xs font-medium">Delivered</th>
                 <th className="pb-2 text-right text-xs font-medium">CTR</th>
-                <th className="pb-2 text-right text-xs font-medium">CPM effectif</th>
+                <th className="pb-2 text-right text-xs font-medium">Effective CPM</th>
               </tr>
             </thead>
             <tbody>
@@ -225,11 +235,10 @@ export function LivraisonPage() {
           </table>
 
           <p className="mt-3 text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-            Le GRP n’apparaît pas dans ce tableau : ce n’est pas la même unité que l’impression
-            et il n’existe que pour la TV, le DOOH et l’audio. Les additionner produirait un
-            total parfaitement normal à l’écran et dénué de sens. Écart moyen affiché en
-            {' '}
-            {fmtDec(TOLERANCE, 0)} points de tolérance.
+            GRP does not appear in this table: it is not the same unit as an impression, and it
+            exists only for TV, DOOH and audio. Adding them together would produce a total that
+            looks perfectly normal on screen and means nothing. Variance above is judged against
+            the ±{fmtPct(TOLERANCE, 0)} band the master agreements are written around.
           </p>
         </QueryState>
       </Section>

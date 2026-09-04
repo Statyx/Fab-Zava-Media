@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { Icon } from '@/components/Icon';
 import { ModeBadge } from '@/components/ModeBadge';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { NAV, basePath } from '@/domain/nav';
+import { NAV, SECONDARY_NAV, basePath } from '@/domain/nav';
 import { useAuth } from '@/hooks/AuthContext';
 
 /**
@@ -45,7 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="leading-tight">
               <span className="block text-sm font-semibold text-white">Zava Media</span>
               <span className="block text-xs text-slate-400">
-                De l’écart mesuré à la clause qui l’arbitre
+                Campaign delivery and billing
               </span>
             </span>
           </NavLink>
@@ -67,6 +67,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               >
                 <Icon d={entry.icon} className="h-4 w-4" />
                 <span className="hidden lg:inline">{entry.label}</span>
+              </NavLink>
+            ))}
+
+            {/* Second-rank destinations, behind a separator and deliberately smaller: icon only,
+                named by its tooltip. Architecture has to be reachable without competing with the
+                four questions the console is actually opened to answer — a full-size pill beside
+                them claims an equal share of the eye that it has not earned. */}
+            <span className="mx-1 h-5 w-px bg-white/10" aria-hidden />
+            {SECONDARY_NAV.map((entry) => (
+              <NavLink
+                key={entry.to}
+                to={`${base}${entry.to}`}
+                end
+                title={entry.label}
+                aria-label={entry.label}
+                className={({ isActive }) =>
+                  [
+                    'flex items-center rounded-full p-1.5 transition',
+                    'focus-visible:outline-2 focus-visible:outline-offset-2',
+                    isActive ? 'text-white' : 'text-slate-600 hover:bg-white/5 hover:text-slate-300',
+                  ].join(' ')
+                }
+                style={({ isActive }) => (isActive ? { background: 'var(--accent)' } : undefined)}
+              >
+                <Icon d={entry.icon} className="h-3.5 w-3.5" />
               </NavLink>
             ))}
           </nav>

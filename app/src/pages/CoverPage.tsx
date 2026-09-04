@@ -1,10 +1,12 @@
 import { KpiCard } from '@/components/KpiCard';
+import { Icon } from '@/components/Icon';
 import { QueryState } from '@/components/QueryState';
 import { COVER_DAX, mapCover } from '@/data/queries';
 import {
   badgeForFamily,
   focusForFamily,
   routeForFamily,
+  SECONDARY_NAV,
   sectionLabelForFamily,
 } from '@/domain/nav';
 import { FAMILY_STYLE, OPENERS, starters } from '@/domain/openers';
@@ -34,48 +36,47 @@ export function CoverPage() {
           className="text-xs font-semibold uppercase tracking-[0.18em]"
           style={{ color: 'var(--text-muted)' }}
         >
-          Zava Media · console de pilotage
+          Zava Media · operations console
         </p>
         <h1
           className="mt-3 text-3xl font-bold tracking-tight"
           style={{ color: 'var(--text-primary)' }}
         >
-          Le chiffre est ici. La clause ne l’est pas.
+          Every campaign, from plan to invoice.
         </h1>
         <p className="mt-3 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-          Les écarts de livraison se mesurent dans le modèle sémantique. Ce à quoi ils donnent
-          droit est écrit dans les contrats cadres, et nulle part ailleurs. Cette console pose
-          les deux questions et montre laquelle a répondu.
+          Delivery against plan by market and quarter, the terms of each master agreement, and
+          what has been billed against what was actually spent.
         </p>
       </header>
 
-      {/* Counts come from the model, not from the copy. A hardcoded "80 campagnes" keeps its
+      {/* Counts come from the model, not from the copy. A hardcoded "80 campaigns" keeps its
           value after the data changes, which is exactly the kind of quiet lie this app exists
           not to tell. */}
       <div className="mt-8">
         <QueryState loading={loading} error={error} onRetry={reload}>
           {data ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              <KpiCard label="Campagnes" value={String(data.campaigns)} measure="Total Campaigns" />
+              <KpiCard label="Campaigns" value={String(data.campaigns)} measure="Total Campaigns" />
               <KpiCard
-                label="Annonceurs"
+                label="Advertisers"
                 value={String(data.advertisers)}
                 measure="Total Advertisers"
               />
-              <KpiCard label="Marchés" value={String(data.markets)} measure="Total Markets" />
+              <KpiCard label="Markets" value={String(data.markets)} measure="Total Markets" />
               <KpiCard
-                label="Régies"
+                label="Media owners"
                 value={String(data.mediaOwners)}
                 measure="Total Media Owners"
               />
               <KpiCard
-                label="Sur-livrées"
+                label="Over-delivered"
                 value={String(data.over)}
                 measure="Over-delivered Campaigns"
                 tone={data.over > 0 ? 'alert' : 'default'}
               />
               <KpiCard
-                label="Sous-livrées"
+                label="Under-delivered"
                 value={String(data.under)}
                 measure="Under-delivered Campaigns"
                 tone={data.under > 0 ? 'alert' : 'default'}
@@ -86,11 +87,10 @@ export function CoverPage() {
       </div>
 
       <h2 className="mt-10 text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-        Par où commencer
+        Where to start
       </h2>
       <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-        Chaque carte pose une vraie question et ouvre la section qui la porte. Le badge annonce
-        ce qu’elle ira lire — ce qu’elle a réellement lu s’affiche sous la réponse.
+        Pick a question and it opens the section that answers it, on the panel that carries it.
       </p>
 
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -121,7 +121,7 @@ export function CoverPage() {
                     className="ml-auto rounded-full px-2 py-0.5 text-[0.625rem] font-semibold"
                     style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
                   >
-                    Croisé
+                    Data + contract
                   </span>
                 ) : null}
               </div>
@@ -147,6 +147,24 @@ export function CoverPage() {
             </button>
           );
         })}
+      </div>
+
+      {/* Second-rank, and it looks it. Architecture is the question that lands after the demo,
+          not the reason anyone opened the console — so it gets one muted line under the cards
+          rather than a card of its own competing with the six real questions. */}
+      <div className="mt-8 border-t pt-4" style={{ borderColor: 'var(--border)' }}>
+        {SECONDARY_NAV.map((entry) => (
+          <button
+            key={entry.to}
+            onClick={() => go(entry.to)}
+            className="inline-flex items-center gap-1.5 text-xs transition hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            <Icon d={entry.icon} className="h-3.5 w-3.5" />
+            {entry.label}
+            <span className="hidden sm:inline">— {entry.blurb}</span>
+          </button>
+        ))}
       </div>
     </div>
   );

@@ -35,11 +35,11 @@ interface Check {
 }
 
 const STATE_STYLE: Record<State, { chip: string; text: string }> = {
-  pending: { chip: statusChip('neutral'), text: 'En cours' },
+  pending: { chip: statusChip('neutral'), text: 'Running' },
   ok: { chip: statusChip('ok'), text: 'OK' },
-  warn: { chip: statusChip('warn'), text: 'Dégradé' },
-  fail: { chip: statusChip('fail'), text: 'Échec' },
-  skip: { chip: statusChip('neutral'), text: 'Ignoré' },
+  warn: { chip: statusChip('warn'), text: 'Degraded' },
+  fail: { chip: statusChip('fail'), text: 'Failed' },
+  skip: { chip: statusChip('neutral'), text: 'Skipped' },
 };
 
 const ENV_KEYS = [
@@ -53,11 +53,11 @@ const ENV_KEYS = [
 /** Audience and granted scopes — the difference between "a token came back" and "the right token came back". */
 function describeToken(token: string): string {
   const claims = decodeJwt(token);
-  if (!claims) return 'jeton non décodable';
+  if (!claims) return 'token could not be decoded';
   const aud = String(claims.aud ?? '?');
   const scp = String(claims.scp ?? claims.roles ?? '-');
   const exp = typeof claims.exp === 'number' ? new Date(claims.exp * 1000) : null;
-  const expires = exp ? ` — expire à ${exp.toLocaleTimeString('fr-FR')}` : '';
+  const expires = exp ? ` — expires at ${exp.toLocaleTimeString('en-GB')}` : '';
   return `aud ${aud} — scp ${scp}${expires}`;
 }
 
@@ -76,29 +76,29 @@ export function DiagnosticPage() {
     const missing = ENV_KEYS.filter((k) => !import.meta.env[k]);
     push({
       id: 'config',
-      label: 'Configuration du bundle',
+      label: 'Bundle configuration',
       state: missing.length === 0 ? 'ok' : 'fail',
       detail:
         missing.length === 0
-          ? `${ENV_KEYS.length} variables présentes`
-          : `Manquantes : ${missing.join(', ')}`,
+          ? `${ENV_KEYS.length} variables present`
+          : `Missing: ${missing.join(', ')}`,
     });
 
     push({
       id: 'frame',
-      label: 'Contexte d’exécution',
+      label: 'Execution context',
       state: isFramed() ? 'warn' : 'ok',
       detail: isFramed()
-        ? 'Exécution dans une iframe (portail Fabric). La fenêtre de connexion peut être bloquée — ouvrir l’URL d’hébergement dans un onglet.'
-        : 'Onglet autonome. Connexion interactive disponible.',
+        ? 'Running inside an iframe (Fabric portal). The sign-in popup may be blocked — open the hosting URL in a tab.'
+        : 'Standalone tab. Interactive sign-in available.',
     });
 
     if (!msalConfigured) {
       push({
         id: 'msal',
-        label: 'Identité',
+        label: 'Identity',
         state: 'fail',
-        detail: 'Client ou locataire Entra absent : aucune acquisition de jeton n’est possible.',
+        detail: 'Entra client or tenant missing: no token can be acquired.',
       });
       setRunning(false);
       return;
@@ -109,16 +109,16 @@ export function DiagnosticPage() {
       const acct = activeAccount();
       push({
         id: 'msal',
-        label: 'Identité initialisée',
+        label: 'Identity initialised',
         state: acct ? 'ok' : 'warn',
         detail: acct
-          ? `Compte actif : ${acct.username}`
-          : 'Initialisée, mais aucun compte connecté. Les acquisitions silencieuses échoueront.',
+          ? `Active account: ${acct.username}`
+          : 'Initialised, but no account signed in. Silent acquisitions will fail.',
       });
     } catch (err) {
       push({
         id: 'msal',
-        label: 'Identité initialisée',
+        label: 'Identity initialised',
         state: 'fail',
         detail: err instanceof Error ? err.message : String(err),
       });
@@ -127,8 +127,8 @@ export function DiagnosticPage() {
     }
 
     const planes: { id: string; label: string; scopes: string[] }[] = [
-      { id: 'tok-fabric', label: 'Jeton Fabric (agent de données)', scopes: FABRIC_SCOPES },
-      { id: 'tok-pbi', label: 'Jeton Power BI (évaluation des mesures)', scopes: POWERBI_SCOPES },
+      { id: 'tok-fabric', label: 'Fabric token (data agent)', scopes: FABRIC_SCOPES },
+      { id: 'tok-pbi', label: 'Power BI token (measure evaluation)', scopes: POWERBI_SCOPES },
     ];
 
     for (const plane of planes) {
@@ -154,7 +154,7 @@ export function DiagnosticPage() {
           id: plane.id,
           label: plane.label,
           state: 'fail',
-          detail: `Aucune portée accordée silencieusement. Dernière erreur : ${lastErr}`,
+          detail: `No scope granted silently. Last error: ${lastErr}`,
         });
       }
     }
@@ -162,9 +162,9 @@ export function DiagnosticPage() {
     if (!semanticModelId) {
       push({
         id: 'model',
-        label: 'Modèle sémantique interrogeable',
+        label: 'Semantic model queryable',
         state: 'skip',
-        detail: 'Identifiant du modèle sémantique absent de la configuration.',
+        detail: 'Semantic model id missing from the configuration.',
       });
     } else {
       try {
@@ -176,17 +176,17 @@ export function DiagnosticPage() {
         const value = rows[0]?.['[probe]'] ?? rows[0]?.probe;
         push({
           id: 'model',
-          label: 'Modèle sémantique interrogeable',
+          label: 'Semantic model queryable',
           state: value === null || value === undefined ? 'warn' : 'ok',
           detail:
             value === null || value === undefined
-              ? 'Le modèle a répondu, mais la mesure est revenue vide — vérifier qu’il s’agit bien du modèle attendu.'
-              : `Mesure Total Campaigns évaluée → ${String(value)}`,
+              ? 'The model answered, but the measure came back empty — check this really is the expected model.'
+              : `Measure Total Campaigns evaluated → ${String(value)}`,
         });
       } catch (err) {
         push({
           id: 'model',
-          label: 'Modèle sémantique interrogeable',
+          label: 'Semantic model queryable',
           state: 'fail',
           detail: err instanceof Error ? err.message : String(err),
         });
@@ -204,8 +204,8 @@ export function DiagnosticPage() {
       <div className="mx-auto max-w-4xl">
         <h1 className="text-2xl font-semibold tracking-tight">Diagnostic</h1>
         <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-          Vérifie chaque maillon entre le navigateur et les données Fabric, et nomme celui qui a
-          cédé. Cette page est volontairement accessible sans être connecté.
+          Checks every link between the browser and the Fabric data, and names the one that
+          gave way. This page is deliberately reachable without being signed in.
         </p>
 
         <div className="mt-4 flex items-center gap-3">
@@ -215,10 +215,10 @@ export function DiagnosticPage() {
             className="rounded-md px-3 py-2 text-sm font-medium text-white transition-all hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             style={{ background: 'var(--accent)' }}
           >
-            {running ? 'Vérification…' : 'Lancer le diagnostic'}
+            {running ? 'Checking…' : 'Run the diagnostic'}
           </button>
           <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            Mode direct {liveAvailable() ? 'configuré' : 'non configuré'}
+            Live mode {liveAvailable() ? 'configured' : 'not configured'}
           </span>
         </div>
 
@@ -247,7 +247,7 @@ export function DiagnosticPage() {
 
         {checks.length === 0 && !running ? (
           <p className="mt-6 text-sm" style={{ color: 'var(--text-muted)' }}>
-            Aucun résultat pour l’instant.
+            No results yet.
           </p>
         ) : null}
       </div>

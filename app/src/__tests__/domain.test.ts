@@ -154,7 +154,86 @@ describe('the route manifest', () => {
 
   it('keeps preview navigation inside the preview mount', () => {
     // A bare jump out of `/preview` lands on a guarded route and bounces to sign-in.
-    expect(basePath('/preview/livraison')).toBe('/preview');
-    expect(basePath('/livraison')).toBe('');
+    expect(basePath('/preview/delivery')).toBe('/preview');
+    expect(basePath('/delivery')).toBe('');
+  });
+});
+
+/**
+ * The grain panel carries the punchline of the billing section, and it had no coverage at all
+ * until a shipped `billed === 0` filter matched nothing against the deployed model and drew an
+ * empty panel underneath a header still reporting the gap.
+ *
+ * These rows are transcribed from the deployed semantic model, not invented: the six real
+ * shortfall rows and two of the balanced ones. Pinning them here means a future change to the
+ * filter has to survive the shape the data actually has.
+ */
+describe('the grain panel', () => {
+  const row = (id: string, name: string, owner: string, spend: number, billed: number) => ({
+    'dim_campaign[campaign_id]': id,
+    'dim_campaign[campaign_name]': name,
+    'dim_media_owner[media_owner_name]': owner,
+    '[NetSpend]': spend,
+    '[NetBilled]': billed,
+  });
+
+  const FASHION = 'Litware Fashion GB 2026-Q3 Performance';
+  const HOME = 'Litware Home GB 2026-Q3 Loyalty';
+
+  const DEPLOYED = [
+    row('CMP-0072', FASHION, 'Kestrel Retail Media', 584116.22, 393829.17),
+    row('CMP-0072', FASHION, 'Halcyon Social', 476343.01, 320104.68),
+    row('CMP-0072', FASHION, 'Solstice Audio', 267354, 179703.25),
+    row('CMP-0068', HOME, 'Alpine Digital', 254904.76, 170363.77),
+    row('CMP-0068', HOME, 'Halcyon Social', 216646.43, 145535.21),
+    row('CMP-0068', HOME, 'Meridian TV', 179266.12, 119935.93),
+    row('CMP-0037', 'Adventure Works Breaks DE 2026-Q2 Awareness', 'Alpine Digital', 551053.48, 551053.48),
+    row('CMP-0041', 'Contoso Fleet ES 2026-Q3 Performance', 'Vertex Outdoor', 392204.35, 392204.35),
+  ];
+
+  it('finds the six under-billed rows across two campaigns', () => {
+    const g = queries.mapGrain(DEPLOYED);
+    expect(g.rows).toBe(6);
+    expect(g.campaigns).toBe(2);
+    expect(g.names).toEqual(expect.arrayContaining([FASHION, HOME]));
+  });
+
+  it('reports the shortfall, not the spend', () => {
+    // Summing spend would report 1.98M EUR of "unbilled" money that was in fact largely
+    // invoiced. The panel has to answer with what is missing: 649,158.53 EUR.
+    expect(queries.mapGrain(DEPLOYED).amount).toBeCloseTo(649158.53, 2);
+  });
+
+  it('does not read rounding noise as an anomaly', () => {
+    const noisy = [row('CMP-0037', 'Balanced', 'Alpine Digital', 551053.48, 551053.47)];
+    expect(queries.mapGrain(noisy).rows).toBe(0);
+  });
+
+  it('ignores rows with no campaign key', () => {
+    const orphan = [row('', 'Unattributed', 'Alpine Digital', 100000, 0)];
+    expect(queries.mapGrain(orphan).rows).toBe(0);
+  });
+});
+
+/**
+ * The deployed model carries no disputed invoice, so `[Disputed Invoices]` answers blank. Folded
+ * to `0` that becomes a claim — "we checked, there are none" — indistinguishable from a query
+ * that returned nothing. The mapper keeps the blank so the card can name which one it is.
+ */
+describe('a measure that answers blank', () => {
+  it('keeps the blank apart from a real zero', () => {
+    const blank = queries.mapBillingTotals([
+      { '[Gross]': 70290759.57, '[Net]': 60885308.41, '[Disputed]': null, '[DisputedAmount]': null },
+    ]);
+    expect(blank.disputed).toBeNull();
+    expect(blank.disputedAmount).toBeNull();
+
+    const zero = queries.mapBillingTotals([{ '[Disputed]': 0, '[DisputedAmount]': 0 }]);
+    expect(zero.disputed).toBe(0);
+  });
+
+  it('still folds the measures that have no such claim', () => {
+    // A blank total is genuinely zero money; only the counts that assert an absence are kept.
+    expect(queries.mapBillingTotals([{ '[Gross]': null }]).gross).toBe(0);
   });
 });

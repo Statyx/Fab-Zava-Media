@@ -274,6 +274,15 @@ The generator reports 6, the test asserts 2.
 That is deliberate: asking the model for the two counts as two separate measures lets them drift
 apart, which is precisely the failure the panel exists to make visible.
 
+**Detect the shortfall, never the absence.** Verified against the deployed model: the six pairs
+carry **two invoices** where a fully billed campaign carries three, so one month is genuinely
+missing from each. But since `fact_billing` has no path to `dim_date`, that missing month is
+*unobservable* at the only queryable grain — it shows up as a row billed to roughly two thirds of
+spend, never as a zero. A filter looking for unbilled rows finds nothing and draws an empty panel
+under a header that still reports 649 159 €. `mapGrain` therefore tests `spend − billed`, and
+reports the **shortfall**, not the spend: summing the spend of those six rows would claim 1,98 M€
+of missing money that was in fact largely invoiced.
+
 Put both on screen, side by side, each labelled with its grain. This is the cheapest possible
 demonstration that a question which does not name its table is under-specified — and it costs one
 panel.
@@ -288,7 +297,7 @@ measure at runtime or not shown at all.
 | Contoso Mobility × Spain × Q3 | **+12,00 %** | ADV-001 art. 6.1–6.2 | not billable, plus a 50 % make-good of the excess, within 45 days, without the client asking |
 | Litware Retail × UK × Q3 | **+11,00 %** | ADV-004 art. 6.3 | nothing — compensation, credit and carry-over expressly excluded |
 | Fabrikam Beauty × Italy × Q3 | **−8,00 %** | ADV-002 art. 6.2 | 2 % penalty on net media budget, owed by the agency, without formal notice |
-| 2 UK campaigns never billed | **649 159 €** | ADV-004 art. 9.2 | 120-day window, forfeited 28/01/2027 |
+| 2 UK campaigns, one month unbilled each | **649 159 €** | ADV-004 art. 9.2 | 120-day window, forfeited 28/01/2027 |
 
 Three variances of the same order, three opposite outcomes. That contrast **is** the demo; the
 app's job is to make it land in one click.

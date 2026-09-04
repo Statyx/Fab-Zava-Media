@@ -25,6 +25,19 @@ import type { DaxRow, DaxValue } from '@/services/powerbi';
 const num = (v: DaxValue): number => (typeof v === 'number' ? v : Number(v ?? 0) || 0);
 const str = (v: DaxValue): string => (v === null || v === undefined ? '' : String(v));
 
+/**
+ * For measures whose blank is meaningful.
+ *
+ * `num` folds a DAX blank into `0`, which is right for a total and wrong for a count that
+ * nobody matched: the screen then states "0 disputed invoices" with the same confidence
+ * whether the model found none or the query returned nothing at all. Where that distinction
+ * carries a claim, keep the blank and let the component say which of the two it is.
+ */
+const numOrNull = (v: DaxValue): number | null => {
+  if (v === null || v === undefined || v === '') return null;
+  return num(v);
+};
+
 /* ------------------------------------------------------------------- Cover */
 
 export interface CoverStats {
@@ -74,8 +87,9 @@ export interface PortfolioKpis {
   consumption: number;
   over: number;
   under: number;
-  disputed: number;
-  disputedAmount: number;
+  /** Blank when the model matched no disputed invoice — not the same claim as zero. */
+  disputed: number | null;
+  disputedAmount: number | null;
 }
 
 export const PORTFOLIO_DAX = `
@@ -102,8 +116,8 @@ export function mapPortfolio(rows: DaxRow[]): PortfolioKpis {
     consumption: num(r['[Consumption]']),
     over: num(r['[Over]']),
     under: num(r['[Under]']),
-    disputed: num(r['[Disputed]']),
-    disputedAmount: num(r['[DisputedAmount]']),
+    disputed: numOrNull(r['[Disputed]']),
+    disputedAmount: numOrNull(r['[DisputedAmount]']),
   };
 }
 
@@ -281,8 +295,9 @@ export interface BillingTotals {
   net: number;
   netNet: number;
   invoices: number;
-  disputed: number;
-  disputedAmount: number;
+  /** Blank when the model matched no disputed invoice — not the same claim as zero. */
+  disputed: number | null;
+  disputedAmount: number | null;
   gap: number;
 }
 
@@ -306,8 +321,8 @@ export function mapBillingTotals(rows: DaxRow[]): BillingTotals {
     net: num(r['[Net]']),
     netNet: num(r['[NetNet]']),
     invoices: num(r['[Invoices]']),
-    disputed: num(r['[Disputed]']),
-    disputedAmount: num(r['[DisputedAmount]']),
+    disputed: numOrNull(r['[Disputed]']),
+    disputedAmount: numOrNull(r['[DisputedAmount]']),
     gap: num(r['[Gap]']),
   };
 }
@@ -315,9 +330,17 @@ export function mapBillingTotals(rows: DaxRow[]): BillingTotals {
 /**
  * The grain panel.
  *
- * Two campaigns were never billed, and six rows are missing from the billing fact, because
- * that table is grained campaign x media owner and each of those campaigns was sold by three
- * owners. Both numbers are correct; they answer different questions.
+ * Two campaigns are under-billed, and six rows carry the shortfall, because the billing fact
+ * is grained campaign x media owner and each of those campaigns was sold by three owners.
+ * Both numbers are correct; they answer different questions.
+ *
+ * Checked against the deployed model: six billing rows really are missing — the six pairs carry
+ * two invoices where a delivered campaign carries three, so a month is absent from each. But
+ * `fact_billing` has no relationship to `dim_date`, so that absence is **unobservable at the
+ * only queryable grain**: it surfaces there as a shortfall, roughly a third short, never as a
+ * zero. An earlier version of `mapGrain` tested `billed === 0` and matched nothing at all,
+ * drawing an empty panel underneath a header still reporting the gap — the exact contradiction
+ * the panel exists to expose. The test is a shortfall, never an absence.
  *
  * The query groups at the **finer** of the two grains and lets the page derive the coarser one
  * by collapsing on campaign. Asking the model for the two counts separately would let them
@@ -338,31 +361,40 @@ SUMMARIZECOLUMNS(
 )`;
 
 export interface GrainStats {
-  /** Missing rows at campaign x media owner grain. */
+  /** Under-billed rows at campaign x media owner grain. */
   rows: number;
   /** Distinct campaigns behind those rows. */
   campaigns: number;
-  /** Net spend carried by them. */
+  /** Billing shortfall they carry, in EUR — spend minus billed, not spend. */
   amount: number;
   names: string[];
 }
 
+/**
+ * A cent of floating-point noise on a currency aggregate is not a billing anomaly. The 215
+ * balanced rows in the deployed model agree to within a cent; the six real ones are short by
+ * 59k EUR at the very least, so any epsilon in between separates them. One euro is chosen to
+ * sit far from both.
+ */
+const SHORTFALL_EPSILON_EUR = 1;
+
 export function mapGrain(rows: DaxRow[]): GrainStats {
-  const unbilled = rows
+  const underBilled = rows
     .map((r) => ({
       id: str(r['dim_campaign[campaign_id]']),
       name: str(r['dim_campaign[campaign_name]']),
       spend: num(r['[NetSpend]']),
       billed: num(r['[NetBilled]']),
     }))
-    .filter((r) => r.id !== '' && r.spend > 0 && r.billed === 0);
+    .map((r) => ({ ...r, shortfall: r.spend - r.billed }))
+    .filter((r) => r.id !== '' && r.shortfall > SHORTFALL_EPSILON_EUR);
 
-  const byCampaign = new Map(unbilled.map((r) => [r.id, r.name]));
+  const byCampaign = new Map(underBilled.map((r) => [r.id, r.name]));
 
   return {
-    rows: unbilled.length,
+    rows: underBilled.length,
     campaigns: byCampaign.size,
-    amount: unbilled.reduce((sum, r) => sum + r.spend, 0),
+    amount: underBilled.reduce((sum, r) => sum + r.shortfall, 0),
     names: [...byCampaign.values()],
   };
 }

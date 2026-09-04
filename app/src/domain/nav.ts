@@ -11,10 +11,10 @@ import type { OpenerFamily } from '@/domain/openers';
  * The sections below are the four questions a media agency console is actually asked, in the
  * order they get asked:
  *
- *  - **Portefeuille** — where do things stand, and where do I start looking.
- *  - **Livraison**    — what was planned, what was delivered, and by how much it missed.
- *  - **Contrats**     — what the text says, with no figure in sight.
- *  - **Facturation**  — what was spent, what was billed, and what is about to lapse.
+ *  - **Portfolio** — where do things stand, and where do I start looking.
+ *  - **Delivery**  — what was planned, what ran, and by how much it missed.
+ *  - **Contracts** — what the text says, with no figure in sight.
+ *  - **Billing**   — what was spent, what was billed, and what is about to lapse.
  *
  * There is exactly **one** navigation. The sibling app's worst structural failure was two
  * navigations over the same subject: a four-step arc holding every chart and no chat, beside
@@ -46,30 +46,32 @@ const GRAPH = 'M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M2
 const PULSE = 'M2.25 12h3.75l3-9 4.5 18 3-9h5.25';
 const OWNER =
   'M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z';
+const STACK =
+  'M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3';
 
 export const NAV: NavEntry[] = [
   {
-    to: '/portefeuille',
-    label: 'Portefeuille',
-    blurb: 'Où en sont les campagnes, et où regarder en premier.',
+    to: '/portfolio',
+    label: 'Portfolio',
+    blurb: 'Where the campaigns stand, and where to look first.',
     icon: HOME,
   },
   {
-    to: '/livraison',
-    label: 'Livraison',
-    blurb: 'Planifié contre livré, par marché et par trimestre — et le pacing en direct.',
+    to: '/delivery',
+    label: 'Delivery',
+    blurb: 'Planned against delivered, by market and quarter — and pacing as it happens.',
     icon: CHART,
   },
   {
-    to: '/contrats',
-    label: 'Contrats',
-    blurb: 'Les cinq contrats cadres et leurs trois régimes de compensation. Aucun chiffre.',
+    to: '/contracts',
+    label: 'Contracts',
+    blurb: 'The five master agreements and their three compensation regimes.',
     icon: DOC,
   },
   {
-    to: '/facturation',
-    label: 'Facturation',
-    blurb: 'Dépensé contre facturé, ce qui manque et la date à laquelle cela se périme.',
+    to: '/billing',
+    label: 'Billing',
+    blurb: 'Spent against billed, what is missing, and the date it lapses.',
     icon: EURO,
   },
 ];
@@ -77,8 +79,31 @@ export const NAV: NavEntry[] = [
 /** Not exported into NAV on purpose. */
 export const DIAGNOSTIC_ROUTE = '/diagnostic';
 
-/** Listed under the nav rather than in it: it explains the app, it is not part of the work. */
 export const ARCHITECTURE_ROUTE = '/architecture';
+
+/**
+ * Second-rank destinations: reachable, but not part of the work.
+ *
+ * Architecture explains how the console is wired and what the deployment cost. Nobody opens a
+ * media console to read an architecture, so it does not belong beside the four questions — but
+ * it was previously in neither list, which meant **nothing on screen linked to it at all** and
+ * `WorkspaceLayout`, which titles a page by looking it up here, rendered it with no heading.
+ * A route that exists, is routed, and is unreachable by clicking is a route that does not exist.
+ *
+ * Kept separate from `NAV` rather than appended to it so the tests that assert "every family
+ * lands on a listed section" keep meaning what they say: this entry answers no family.
+ */
+export const SECONDARY_NAV: NavEntry[] = [
+  {
+    to: ARCHITECTURE_ROUTE,
+    label: 'Architecture',
+    blurb: 'How the chain is wired, and the rule that keeps figures and terms apart.',
+    icon: STACK,
+  },
+];
+
+/** Every titled destination, in the order the shell renders them. */
+export const ALL_NAV: NavEntry[] = [...NAV, ...SECONDARY_NAV];
 
 /**
  * Which section answers a given family of question.
@@ -88,30 +113,33 @@ export const ARCHITECTURE_ROUTE = '/architecture';
  * without the compiler pointing at this record.
  */
 export const SECTION_BY_FAMILY: Record<OpenerFamily, string> = {
-  portfolio: '/portefeuille',
+  portfolio: '/portfolio',
   // The graph question is a traversal, not a figure — it belongs where the whole estate is in
   // view, not inside one quarter's variance table.
-  graph: '/portefeuille',
-  delivery: '/livraison',
-  // Pacing shares the Livraison section because it is the same subject at a different tempo:
+  graph: '/portfolio',
+  delivery: '/delivery',
+  // Pacing shares the Delivery section because it is the same subject at a different tempo:
   // splitting it would produce two pages that each show half a delivery story.
-  pacing: '/livraison',
-  contract: '/contrats',
-  billing: '/facturation',
+  pacing: '/delivery',
+  contract: '/contracts',
+  billing: '/billing',
 };
 
 /**
- * Two families share Portefeuille and two share Livraison, so the section alone would not tell
- * the user which card they clicked. The focus anchor scrolls the panel that answers it into
- * view and marks it for a couple of seconds.
+ * Two families share Portfolio and two share Delivery, so the section alone would not tell the
+ * user which card they clicked. The focus anchor scrolls the panel that answers it into view
+ * and marks it for a couple of seconds.
+ *
+ * These strings are `Section id` values. A typo here does not fail anything — it silently
+ * scrolls nowhere — so they are pinned by a test against the ids the pages actually declare.
  */
 export const FOCUS_BY_FAMILY: Record<OpenerFamily, string> = {
-  portfolio: 'mesures',
-  graph: 'relations',
-  delivery: 'ecarts',
+  portfolio: 'measures',
+  graph: 'relationships',
+  delivery: 'variance',
   pacing: 'pacing',
   contract: 'regimes',
-  billing: 'manquants',
+  billing: 'unbilled',
 };
 
 export function routeForFamily(family: OpenerFamily): string {
@@ -143,7 +171,7 @@ export function basePath(pathname: string): string {
  */
 export function sectionLabelForFamily(family: OpenerFamily): string {
   const to = SECTION_BY_FAMILY[family];
-  return NAV.find((n) => n.to === to)?.label ?? 'Ouvrir';
+  return NAV.find((n) => n.to === to)?.label ?? 'Open';
 }
 
 /**
@@ -160,6 +188,9 @@ export function sectionLabelForFamily(family: OpenerFamily): string {
  * This is a *claim*, not evidence — it says what the question is expected to consult. What was
  * actually consulted is printed under the answer, and the two are allowed to disagree. That
  * disagreement is the interesting part and must stay visible.
+ *
+ * Worded in the agency's own vocabulary, not the platform's. "Figures + clauses" described our
+ * plumbing; "Performance + terms" describes what the person clicking actually wants.
  */
 export interface OpenerBadge {
   label: string;
@@ -169,12 +200,12 @@ export interface OpenerBadge {
 }
 
 const BADGE_BY_FAMILY: Record<OpenerFamily, OpenerBadge> = {
-  portfolio: { label: 'Chiffres', icon: CHART, tone: 'var(--accent)' },
-  delivery: { label: 'Chiffres + clauses', icon: CHART, tone: 'var(--sev-high)' },
-  billing: { label: 'Chiffres + clauses', icon: EURO, tone: 'var(--sev-critical)' },
-  graph: { label: 'Graphe de relations', icon: GRAPH, tone: 'var(--sev-low)' },
-  contract: { label: 'Clauses', icon: DOC, tone: 'var(--sev-medium)' },
-  pacing: { label: 'Flux temps réel', icon: PULSE, tone: 'var(--text-secondary)' },
+  portfolio: { label: 'Performance', icon: CHART, tone: 'var(--accent)' },
+  delivery: { label: 'Performance + terms', icon: CHART, tone: 'var(--sev-high)' },
+  billing: { label: 'Billing + terms', icon: EURO, tone: 'var(--sev-critical)' },
+  graph: { label: 'Account map', icon: GRAPH, tone: 'var(--sev-low)' },
+  contract: { label: 'Contract terms', icon: DOC, tone: 'var(--sev-medium)' },
+  pacing: { label: 'Live pacing', icon: PULSE, tone: 'var(--text-secondary)' },
 };
 
 export function badgeForFamily(family: OpenerFamily): OpenerBadge {

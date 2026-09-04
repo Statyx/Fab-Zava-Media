@@ -15,9 +15,11 @@
  * Plain language must not upgrade a claim: a label never says the app *observed* something it
  * merely declares. What actually ran is printed under the answer.
  *
- * Prompts are written in French because the answer comes back in the language it was asked
- * in, and the room is French. The identifiers inside them keep their real spelling —
- * translating `dim_campaign` would simply stop it resolving.
+ * Prompts are written in English because the answer comes back in the language it was asked
+ * in, and this console is English. Switching this file back to another language switches the
+ * agents' answers with it — that is the only lever. The identifiers inside the prompts keep
+ * their real spelling in every language: translating `dim_campaign` would simply stop it
+ * resolving.
  */
 export type OpenerFamily =
   | 'portfolio'
@@ -71,13 +73,12 @@ export interface Opener {
  * instruction about its own behaviour, consulted nothing, and returned in 29.5 s.
  */
 export const HOUSE_STYLE =
-  " Réponds comme un directeur de clientèle prépare un point client, en 90 mots au plus : " +
-  "la conclusion d'abord, puis seulement les deux ou trois chiffres qui la portent. " +
-  "Donne toujours le planifié et le livré à côté d'un pourcentage. N'énumère pas de lignes. " +
-  "Dans la prose, nomme les annonceurs, marchés et régies comme on les dit à l'oral, sans " +
-  "aucun identifiant, nom de table ni nom de mesure. Termine par un unique bloc " +
-  "`### SOURCE` de six lignes au maximum, qui porte les identifiants, les tables et les " +
-  "mesures utilisées.";
+  ' Answer the way an account director prepares a client review, in 90 words at most: ' +
+  'the conclusion first, then only the two or three figures that carry it. ' +
+  'Always give planned and delivered alongside a percentage. Do not list rows. ' +
+  'In the prose, name advertisers, markets and media owners the way they are said out loud, ' +
+  'with no identifier, table name or measure name. Finish with a single `### SOURCE` block ' +
+  'of six lines at most, carrying the identifiers, tables and measures used.';
 
 export const OPENERS: Opener[] = [
   /**
@@ -92,16 +93,16 @@ export const OPENERS: Opener[] = [
     id: 'variance-remedy',
     family: 'delivery',
     kind: 'mixed',
-    label: 'Quels marchés dérapent au T3, et que prévoit le contrat en face ?',
+    label: 'Which markets are off plan in Q3, and what does the contract say about it?',
     prompt:
-      "Quels couples annonceur x marché s'écartent du plan sur le trimestre 2026-Q3 ? " +
-      'Utilise [Planned Impressions], [Delivered Impressions] et [Delivery vs Plan %] par ' +
-      'dim_advertiser[advertiser_name] et dim_market[market_name], filtré sur ' +
-      'dim_campaign[quarter] = "2026-Q3". Pour chaque écart trouvé, va chercher dans les ' +
-      'contrats cadres ce que la clause de livraison prévoit, et dis si le client a droit à ' +
-      'quelque chose ou non.' +
+      'Which advertiser x market pairs are off plan for the 2026-Q3 quarter? ' +
+      'Use [Planned Impressions], [Delivered Impressions] and [Delivery vs Plan %] by ' +
+      'dim_advertiser[advertiser_name] and dim_market[market_name], filtered on ' +
+      'dim_campaign[quarter] = "2026-Q3". For each variance found, go and read in the master ' +
+      'agreements what the delivery clause provides for, and say whether the client is ' +
+      'entitled to anything or not.' +
       HOUSE_STYLE,
-    exercises: 'les chiffres de livraison, puis les contrats cadres',
+    exercises: 'the delivery figures, then the master agreements',
   },
 
   /**
@@ -114,31 +115,31 @@ export const OPENERS: Opener[] = [
     id: 'unbilled-window',
     family: 'billing',
     kind: 'mixed',
-    label: "Qu'est-ce qui a été diffusé et jamais facturé, et jusqu'à quand est-ce réclamable ?",
+    label: 'What ran and was never billed, and how long can it still be claimed?',
     prompt:
-      "Quel est l'écart entre ce qui a été dépensé et ce qui a été facturé ? Utilise " +
-      '[Net Spend (EUR)], [Net Billed (EUR)] et [Billing vs Spend Gap (EUR)] par ' +
-      'dim_advertiser[advertiser_name] et dim_market[market_name]. Précise combien de ' +
-      'campagnes distinctes sont concernées et combien de lignes de fact_billing manquent, ' +
-      "en disant que ces deux comptes ne sont pas au même grain. Puis va chercher dans le " +
-      "contrat de l'annonceur concerné le délai au-delà duquel une facture omise ne peut " +
-      'plus être réclamée, et la date à laquelle ce délai expire.' +
+      'What is the gap between what was spent and what was billed? Use ' +
+      '[Net Spend (EUR)], [Net Billed (EUR)] and [Billing vs Spend Gap (EUR)] by ' +
+      'dim_advertiser[advertiser_name] and dim_market[market_name]. State how many distinct ' +
+      'campaigns are affected and how many fact_billing rows are missing, saying explicitly ' +
+      'that those two counts are not at the same grain. Then go and read, in the affected ' +
+      "advertiser's contract, the deadline beyond which an omitted invoice can no longer be " +
+      'claimed, and the date that deadline expires.' +
       HOUSE_STYLE,
-    exercises: 'la facturation, puis le délai de forclusion au contrat',
+    exercises: 'billing, then the claim deadline in the contract',
   },
 
   {
     id: 'portfolio-state',
     family: 'portfolio',
     kind: 'single',
-    label: 'Où en est le portefeuille sur la période ?',
+    label: 'Where does the portfolio stand over the period?',
     prompt:
-      "Donne l'état du portefeuille sur la période : [Total Campaigns], [Active Campaigns], " +
-      '[Planned Budget (EUR)], [Net Spend (EUR)], [Budget Consumption %], puis ' +
-      '[Over-delivered Campaigns] et [Under-delivered Campaigns]. Dis où se concentre le ' +
-      'risque.' +
+      'Give the state of the portfolio over the period: [Total Campaigns], ' +
+      '[Active Campaigns], [Planned Budget (EUR)], [Net Spend (EUR)], ' +
+      '[Budget Consumption %], then [Over-delivered Campaigns] and ' +
+      '[Under-delivered Campaigns]. Say where the risk is concentrated.' +
       HOUSE_STYLE,
-    exercises: 'les mesures du portefeuille',
+    exercises: 'the portfolio measures',
   },
 
   /**
@@ -156,43 +157,42 @@ export const OPENERS: Opener[] = [
     id: 'graph-owners',
     family: 'graph',
     kind: 'single',
-    label: 'Quelles régies portent les campagnes du marché en écart ?',
+    label: 'Which media owners carry the campaigns in the off-plan market?',
     prompt:
-      'Quelles régies ont vendu les campagnes de Contoso Mobility en Espagne ? Suis le ' +
-      'graphe : Advertiser -[AdvertiserHasBrand]-> Brand -[BrandHasCampaign]-> Campaign, ' +
-      'puis Campaign -[CampaignInMarket]-> Market pour ne garder que MKT-ES, et enfin ' +
-      'Campaign -[CampaignBooksMediaOwner]-> MediaOwner. Nomme chaque régie et son type.' +
+      'Which media owners sold the Contoso Mobility campaigns in Spain? Follow the ' +
+      'graph: Advertiser -[AdvertiserHasBrand]-> Brand -[BrandHasCampaign]-> Campaign, ' +
+      'then Campaign -[CampaignInMarket]-> Market to keep only MKT-ES, and finally ' +
+      'Campaign -[CampaignBooksMediaOwner]-> MediaOwner. Name each media owner and its type.' +
       HOUSE_STYLE,
-    exercises: 'le graphe annonceur - marque - campagne - régie',
+    exercises: 'the advertiser - brand - campaign - media owner graph',
   },
 
   {
     id: 'contract-regimes',
     family: 'contract',
     kind: 'single',
-    label: 'Que prévoient les contrats en cas de sur-livraison ?',
+    label: 'What do the contracts provide for in case of over-delivery?',
     prompt:
-      "Dans les cinq contrats cadres indexés, que prévoit chacun en cas d'écart de " +
-      'livraison ? Distingue les régimes : compensation due sans demande du client, ' +
-      "compensation expressément exclue, et pénalité à la charge de l'agence. Cite " +
-      "l'article pour chacun. N'utilise aucun chiffre de livraison : cette question porte " +
-      'sur le texte seul.' +
+      'Across the five indexed master agreements, what does each one provide for in case of ' +
+      'a delivery variance? Distinguish the regimes: compensation due without the client ' +
+      'asking, compensation expressly excluded, and penalty borne by the agency. Cite the ' +
+      'article for each one. Use no delivery figure: this question is about the text alone.' +
       HOUSE_STYLE,
-    exercises: 'les cinq contrats cadres',
+    exercises: 'the five master agreements',
   },
 
   {
     id: 'pacing-live',
     family: 'pacing',
     kind: 'single',
-    label: 'Que remonte le pacing en ce moment ?',
+    label: 'What is pacing reporting right now?',
     prompt:
-      "Que remonte le flux de pacing ? Utilise la table pacing_events de l'Eventhouse : " +
-      'timestamp, campaign_id, impressions_delta, spend_delta et pacing_index. Dis quelles ' +
-      'campagnes sur-consomment leur plan et depuis quand, et dis combien de temps couvre ' +
-      'la fenêtre que tu as lue.' +
+      'What is the pacing stream reporting? Use the pacing_events table in the Eventhouse: ' +
+      'timestamp, campaign_id, impressions_delta, spend_delta and pacing_index. Say which ' +
+      'campaigns are over-consuming their plan and since when, and say how much time the ' +
+      'window you read actually covers.' +
       HOUSE_STYLE,
-    exercises: 'le flux de pacing temps réel',
+    exercises: 'the real-time pacing stream',
   },
 ];
 
@@ -209,12 +209,12 @@ export const FAMILY_STYLE: Record<
   OpenerFamily,
   { icon: string; accent: string; area: string }
 > = {
-  portfolio: { icon: '🎯', accent: '#00008F', area: 'Portefeuille' },
-  delivery: { icon: '📐', accent: '#027180', area: 'Livraison' },
+  portfolio: { icon: '🎯', accent: '#00008F', area: 'Portfolio' },
+  delivery: { icon: '📐', accent: '#027180', area: 'Delivery' },
   pacing: { icon: '📈', accent: '#0891b2', area: 'Pacing' },
-  graph: { icon: '🕸️', accent: '#0369a1', area: 'Relations' },
-  contract: { icon: '📜', accent: '#896610', area: 'Contrats' },
-  billing: { icon: '💶', accent: '#863C41', area: 'Facturation' },
+  graph: { icon: '🕸️', accent: '#0369a1', area: 'Relationships' },
+  contract: { icon: '📜', accent: '#896610', area: 'Contracts' },
+  billing: { icon: '💶', accent: '#863C41', area: 'Billing' },
 };
 
 /**

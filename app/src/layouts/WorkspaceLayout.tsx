@@ -3,7 +3,7 @@ import { Outlet, useLocation, useSearchParams } from 'react-router-dom';
 
 import { AssistantRail } from '@/components/AssistantRail';
 import { useAssistant } from '@/domain/assistant';
-import { NAV } from '@/domain/nav';
+import { ALL_NAV } from '@/domain/nav';
 import { OPENERS } from '@/domain/openers';
 
 /**
@@ -23,7 +23,9 @@ export function WorkspaceLayout() {
   const { pathname } = useLocation();
   const { ask } = useAssistant();
 
-  const section = NAV.find((n) => n.to === pathname);
+  // ALL_NAV, not NAV: Architecture is a second-rank entry, and looking it up in NAV alone
+  // rendered the page with no heading at all.
+  const section = ALL_NAV.find((n) => n.to === pathname);
   const focus = params.get('focus');
 
   /**

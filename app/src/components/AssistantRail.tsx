@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useAssistant } from '@/domain/assistant';
 import type { Turn } from '@/domain/assistant';
+import type { Opener } from '@/domain/openers';
 import { Markdown } from '@/components/Markdown';
 import { splitAnswer } from '@/services/answer';
 import { frozenDate } from '@/services/frozen';
@@ -57,15 +58,15 @@ import { badgeForFamily } from '@/domain/nav';
  * has seen yet.
  */
 export const SOURCE_LABEL: Record<string, string> = {
-  Lakehouse: 'la table des livraisons et de la facturation',
-  SemanticModel: 'le modèle sémantique',
-  Warehouse: 'les tables de campagne',
-  GraphQLApi: 'le graphe de relations',
-  code_interpreter: 'un calcul',
+  Lakehouse: 'the delivery and billing tables',
+  SemanticModel: 'the semantic model',
+  Warehouse: 'the campaign tables',
+  GraphQLApi: 'the relationship graph',
+  code_interpreter: 'a computation',
 
-  'analyze.database.execute': 'les données de campagne',
-  'trace.analyze_ontology': 'le graphe de relations',
-  'trace.analyze_semantic_model': 'le modèle sémantique',
+  'analyze.database.execute': 'the campaign data',
+  'trace.analyze_ontology': 'the relationship graph',
+  'trace.analyze_semantic_model': 'the semantic model',
 };
 
 /**
@@ -115,7 +116,7 @@ function RouteBadges({ tools }: { tools: string[] }) {
         }}
       >
         <span aria-hidden="true">⚠</span>
-        <span>Aucune source consultée — cette réponse n’a pas été lue dans les données.</span>
+        <span>No source consulted — this answer was not read out of the data.</span>
       </p>
     );
   }
@@ -123,7 +124,7 @@ function RouteBadges({ tools }: { tools: string[] }) {
   return (
     <div className="mt-2 flex flex-wrap items-center gap-1">
       <span className="text-2xs" style={{ color: 'var(--text-muted)' }}>
-        Lu dans
+        Read from
       </span>
       {unique.map((t) => (
         <span
@@ -136,7 +137,7 @@ function RouteBadges({ tools }: { tools: string[] }) {
       ))}
       {unique.length > 1 ? (
         <span className="text-2xs" style={{ color: 'var(--text-muted)' }}>
-          · recoupé
+          · cross-referenced
         </span>
       ) : null}
     </div>
@@ -150,9 +151,9 @@ function RouteBadges({ tools }: { tools: string[] }) {
  * invented. These three the browser genuinely observes.
  */
 const STEPS = [
-  { key: 'connect', label: 'Ouverture du fil' },
-  { key: 'run', label: 'Exécution de la question' },
-  { key: 'read', label: 'Rédaction de la réponse' },
+  { key: 'connect', label: 'Opening the thread' },
+  { key: 'run', label: 'Running the question' },
+  { key: 'read', label: 'Writing the answer' },
 ] as const;
 
 function phaseOf(progress: string): number {
@@ -200,7 +201,7 @@ function Trace({ progress }: { progress: string }) {
           style={{ background: 'var(--border)' }}
         />
         <span style={{ color: 'var(--text-muted)' }}>
-          Choix d’une source et écriture de la requête
+          Choosing a source and writing the query
           <span className="block text-2xs italic">not measured here</span>
         </span>
       </li>
@@ -271,7 +272,7 @@ function AnswerBubble({ turn }: { turn: Turn }) {
       <div className="mt-2 flex items-start justify-between gap-2">
         <details className="min-w-0 flex-1">
           <summary className="cursor-pointer text-2xs" style={{ color: 'var(--text-muted)' }}>
-            D’où vient cette réponse
+            Where this answer comes from
           </summary>
 
           {source ? (
@@ -327,17 +328,17 @@ function Failure({ turn }: { turn: Turn }) {
       style={{ borderColor: 'var(--sev-high)', background: 'var(--bg-secondary)' }}
     >
       <p className="text-xs font-medium" style={{ color: 'var(--sev-high)' }}>
-        La question n’a pas abouti
+        The question did not complete
       </p>
       <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
         {message}
       </p>
       <p className="mt-1 text-2xs" style={{ color: 'var(--text-muted)' }}>
-        Abandon après {turn.seconds} s
+        Gave up after {turn.seconds} s
       </p>
       <details className="mt-2">
         <summary className="cursor-pointer text-2xs" style={{ color: 'var(--text-muted)' }}>
-          Détail technique
+          Technical detail
         </summary>
         <p
           className="mt-1 font-mono text-2xs leading-relaxed"
@@ -365,20 +366,68 @@ function Welcome({ configured }: { configured: boolean }) {
       style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}
     >
       <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-        Posez une question sur les campagnes
+        Ask a question about the campaigns
       </p>
       <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
         {configured
-          ? 'Les réponses sont lues dans le modèle sémantique, le corpus contractuel et le graphe de relations. Chacune indique ce qu’elle a consulté, et la requête dont elle est issue.'
-          : 'L’assistant n’est pas câblé dans ce build. Les questions sont affichées telles qu’elles seraient envoyées, pour que le câblage se vérifie sans inventer de réponse.'}
+          ? 'Answers are read from live campaign data, the signed agreements and the account map. Each one states what it looked at.'
+          : 'The assistant is not wired up in this build. Questions are shown exactly as they would be sent, so the wiring can be checked without inventing an answer.'}
       </p>
     </div>
+  );
+}
+
+/**
+ * One suggested question, badge included.
+ *
+ * Extracted because the rail now draws this list in two very different frames — open before the
+ * first question, folded away after it — and a suggestion that looked different depending on
+ * which frame held it would read as two different kinds of control.
+ */
+function SuggestionButton({
+  opener,
+  busy,
+  onAsk,
+}: {
+  opener: Opener;
+  busy: boolean;
+  onAsk: (opener: Opener) => void;
+}) {
+  const badge = badgeForFamily(opener.family);
+  return (
+    <button
+      onClick={() => onAsk(opener)}
+      disabled={busy}
+      className="w-full rounded-xl border px-3 py-2.5 text-left transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+      style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}
+    >
+      <span className="block text-xs leading-snug" style={{ color: 'var(--text-primary)' }}>
+        {opener.label}
+      </span>
+      <span
+        className="mt-1.5 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs"
+        style={{ background: 'var(--accent-soft)', color: badge.tone }}
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          className="h-3 w-3 shrink-0"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d={badge.icon} />
+        </svg>
+        {badge.label}
+      </span>
+    </button>
   );
 }
 
 export function AssistantRail() {
   const { turns, busy, suggestions, configured, ask, askText } = useAssistant();
   const [draft, setDraft] = useState('');
+  const [showFollowUps, setShowFollowUps] = useState(false);
   const tail = useRef<HTMLDivElement>(null);
 
   // New turns scroll themselves into view; otherwise a long answer pushes the
@@ -414,8 +463,8 @@ export function AssistantRail() {
           </h2>
           <p className="truncate text-xs" style={{ color: 'var(--text-muted)' }}>
             {configured
-              ? 'Lit le modèle, les contrats et le graphe'
-              : 'Non configuré'}
+              ? 'Reads campaign data, contracts and account relationships'
+              : 'Not configured'}
           </p>
         </div>
       </header>
@@ -445,61 +494,71 @@ export function AssistantRail() {
       </div>
 
       {/*
-        Suggestions in two acts.
+        Suggestions in two acts — and the second act gets out of the way.
 
-        Three before the first question, then whatever is left after each answer. An opening
-        wall of eight options is a decision, not an invitation — and the list empties itself
-        exactly when the room has learned what a good question looks like and can type one.
+        Three before the first question, then whatever is left after each answer. An opening wall
+        of eight options is a decision, not an invitation.
+
+        After the first answer the list FOLDS. On a laptop the rail is tall enough to carry both;
+        on a small screen three cards at the foot left the answer a four-line slot to scroll in,
+        which is the one thing the room is actually reading. So the follow-ups become a single
+        line until asked for, and asking one closes them again — the answer that follows should
+        land in a full-height panel, not behind the menu that produced it.
       */}
       {suggestions.length > 0 ? (
-        <div className="border-t px-4 pt-3" style={{ borderColor: 'var(--border)' }}>
-          <p className="mb-2 text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
-            {turns.length === 0 ? 'Pour commencer' : 'Aller plus loin'}
-          </p>
-          <div className="space-y-1.5">
-            {suggestions.map((s) => {
-              const badge = badgeForFamily(s.family);
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => ask(s)}
-                  disabled={busy}
-                  className="w-full rounded-xl border px-3 py-2.5 text-left transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
-                  style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}
-                >
-                  <span
-                    className="block text-xs leading-snug"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    {s.label}
-                  </span>
-                  <span
-                    className="mt-1.5 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs"
-                    style={{ background: 'var(--accent-soft)', color: badge.tone }}
-                  >
-                    <svg
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      className="h-3 w-3 shrink-0"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d={badge.icon} />
-                    </svg>
-                    {badge.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          {turns.length === 0 ? (
-            <p className="mt-2 text-2xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-              Le badge annonce ce que la question ira lire. Ce qu’elle a réellement lu s’affiche
-              sous la réponse.
+        turns.length === 0 ? (
+          <div className="border-t px-4 pt-3 pb-1" style={{ borderColor: 'var(--border)' }}>
+            <p className="mb-2 text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
+              To get started
             </p>
-          ) : null}
-        </div>
+            <div className="max-h-[42vh] space-y-1.5 overflow-y-auto">
+              {suggestions.map((s) => (
+                <SuggestionButton key={s.id} opener={s} busy={busy} onAsk={ask} />
+              ))}
+            </div>
+            <p className="mt-2 text-2xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+              The badge declares what the question will go and read. What it actually read is shown
+              under the answer.
+            </p>
+          </div>
+        ) : (
+          <div className="border-t" style={{ borderColor: 'var(--border)' }}>
+            <button
+              type="button"
+              onClick={() => setShowFollowUps((v) => !v)}
+              aria-expanded={showFollowUps}
+              className="flex w-full items-center gap-1.5 px-4 py-2 text-xs font-medium transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+                className={`h-3 w-3 shrink-0 transition-transform ${showFollowUps ? 'rotate-90' : ''}`}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+              Go further · {suggestions.length}
+            </button>
+            {showFollowUps ? (
+              <div className="max-h-[45vh] space-y-1.5 overflow-y-auto px-4 pb-3">
+                {suggestions.map((s) => (
+                  <SuggestionButton
+                    key={s.id}
+                    opener={s}
+                    busy={busy}
+                    onAsk={(o) => {
+                      setShowFollowUps(false);
+                      ask(o);
+                    }}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
+        )
       ) : null}
 
       <form
@@ -511,8 +570,8 @@ export function AssistantRail() {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           disabled={busy}
-          placeholder={busy ? 'Réponse en cours…' : 'Poser une question…'}
-          aria-label="Poser une question à l’assistant Zava"
+          placeholder={busy ? 'Answering…' : 'Ask a question…'}
+          aria-label="Ask the Zava assistant a question"
           className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-1 disabled:opacity-50"
           style={{
             borderColor: 'var(--border)',
@@ -526,7 +585,7 @@ export function AssistantRail() {
           className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
           style={{ background: 'var(--accent)', color: '#fff' }}
         >
-          Envoyer
+          Send
         </button>
       </form>
     </aside>

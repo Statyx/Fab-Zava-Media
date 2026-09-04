@@ -35,12 +35,12 @@ export function setMode(_mode: DataMode): void {
 }
 
 export const MODE_LABEL: Record<DataMode, string> = {
-  demo: 'Non connecté',
-  live: 'Données Fabric en direct',
+  demo: 'Not connected',
+  live: 'Live Fabric data',
 };
 
 export function modeReason(): string {
   return liveAvailable()
-    ? 'Chaque chiffre est une mesure évaluée sur le modèle sémantique.'
-    : "Modèle sémantique ou inscription Entra absents : aucun chiffre n'est affiché.";
+    ? 'Every figure is a measure evaluated against the semantic model.'
+    : 'Semantic model or Entra registration missing: no figure is displayed.';
 }

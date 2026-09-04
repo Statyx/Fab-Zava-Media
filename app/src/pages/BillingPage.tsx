@@ -25,7 +25,7 @@ import { useDax } from '@/hooks/useDax';
  * side, each labelled, is the only honest rendering — and it is the failure a demo of this
  * kind is most likely to walk into on stage.
  */
-export function FacturationPage() {
+export function BillingPage() {
   const { ask } = useAssistant();
   const totals = useDax(BILLING_TOTALS_DAX, mapBillingTotals);
   const gaps = useDax(BILLING_DAX, mapBilling);
@@ -35,39 +35,45 @@ export function FacturationPage() {
   return (
     <>
       <Section
-        id="facture"
-        title="Facturé et contesté"
-        provenance="Modèle sémantique — fait de facturation, grain campagne × régie"
+        id="billed"
+        title="Billed and disputed"
+        provenance="Semantic model — billing fact, grain campaign × media owner"
       >
         <QueryState loading={totals.loading} error={totals.error} onRetry={totals.reload}>
           {totals.data ? (
             <div className="grid grid-cols-2 gap-3 @3xl:grid-cols-3 @6xl:grid-cols-5">
               <KpiCard
-                label="Facturé brut"
+                label="Gross billed"
                 value={fmtEur(totals.data.gross)}
                 measure="Gross Billed (EUR)"
               />
               <KpiCard
-                label="Facturé net"
+                label="Net billed"
                 value={fmtEur(totals.data.net)}
                 measure="Net Billed (EUR)"
-                hint={`${fmtInt(totals.data.invoices)} factures`}
+                hint={`${fmtInt(totals.data.invoices)} invoices`}
               />
               <KpiCard
                 label="Net net"
                 value={fmtEur(totals.data.netNet)}
                 measure="Net Net Billed (EUR)"
-                hint="après remise régie"
+                hint="after media owner rebate"
               />
+              {/* A blank here is the model reporting no match, not a count of zero. Saying
+                  "0" would put the same confidence on both, so the card names which it is. */}
               <KpiCard
-                label="Factures contestées"
-                value={fmtInt(totals.data.disputed)}
+                label="Disputed invoices"
+                value={totals.data.disputed === null ? 'None' : fmtInt(totals.data.disputed)}
                 measure="Disputed Invoices"
-                tone={totals.data.disputed > 0 ? 'alert' : 'default'}
-                hint={fmtEur(totals.data.disputedAmount)}
+                tone={(totals.data.disputed ?? 0) > 0 ? 'alert' : 'default'}
+                hint={
+                  totals.data.disputed === null
+                    ? 'no dispute in scope'
+                    : fmtEur(totals.data.disputedAmount ?? 0)
+                }
               />
               <KpiCard
-                label="Écart facturation / dépense"
+                label="Billing vs spend gap"
                 value={fmtEur(totals.data.gap)}
                 measure="Billing vs Spend Gap (EUR)"
                 tone={Math.abs(totals.data.gap) > 0 ? 'alert' : 'default'}
@@ -81,10 +87,10 @@ export function FacturationPage() {
             <table className="mt-4 w-full text-sm">
               <thead>
                 <tr style={{ color: 'var(--text-muted)' }}>
-                  <th className="pb-2 text-left text-xs font-medium">Annonceur · marché</th>
-                  <th className="pb-2 text-right text-xs font-medium">Dépense nette</th>
-                  <th className="pb-2 text-right text-xs font-medium">Facturé net</th>
-                  <th className="pb-2 text-right text-xs font-medium">Écart</th>
+                  <th className="pb-2 text-left text-xs font-medium">Advertiser · market</th>
+                  <th className="pb-2 text-right text-xs font-medium">Net spend</th>
+                  <th className="pb-2 text-right text-xs font-medium">Net billed</th>
+                  <th className="pb-2 text-right text-xs font-medium">Gap</th>
                 </tr>
               </thead>
               <tbody>
@@ -116,9 +122,9 @@ export function FacturationPage() {
       </Section>
 
       <Section
-        id="manquants"
-        title="Ce qui n’a pas été facturé"
-        provenance="Modèle sémantique — dépense sans facturation en regard"
+        id="unbilled"
+        title="What was never billed"
+        provenance="Semantic model — shortfall between spend and billing, at campaign × media owner grain"
         action={
           <button
             onClick={() => {
@@ -128,7 +134,7 @@ export function FacturationPage() {
             className="rounded-md px-2.5 py-1 text-xs font-medium"
             style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
           >
-            Poser la question
+            Ask the question
           </button>
         }
       >
@@ -149,7 +155,7 @@ export function FacturationPage() {
                     className="text-[0.625rem] font-semibold uppercase tracking-wide"
                     style={{ color: 'var(--text-muted)' }}
                   >
-                    Grain campagne × régie
+                    Campaign × media owner grain
                   </p>
                   <p
                     className="mt-1 text-2xl font-bold tabular-nums"
@@ -158,7 +164,7 @@ export function FacturationPage() {
                     {fmtInt(grain.data.rows)}
                   </p>
                   <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    lignes de facturation manquantes
+                    billing lines short
                   </p>
                 </div>
 
@@ -173,7 +179,7 @@ export function FacturationPage() {
                     className="text-[0.625rem] font-semibold uppercase tracking-wide"
                     style={{ color: 'var(--text-muted)' }}
                   >
-                    Grain campagne
+                    Campaign grain
                   </p>
                   <p
                     className="mt-1 text-2xl font-bold tabular-nums"
@@ -182,7 +188,7 @@ export function FacturationPage() {
                     {fmtInt(grain.data.campaigns)}
                   </p>
                   <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    campagnes concernées · {fmtEur(grain.data.amount)}
+                    campaigns affected · {fmtEur(grain.data.amount)}
                   </p>
                 </div>
               </div>
@@ -194,14 +200,14 @@ export function FacturationPage() {
               ) : null}
 
               <p className="mt-3 text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                Les deux chiffres sont justes. Ils ne répondent pas à la même question : une
-                campagne réservée chez trois régies produit trois lignes. Demander « combien de
-                campagnes » et recevoir un compte de lignes, c’est se tromper d’un facteur trois
-                sans qu’aucune erreur ne s’affiche.
+                Both figures are correct. They do not answer the same question: a campaign booked
+                with three media owners produces three lines. Asking "how many campaigns" and
+                being handed a count of lines is a factor-of-three error that raises nothing on
+                screen.
               </p>
               <p className="mt-2 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                La fenêtre de réclamation, elle, n’est pas dans le modèle : c’est une clause. La
-                question croisée ci-dessus va la chercher là où elle est écrite.
+                The claim window is set by the agreement, not by the billing data. The question
+                above reads it from the signed contract for the account concerned.
               </p>
             </>
           ) : null}
@@ -209,18 +215,18 @@ export function FacturationPage() {
       </Section>
 
       <Section
-        id="remises"
-        title="Remises consenties par les régies"
-        provenance="Modèle sémantique — remise régie → agence"
+        id="rebates"
+        title="Rebates granted by media owners"
+        provenance="Semantic model — media owner → agency rebate"
       >
         <QueryState loading={rebates.loading} error={rebates.error} onRetry={rebates.reload}>
           <table className="w-full text-sm">
             <thead>
               <tr style={{ color: 'var(--text-muted)' }}>
-                <th className="pb-2 text-left text-xs font-medium">Régie</th>
-                <th className="pb-2 text-right text-xs font-medium">Brut facturé</th>
-                <th className="pb-2 text-right text-xs font-medium">Remise</th>
-                <th className="pb-2 text-right text-xs font-medium">% du brut</th>
+                <th className="pb-2 text-left text-xs font-medium">Media owner</th>
+                <th className="pb-2 text-right text-xs font-medium">Gross billed</th>
+                <th className="pb-2 text-right text-xs font-medium">Rebate</th>
+                <th className="pb-2 text-right text-xs font-medium">% of gross</th>
               </tr>
             </thead>
             <tbody>
@@ -236,8 +242,8 @@ export function FacturationPage() {
           </table>
 
           <p className="mt-3 text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-            Cette remise est accordée par la régie à l’agence. Elle n’est pas un droit de
-            l’annonceur, et rien dans ce tableau ne peut être présenté comme tel.
+            This rebate is granted by the media owner to the agency. It is not an advertiser
+            entitlement, and nothing in this table may be presented as one.
           </p>
         </QueryState>
       </Section>

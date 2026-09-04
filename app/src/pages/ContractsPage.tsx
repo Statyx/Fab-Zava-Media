@@ -12,20 +12,20 @@ import { useAssistant } from '@/domain/assistant';
  * The summaries below are captions, not answers. Clicking one asks the corpus, and what comes
  * back carries its own citation. The app must never let a caption pass for evidence.
  */
-export function ContratsPage() {
+export function ContractsPage() {
   const { askText } = useAssistant();
 
   return (
     <>
       <Section
         id="regimes"
-        title="Cinq contrats cadres, trois régimes"
-        provenance="Corpus contractuel — recherche vectorielle, agent dédié"
+        title="Five master agreements, three regimes"
+        provenance="Signed master agreements ADV-001 to ADV-005"
       >
         <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-          Trois écarts du même ordre de grandeur produisent trois issues opposées. Aucun chiffre
-          ne le laisse deviner, et aucune clause seule ne dit sur quelle campagne elle
-          s’applique. Les deux ensemble, oui.
+          Three variances of the same size can produce three opposite outcomes, depending on the
+          regime the campaign sits under: compensation, a make-good in kind, or nothing owed at
+          all. The agreement is what decides.
         </p>
 
         <div className="mt-4 space-y-2">
@@ -36,10 +36,10 @@ export function ContratsPage() {
                 key={a.id}
                 onClick={() =>
                   askText(
-                    `Dans le contrat cadre de ${a.advertiser}, que prévoit exactement la clause ` +
-                      `de livraison ? Cite l'article et dis, en une phrase, ce que l'agence doit ` +
-                      `faire si l'écart dépasse la tolérance. N'utilise aucun chiffre de ` +
-                      `livraison : cette question porte sur le texte seul.`,
+                    `In the ${a.advertiser} master agreement, what exactly does the delivery ` +
+                      `clause provide for? Cite the article and say, in one sentence, what the ` +
+                      `agency must do if the variance exceeds the tolerance. Use no delivery ` +
+                      `figures: this question is about the text alone.`,
                   )
                 }
                 className="block w-full rounded-lg p-3 text-left transition hover:bg-[var(--bg-secondary)] focus-visible:outline-2 focus-visible:outline-offset-2"
@@ -68,17 +68,16 @@ export function ContratsPage() {
         </div>
       </Section>
 
-      <Section id="frontiere" title="Pourquoi cette page ne montre aucun chiffre">
+      <Section id="boundary" title="Where an entitlement is decided">
         <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-          Le modèle sémantique ne contient aucun terme contractuel : il ne peut pas dire si un
-          client a droit à une compensation, à une régularisation ou à un audit. Il donne la
-          mesure, puis s’arrête. Inversement, l’agent contractuel ne calcule rien.
+          A delivery variance is a fact. Whether it entitles the advertiser to compensation, to
+          a make-good, or to an audit is decided by the master agreement — and the terms differ
+          by account. That is why the figure alone never settles a claim.
         </p>
         <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-          Ce n’est pas une contrainte technique, c’est une contrainte d’audit. Deux définitions
-          concurrentes d’« impressions diffusées » ne rendent pas le système lent, elles le
-          rendent inauditable — et la loi Sapin impose de pouvoir <em>montrer</em> comment un
-          chiffre a été produit.
+          It also has to hold up under scrutiny: the Sapin law requires the agency to be able to{' '}
+          <em>show</em> how a billed figure was produced. Two competing definitions of "delivered
+          impressions" is not a reporting inconvenience — it is an audit exposure.
         </p>
       </Section>
     </>

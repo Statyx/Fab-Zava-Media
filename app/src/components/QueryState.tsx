@@ -26,7 +26,7 @@ export function QueryState({ loading, error, empty, onRetry, children }: Props) 
           className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"
           style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
         />
-        Chargement des données…
+        Loading data…
       </div>
     );
   }
@@ -41,7 +41,7 @@ export function QueryState({ loading, error, empty, onRetry, children }: Props) 
         }}
       >
         <p className="text-sm font-medium" style={{ color: 'var(--sev-critical)' }}>
-          La requête a échoué
+          The query failed
         </p>
         <pre
           className="mt-2 whitespace-pre-wrap break-all text-xs"
@@ -59,7 +59,7 @@ export function QueryState({ loading, error, empty, onRetry, children }: Props) 
               color: 'var(--sev-critical)',
             }}
           >
-            Réessayer
+            Retry
           </button>
         )}
       </div>
@@ -69,7 +69,7 @@ export function QueryState({ loading, error, empty, onRetry, children }: Props) 
   if (empty) {
     return (
       <div className="p-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
-        Aucune donnée retournée.
+        No data returned.
       </div>
     );
   }

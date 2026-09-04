@@ -35,7 +35,7 @@ const TONES: Record<NonNullable<Props['tone']>, string> = {
 
 export function KpiCard({ label, value, measure, hint, tone = 'default' }: Props) {
   return (
-    <div className="glass rounded-xl p-4" title={`Mesure ${measure} — modèle sémantique`}>
+    <div className="glass rounded-xl p-4" title={`Measure ${measure} — semantic model`}>
       <p
         className="text-[0.625rem] font-semibold uppercase tracking-wide"
         style={{ color: 'var(--text-muted)' }}

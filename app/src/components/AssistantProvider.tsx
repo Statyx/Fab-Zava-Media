@@ -56,7 +56,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           prompt,
           exercises,
           status: 'running',
-          progress: 'Envoi de la question…',
+          progress: 'Sending the question…',
           seconds: 0,
           answer: null,
           error: null,
@@ -76,7 +76,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
        */
       const recorded = frozenAnswer(prompt);
       if (recorded) {
-        patch({ progress: 'Rejeu d’une réponse enregistrée…' });
+        patch({ progress: 'Replaying a recorded answer…' });
         await new Promise((r) => setTimeout(r, REPLAY_MS));
         patch({
           status: 'done',

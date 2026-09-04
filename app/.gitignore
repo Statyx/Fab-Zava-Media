@@ -26,7 +26,9 @@ coverage
 # `rayfin/.env*` covers .env, .env.bak (emitted by env-file v2 migration with
 # secrets), and any future .env-family files Rayfin's runtime adds.
 rayfin/.env*
-rayfin/.deployments.json
+# Trailing `*` also covers the .bak-* copies taken before re-pointing the CLI at a
+# different workspace — those carry another demo's item IDs and must never be committed.
+rayfin/.deployments.json*
 rayfin/.temp/
 
 # Editor / OS

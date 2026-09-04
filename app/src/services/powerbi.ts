@@ -50,10 +50,10 @@ export async function executeDax(dax: string, datasetId = semanticModelId): Prom
 /** Convenience for the common case: a query shaped `EVALUATE ROW(...)` with one scalar. */
 export async function executeScalar(dax: string): Promise<DaxValue> {
   const [row] = await executeDax(dax);
-  if (!row) throw new Error('La requête DAX n’a retourné aucune ligne.');
+  if (!row) throw new Error('The DAX query returned no rows.');
   const values = Object.values(row);
   if (values.length !== 1) {
-    throw new Error(`Attendu une seule colonne, ${values.length} reçues.`);
+    throw new Error(`Expected a single column, got ${values.length}.`);
   }
   return values[0];
 }

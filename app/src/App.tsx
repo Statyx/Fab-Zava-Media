@@ -8,12 +8,12 @@ import { ARCHITECTURE_ROUTE, DIAGNOSTIC_ROUTE } from '@/domain/nav';
 import { useAuth } from '@/hooks/AuthContext';
 import { WorkspaceLayout } from '@/layouts/WorkspaceLayout';
 import { ArchitecturePage } from '@/pages/ArchitecturePage';
-import { ContratsPage } from '@/pages/ContratsPage';
+import { BillingPage } from '@/pages/BillingPage';
+import { ContractsPage } from '@/pages/ContractsPage';
 import { CoverPage } from '@/pages/CoverPage';
+import { DeliveryPage } from '@/pages/DeliveryPage';
 import { DiagnosticPage } from '@/pages/DiagnosticPage';
-import { FacturationPage } from '@/pages/FacturationPage';
-import { LivraisonPage } from '@/pages/LivraisonPage';
-import { PortefeuillePage } from '@/pages/PortefeuillePage';
+import { PortfolioPage } from '@/pages/PortfolioPage';
 import { isFramed, STARTUP_TIMEOUT_MS } from '@/services/authStartup';
 
 /**
@@ -32,12 +32,12 @@ function StartupStalled() {
     >
       <div className="glass max-w-md rounded-xl p-6">
         <h1 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-          La connexion n’a pas abouti
+          Sign-in did not complete
         </h1>
         <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
           {isFramed()
-            ? 'Cette page s’exécute dans une iframe du portail Fabric, où la connexion silencieuse et les fenêtres de connexion sont souvent bloquées.'
-            : 'Le démarrage de la session a dépassé le délai prévu.'}
+            ? 'This page is running inside a Fabric portal iframe, where silent sign-in and sign-in popups are often blocked.'
+            : 'Session startup took longer than the allotted budget.'}
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <a
@@ -47,7 +47,7 @@ function StartupStalled() {
             className="rounded-md px-3 py-2 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2"
             style={{ background: 'var(--accent)' }}
           >
-            Ouvrir dans un nouvel onglet
+            Open in a new tab
           </a>
           <a
             href={DIAGNOSTIC_ROUTE}
@@ -92,7 +92,7 @@ function AuthGuard({
         style={{ background: 'var(--bg-secondary)' }}
       >
         <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
-          Connexion…
+          Signing in…
         </div>
       </div>
     );
@@ -151,10 +151,10 @@ function App() {
                   </AppShell>
                 }
               >
-                <Route path="portefeuille" element={<PortefeuillePage />} />
-                <Route path="livraison" element={<LivraisonPage />} />
-                <Route path="contrats" element={<ContratsPage />} />
-                <Route path="facturation" element={<FacturationPage />} />
+                <Route path="portfolio" element={<PortfolioPage />} />
+                <Route path="delivery" element={<DeliveryPage />} />
+                <Route path="contracts" element={<ContractsPage />} />
+                <Route path="billing" element={<BillingPage />} />
                 <Route path="architecture" element={<ArchitecturePage />} />
               </Route>
             </Route>
@@ -182,10 +182,10 @@ function App() {
               </Guarded>
             }
           >
-            <Route path="/portefeuille" element={<PortefeuillePage />} />
-            <Route path="/livraison" element={<LivraisonPage />} />
-            <Route path="/contrats" element={<ContratsPage />} />
-            <Route path="/facturation" element={<FacturationPage />} />
+            <Route path="/portfolio" element={<PortfolioPage />} />
+            <Route path="/delivery" element={<DeliveryPage />} />
+            <Route path="/contracts" element={<ContractsPage />} />
+            <Route path="/billing" element={<BillingPage />} />
             <Route path={ARCHITECTURE_ROUTE} element={<ArchitecturePage />} />
           </Route>
 

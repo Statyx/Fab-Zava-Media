@@ -5,11 +5,12 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AssistantProvider } from '@/components/AssistantProvider';
-import { ContratsPage } from '@/pages/ContratsPage';
+import { ContractsPage } from '@/pages/ContractsPage';
 import { CoverPage } from '@/pages/CoverPage';
 import { DiagnosticPage } from '@/pages/DiagnosticPage';
 import { AGREEMENTS } from '@/data/contracts';
-import { NAV } from '@/domain/nav';
+import { ALL_NAV, NAV, SECONDARY_NAV } from '@/domain/nav';
+import { FOCUS_BY_FAMILY, SECTION_BY_FAMILY } from '@/domain/nav';
 import { OPENERS, starters } from '@/domain/openers';
 
 /**
@@ -60,7 +61,7 @@ describe('the cover', () => {
 
 describe('the contract section', () => {
   it('names every agreement', () => {
-    mount(<ContratsPage />);
+    mount(<ContractsPage />);
     for (const a of AGREEMENTS) {
       expect(screen.getAllByText(new RegExp(a.advertiser)).length).toBeGreaterThan(0);
     }
@@ -74,7 +75,7 @@ describe('the contract section', () => {
    * collapse silently, because a page with numbers on it looks *better*.
    *
    * The assertion is structural rather than visual on purpose. The page does render digits —
-   * "50 %", "45 jours", "art. 6.1" — but those are quoted clause terms, transcribed from the
+   * "50%", "45 days", "art. 6.1" — but those are quoted clause terms, transcribed from the
    * contract corpus, not results. A regex over the rendered text cannot tell a quoted term from
    * a measurement, so it would either pass on a page full of KPIs or fail on faithful contract
    * language. What actually matters is the wiring: this module must never reach the semantic
@@ -82,7 +83,7 @@ describe('the contract section', () => {
    */
   it('never reaches the semantic model', () => {
     const src = readFileSync(
-      join(process.cwd(), 'src', 'pages', 'ContratsPage.tsx'),
+      join(process.cwd(), 'src', 'pages', 'ContractsPage.tsx'),
       'utf8',
     );
     expect(src).not.toMatch(/useDax|@\/data\/queries|executeDax|_DAX\b/);
@@ -101,12 +102,56 @@ describe('the diagnostic', () => {
         <DiagnosticPage />
       </MemoryRouter>,
     );
-    expect(screen.getByText(/Lancer le diagnostic/)).toBeTruthy();
+    expect(screen.getByText(/Run the diagnostic/)).toBeTruthy();
     expectNoBrokenNumbers(container);
   });
 
   it('is absent from the navigation', () => {
     // Reachable by URL, never advertised: it is a repair tool, not a screen.
-    expect(NAV.some((n) => n.to.includes('diagnostic'))).toBe(false);
+    expect(ALL_NAV.some((n) => n.to.includes('diagnostic'))).toBe(false);
+  });
+});
+
+/**
+ * Architecture was routed twice and linked from nowhere, and `WorkspaceLayout` — which titles
+ * a page by looking it up in the nav manifest — rendered it with no heading at all. Both
+ * failures were silent: the route resolved, the page mounted, and nothing said it was
+ * unreachable. These two pin the fix rather than the symptom.
+ */
+describe('second-rank destinations', () => {
+  it('are titled, so a page cannot render headless', () => {
+    for (const entry of SECONDARY_NAV) {
+      expect(ALL_NAV.find((n) => n.to === entry.to)?.label).toBeTruthy();
+      expect(ALL_NAV.find((n) => n.to === entry.to)?.blurb).toBeTruthy();
+    }
+  });
+
+  it('stay out of the four questions the console answers', () => {
+    // Kept out of NAV so "every family lands on a listed section" keeps meaning what it says.
+    const primary = new Set(NAV.map((n) => n.to));
+    for (const entry of SECONDARY_NAV) expect(primary.has(entry.to)).toBe(false);
+    for (const to of Object.values(SECTION_BY_FAMILY)) expect(primary.has(to)).toBe(true);
+  });
+});
+
+/**
+ * A focus anchor that matches no `Section id` scrolls nowhere and fails nothing. Pinned
+ * against the ids the pages actually declare, read from source: the alternative is a typo
+ * that only shows up as a card that quietly does not scroll.
+ */
+describe('focus anchors', () => {
+  it('point at a section id that exists on the page they land on', () => {
+    const fileFor: Record<string, string> = {
+      '/portfolio': 'PortfolioPage.tsx',
+      '/delivery': 'DeliveryPage.tsx',
+      '/contracts': 'ContractsPage.tsx',
+      '/billing': 'BillingPage.tsx',
+    };
+
+    for (const [family, anchor] of Object.entries(FOCUS_BY_FAMILY)) {
+      const route = SECTION_BY_FAMILY[family as keyof typeof SECTION_BY_FAMILY];
+      const src = readFileSync(join(process.cwd(), 'src', 'pages', fileFor[route]), 'utf8');
+      expect(src).toMatch(new RegExp(`id="${anchor}"`));
+    }
   });
 });

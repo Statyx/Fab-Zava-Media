@@ -522,3 +522,120 @@
     transition: none;
   }
 }
+/* ---------------------------------------------------------------------------
+   The chain diagram.
+
+   Plane colour is data: the class comes from `plane` in `domain/chain.ts`, and the hues live
+   here so they follow the theme instead of being frozen into the SVG. Amber for Foundry, teal
+   for Fabric, blue for the semantic model, violet for the ontology — the same reading as the
+   sibling console, so the two demos do not teach two different colour languages.
+
+   Dark-mode values are not the light ones dimmed: on a dark card the light fills disappear and
+   the light strokes glare, so each plane gets a lifted stroke and a heavier fill.
+   --------------------------------------------------------------------------- */
+.wf-node.is-foundry {
+  color: #92400e;
+  --wf-fill: rgba(217, 119, 6, 0.12);
+}
+.wf-node.is-fabric {
+  color: #02555f;
+  --wf-fill: rgba(2, 113, 128, 0.1);
+}
+.wf-node.is-ontology {
+  color: #4c1d95;
+  --wf-fill: rgba(138, 43, 226, 0.1);
+}
+.wf-node.is-semantic {
+  color: #1b5e9e;
+  --wf-fill: rgba(27, 94, 158, 0.1);
+}
+
+[data-theme='dark'] .wf-node.is-foundry {
+  color: #fbbf24;
+  --wf-fill: rgba(217, 119, 6, 0.2);
+}
+[data-theme='dark'] .wf-node.is-fabric {
+  color: #5eead4;
+  --wf-fill: rgba(45, 212, 191, 0.16);
+}
+[data-theme='dark'] .wf-node.is-ontology {
+  color: #c4b5fd;
+  --wf-fill: rgba(139, 92, 246, 0.2);
+}
+[data-theme='dark'] .wf-node.is-semantic {
+  color: #93c5fd;
+  --wf-fill: rgba(59, 130, 246, 0.18);
+}
+
+.wf-node rect {
+  fill: var(--wf-fill);
+  stroke: currentColor;
+}
+.wf-node text {
+  fill: currentColor;
+}
+
+/* Connectors are chrome, not data: they take the muted text colour so they recede behind the
+   boxes they join, in both themes. */
+.wf-edge {
+  stroke: var(--text-muted);
+  opacity: 0.75;
+}
+.wf-arrow-head {
+  fill: var(--text-muted);
+}
+.wf-edge-protocol {
+  fill: var(--text-secondary);
+}
+.wf-edge-name {
+  fill: var(--text-muted);
+}
+
+/* The legend swatch reuses the node classes so a plane cannot be recoloured in one place and
+   not the other. */
+.wf-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-secondary);
+}
+.wf-key::before {
+  content: '';
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 0.2rem;
+  background: var(--wf-fill);
+  border: 1.5px solid currentColor;
+}
+.wf-key.is-foundry {
+  color: #92400e;
+  --wf-fill: rgba(217, 119, 6, 0.12);
+}
+.wf-key.is-fabric {
+  color: #02555f;
+  --wf-fill: rgba(2, 113, 128, 0.1);
+}
+.wf-key.is-ontology {
+  color: #4c1d95;
+  --wf-fill: rgba(138, 43, 226, 0.1);
+}
+.wf-key.is-semantic {
+  color: #1b5e9e;
+  --wf-fill: rgba(27, 94, 158, 0.1);
+}
+[data-theme='dark'] .wf-key.is-foundry {
+  color: #fbbf24;
+  --wf-fill: rgba(217, 119, 6, 0.2);
+}
+[data-theme='dark'] .wf-key.is-fabric {
+  color: #5eead4;
+  --wf-fill: rgba(45, 212, 191, 0.16);
+}
+[data-theme='dark'] .wf-key.is-ontology {
+  color: #c4b5fd;
+  --wf-fill: rgba(139, 92, 246, 0.2);
+}
+[data-theme='dark'] .wf-key.is-semantic {
+  color: #93c5fd;
+  --wf-fill: rgba(59, 130, 246, 0.18);
+}

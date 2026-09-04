@@ -29,7 +29,7 @@ export function AuthPage() {
     try {
       await signIn();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Échec de la connexion.');
+      setError(err instanceof Error ? err.message : 'Sign-in failed.');
     } finally {
       setIsLoading(false);
     }
@@ -37,9 +37,9 @@ export function AuthPage() {
 
   const buttonLabel = isLoading
     ? fabricAuthEnabled
-      ? 'Ouverture de Fabric…'
-      : 'Connexion…'
-    : 'Se connecter avec Microsoft';
+      ? 'Opening Fabric…'
+      : 'Signing in…'
+    : 'Sign in with Microsoft';
 
   return (
     <div className="auth-bg relative flex min-h-screen flex-col overflow-hidden">
@@ -65,7 +65,7 @@ export function AuthPage() {
                 Zava Media
               </h1>
               <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                Livraison, contrats et facturation des campagnes.
+                Campaign delivery, contracts and billing.
               </p>
             </div>
 
