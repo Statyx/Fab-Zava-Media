@@ -297,6 +297,82 @@ def test_calendar_columns_stay_strings_in_the_notebook():
         assert col in STRING_COLUMNS, f"'{col}' must be forced to STRING"
 
 
+def test_notebook_widens_inferred_integers_to_64_bit():
+    """Every integer VALUE fits in 32 bits. The SUMs do not.
+
+    The largest delivery row is about 2 million impressions, so inferSchema picks `int`.
+    Delivered impressions total 7.8 billion; Direct Lake pushes SUM(int) down to the SQL
+    endpoint, which raises "Arithmetic overflow error converting expression to data type
+    int" and fails the query outright. That killed [Delivery vs Plan %], the measure the
+    demo is built on, while every individual row looked correct.
+
+    Pinned as source text because the correction lives inside the generated notebook,
+    which only ever runs in Spark and so can never be exercised here.
+    """
+    from fabric.lakehouse.deploy_setup_notebook import build_notebook_py
+    body = build_notebook_py("ws", "lh", "LH")
+    assert 'simpleString() == "int"' in body, "no 32-bit integer detection in the notebook"
+    assert "LongType()" in body, "integers are detected but never widened"
+
+
+def test_notebook_corrects_the_schema_before_reading_not_after():
+    """Inference must be a proposal that is corrected, never a result that is patched.
+
+    '2026-04' is parsed as a timestamp; casting that timestamp back to string yields
+    '2026-04-01 00:00:00' and can never recover the text that was in the file. Both sides
+    of the plan/delivery join were corrupted identically, so the join kept working and
+    the damage surfaced only as garbage on the axis of a chart.
+
+    The fix is to re-read the file with the corrected schema, so the parse never happens.
+    """
+    from fabric.lakehouse.deploy_setup_notebook import build_notebook_py
+    body = build_notebook_py("ws", "lh", "LH")
+    assert "schema=StructType(fields)" in body, (
+        "the corrected schema is never applied to a read — a post-hoc "
+        '.cast("string") cannot undo a date parse'
+    )
+    assert not re.search(r'cast\(\s*"string"\s*\)', body), (
+        "calendar columns are still being cast to string after inference, which "
+        "produces '2026-04-01 00:00:00' instead of '2026-04'"
+    )
+
+
+def test_seed_integer_sums_overflow_32_bits():
+    """The reason the widening exists, asserted against the data rather than the code.
+
+    If a future regeneration shrinks the seed data below the int32 ceiling this test goes
+    green for the wrong reason — but it can never go red while the hazard is real and the
+    widening absent, which is the failure that actually cost a demo.
+    """
+    import csv as _csv
+    int32_max = 2**31 - 1
+    for table, column in (("fact_delivery", "impressions"),
+                          ("fact_plan", "planned_impressions")):
+        with (RAW / f"{table}.csv").open(encoding="utf-8", newline="") as fh:
+            total = sum(int(row[column]) for row in _csv.DictReader(fh))
+        assert total > int32_max, (
+            f"{table}.{column} sums to {total:,}, which now fits in an int32 — "
+            "confirm the Delta widening is still required before relaxing it"
+        )
+
+
+def test_calendar_string_columns_are_not_declared_numeric_in_the_model():
+    """A column forced to STRING must not be declared int64 in the semantic model.
+
+    dim_date[month] was declared int64 while holding '2026-04'. Direct Lake rejected every
+    query touching it, which silently emptied the delivery-trend visual that uses it as
+    its axis — the model loaded fine and one chart was simply dead.
+    """
+    text = (ROOT / "fabric" / "powerbi" / "deploy_semantic_model.py").read_text(encoding="utf-8")
+    from fabric.lakehouse.deploy_setup_notebook import STRING_COLUMNS
+    for col in STRING_COLUMNS:
+        numeric = re.search(rf'_col\(\s*"{re.escape(col)}"\s*,\s*"(int64|double|decimal)"', text)
+        assert not numeric, (
+            f"dim/fact column '{col}' is forced to STRING by the notebook but declared "
+            f"'{numeric.group(1)}' in the semantic model"
+        )
+
+
 # ── Ontology <-> CSVs ────────────────────────────────────────────
 def test_ontology_entities_bind_to_existing_tables_and_columns():
     """An entity bound to a missing column yields an EMPTY GRAPH, not an error."""

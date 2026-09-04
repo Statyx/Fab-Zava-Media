@@ -198,12 +198,14 @@ def build_model_bim(config, state):
     tables.append({
         "name": "dim_date", "lineageTag": _tag(),
         "description": "Calendar. date_key is a STRING (YYYY-MM-DD) so it joins the "
-                       "delivery grain exactly.",
+                       "delivery grain exactly, and month is a STRING (YYYY-MM) so it "
+                       "joins the monthly plan and billing grain. Declaring month int64 "
+                       "made every visual keyed on it fail: the column is '2026-04'.",
         "columns": [
             _col("date_key", "string", "Date key (YYYY-MM-DD)", summarize_none=True),
             _col("year", "int64", "Calendar year", fmt="0", summarize_none=True),
             _col("quarter", "string", "Calendar quarter", summarize_none=True),
-            _col("month", "int64", "Month number", fmt="0", summarize_none=True),
+            _col("month", "string", "Month key (YYYY-MM)", summarize_none=True),
             _col("month_name", "string", "Month name"),
             _col("day_of_month", "int64", "Day of month", fmt="0", summarize_none=True),
             _col("week_of_year", "int64", "ISO week", fmt="0", summarize_none=True),

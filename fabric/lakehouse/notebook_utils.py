@@ -165,10 +165,22 @@ def create_notebook(workspace_id: str, display_name: str,
         },
     }
 
-    resp = requests.post(
-        f"{API}/workspaces/{workspace_id}/items",
-        headers=headers, json=body, timeout=60,
-    )
+    # Fabric releases a deleted item from the LISTING before it releases the NAME, so
+    # delete_notebook's wait can report success while a create still 409s with
+    # ItemDisplayNameNotAvailableYet. The reservation is not observable any other way
+    # than by attempting the create, so the retry belongs here.
+    for attempt in range(12):
+        resp = requests.post(
+            f"{API}/workspaces/{workspace_id}/items",
+            headers=headers, json=body, timeout=60,
+        )
+        if resp.status_code == 409 and "ItemDisplayNameNotAvailableYet" in resp.text:
+            print(f"  Name '{display_name}' still reserved, retrying "
+                  f"({attempt + 1}/12)...")
+            sys.stdout.flush()
+            time.sleep(15)
+            continue
+        break
 
     if resp.status_code in (200, 201):
         return resp.json()["id"]
