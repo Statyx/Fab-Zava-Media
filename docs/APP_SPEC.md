@@ -75,6 +75,12 @@ not deleting — `known_issues.md` #19.
 build: the subtree is dropped at bundle time rather than merely hidden. Screens can be iterated
 on without a tenant, and cannot be reached once shipped.
 
+Its lazy-loaded query-source provider supplies explicitly labelled sample figures for design
+review, not a snapshot of Fabric. The header and KPI tooltips identify those samples. Prepared
+questions replay their recorded answers (from the original data); new live questions require
+opening the authenticated app. Neither the fixtures nor the preview route ship in production,
+and a failed live query still shows its error and Retry rather than substituting sample data.
+
 There is exactly **one** navigation. The blueprint's failure mode #15 is two navigations over
 the same subject: in `app-v2` a four-step arc held every chart and no chat while four personas
 held every chat and no chart. Do not reintroduce it under another name (no "Parcours", no

@@ -1,21 +1,21 @@
 import { getMode, MODE_LABEL, modeReason } from '@/data/mode';
+import { useQuerySource } from '@/data/querySource';
 import { statusChip, statusDot } from '@/domain/severity';
 
 /**
  * Where the numbers come from, always on screen.
  *
- * The sister console made this a toggle because it carried a bundled data set to fall back
- * on. This one has none, so there is nothing to switch to — and a control that pretends
- * otherwise would promise a fallback that does not exist. It reads, and it explains itself on
- * hover; it does not act.
+ * The development preview has its own sample source; live failures never switch to it.
+ * This badge describes the selected source, rather than promising a successful connection.
  */
 export function ModeBadge() {
+  const { preview } = useQuerySource();
   const mode = getMode();
-  const isLive = mode === 'live';
+  const isLive = !preview && mode === 'live';
 
   return (
     <span
-      title={modeReason()}
+      title={preview ? 'Illustrative figures for design review. No Power BI query is sent.' : modeReason()}
       className={[
         'flex items-center gap-2 rounded-md px-2.5 py-1 text-xs font-medium ring-1',
         isLive ? statusChip('ok') : statusChip('warn'),
@@ -25,7 +25,7 @@ export function ModeBadge() {
         aria-hidden="true"
         className={['h-1.5 w-1.5 rounded-full', statusDot(isLive ? 'ok' : 'warn')].join(' ')}
       />
-      {MODE_LABEL[mode]}
+      {preview ? 'Preview data' : MODE_LABEL[mode]}
     </span>
   );
 }

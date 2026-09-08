@@ -13,6 +13,7 @@ import {
 import { AssistantContext, type AssistantApi, type Turn } from '@/domain/assistant';
 import { frozenAnswer, REPLAY_MS } from '@/services/frozen';
 import { deeper, followUps, starters, type Opener, type OpenerBackend } from '@/domain/openers';
+import { useQuerySource } from '@/data/querySource';
 
 /**
  * Owns the conversation for the whole console.
@@ -21,6 +22,7 @@ import { deeper, followUps, starters, type Opener, type OpenerBackend } from '@/
  * user their thread.
  */
 export function AssistantProvider({ children }: { children: React.ReactNode }) {
+  const { preview } = useQuerySource();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [asked, setAsked] = useState<string[]>([]);
   /**
@@ -114,6 +116,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
+        // Never send illustrative preview figures to a live agent as measured context.
+        if (preview) {
+          throw new Error(
+            'This design preview only replays recorded questions. Open the live app and sign in to ask this question.',
+          );
+        }
         const askAgent = backend === 'foundry' ? askSupervisor : askDataAgent;
         const answer = await askAgent(prompt, (s) => patch({ progress: s }));
         patch({ status: 'done', answer, progress: '' });
@@ -135,7 +143,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         setBusy(false);
       }
     },
-    [busy]
+    [busy, preview]
   );
 
   const ask = useCallback(

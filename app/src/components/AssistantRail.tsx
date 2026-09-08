@@ -7,6 +7,7 @@ import { Markdown } from '@/components/Markdown';
 import { splitAnswer } from '@/services/answer';
 import { frozenDate } from '@/services/frozen';
 import { badgeForFamily } from '@/domain/nav';
+import { useQuerySource } from '@/data/querySource';
 
 /**
  * The assistant, pinned to a rail.
@@ -368,6 +369,7 @@ function Failure({ turn }: { turn: Turn }) {
 }
 
 function Welcome({ configured }: { configured: boolean }) {
+  const { preview } = useQuerySource();
   return (
     <div
       className="rounded-xl border p-3"
@@ -377,7 +379,9 @@ function Welcome({ configured }: { configured: boolean }) {
         Ask a question about the campaigns
       </p>
       <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-        {configured
+        {preview
+          ? 'Suggested questions replay recorded answers, which may differ from the sample figures. Open the live app to ask your own question.'
+          : configured
           ? 'Answers are read from live campaign data, the signed agreements and the account map. Each one states what it looked at.'
           : 'The assistant is not wired up in this build. Questions are shown exactly as they would be sent, so the wiring can be checked without inventing an answer.'}
       </p>
@@ -433,6 +437,7 @@ function SuggestionButton({
 }
 
 export function AssistantRail() {
+  const { preview } = useQuerySource();
   const { turns, busy, deeper, suggestions, configured, ask, askText } = useAssistant();
   const [draft, setDraft] = useState('');
   const [showFollowUps, setShowFollowUps] = useState(false);
@@ -446,7 +451,7 @@ export function AssistantRail() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (busy || !draft.trim()) return;
+    if (preview || busy || !draft.trim()) return;
     askText(draft);
     setDraft('');
   };
@@ -470,7 +475,9 @@ export function AssistantRail() {
             Assistant Zava
           </h2>
           <p className="truncate text-xs" style={{ color: 'var(--text-muted)' }}>
-            {configured
+            {preview
+              ? 'Recorded answers - not based on the sample figures'
+              : configured
               ? 'Reads campaign data, contracts and account relationships'
               : 'Not configured'}
           </p>
@@ -616,8 +623,8 @@ export function AssistantRail() {
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          disabled={busy}
-          placeholder={busy ? 'Answering…' : 'Ask a question…'}
+          disabled={preview || busy}
+          placeholder={preview ? 'Open live app to ask a question' : busy ? 'Answering…' : 'Ask a question…'}
           aria-label="Ask the Zava assistant a question"
           className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-1 disabled:opacity-50"
           style={{
@@ -628,7 +635,7 @@ export function AssistantRail() {
         />
         <button
           type="submit"
-          disabled={busy || !draft.trim()}
+          disabled={preview || busy || !draft.trim()}
           className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
           style={{ background: 'var(--accent)', color: '#fff' }}
         >

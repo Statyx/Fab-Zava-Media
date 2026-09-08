@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { AppShell } from '@/components/AppShell';
@@ -15,6 +15,10 @@ import { DeliveryPage } from '@/pages/DeliveryPage';
 import { DiagnosticPage } from '@/pages/DiagnosticPage';
 import { PortfolioPage } from '@/pages/PortfolioPage';
 import { isFramed, STARTUP_TIMEOUT_MS } from '@/services/authStartup';
+
+const PreviewLayout = import.meta.env.DEV
+  ? lazy(() => import('@/preview/PreviewLayout'))
+  : null;
 
 /**
  * A spinner with no exit is the failure this guard exists to avoid.
@@ -134,8 +138,15 @@ function App() {
               `import.meta.env.DEV` is statically false in a production build, so this subtree
               is dropped at bundle time rather than merely hidden — the screens can be iterated
               on without a tenant, and cannot be reached once shipped. */}
-          {import.meta.env.DEV ? (
-            <Route path="/preview">
+          {import.meta.env.DEV && PreviewLayout ? (
+            <Route
+              path="/preview"
+              element={
+                <Suspense fallback={<p className="p-6">Loading preview…</p>}>
+                  <PreviewLayout />
+                </Suspense>
+              }
+            >
               <Route
                 index
                 element={

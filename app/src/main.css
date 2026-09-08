@@ -504,6 +504,241 @@
   }
 }
 
+/* Cover-only layout; the workspace keeps its compact KPI and panel sizing. */
+.cover-page {
+  width: 100%;
+  max-width: 1400px;
+  margin-inline: auto;
+  padding: clamp(1.5rem, 3vw, 3rem) clamp(1rem, 4vw, 3rem) 2.5rem;
+}
+
+.cover-hero {
+  max-width: 48rem;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.cover-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.375rem 0.875rem;
+  color: var(--text-secondary);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.cover-eyebrow > span {
+  color: var(--portal-grad-a);
+}
+
+.cover-title {
+  margin-top: 1.25rem;
+  font-size: clamp(2.25rem, 4.5vw, 3.5rem);
+  font-weight: 750;
+  line-height: 1.1;
+  letter-spacing: -0.045em;
+  color: var(--text-primary);
+}
+.cover-title > span {
+  display: block;
+}
+.cover-intro {
+  max-width: 42rem;
+  margin: 1.25rem auto 0;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+
+.cover-metrics {
+  max-width: 53rem;
+  margin: 2.5rem auto;
+}
+.cover-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.cover-kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 7.5rem;
+  padding: 1rem 0.375rem;
+  border-radius: 1rem;
+  text-align: center;
+}
+.cover-kpi-icon {
+  order: 0;
+  font-size: 1.125rem;
+  color: var(--portal-grad-b);
+}
+.cover-kpi-value {
+  order: 1;
+  margin-top: 0.375rem;
+  font-size: 1.875rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.cover-kpi-label {
+  order: 2;
+  margin-top: 0.375rem;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cover-kpi-hint {
+  order: 3;
+  font-size: 0.625rem;
+}
+
+.cover-section-label {
+  margin-bottom: 0.875rem;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.cover-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.cover-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 1.375rem;
+  border-radius: 1rem;
+  text-align: left;
+  cursor: pointer;
+}
+.cover-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 650;
+}
+.cover-card-icon {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  border-radius: 0.875rem;
+  background: color-mix(in srgb, var(--card-accent) 12%, var(--bg-card-solid));
+  font-size: 1.25rem;
+}
+.cover-card-question {
+  margin-block: 1rem 1.25rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.cover-card-footer {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+.cover-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+.cover-card .portal-chip {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  color: var(--text-secondary);
+  font-size: 0.5625rem;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+.cover-card .portal-arrow {
+  margin-left: auto;
+  color: var(--card-accent);
+}
+.cover-card:hover {
+  transform: translateY(-0.2rem);
+  box-shadow: var(--shadow-md);
+}
+.cover-caption {
+  margin-top: 0.75rem;
+  font-size: 0.6875rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.cover-platform {
+  margin-top: 2rem;
+}
+.cover-architecture {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 29rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  text-align: left;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.cover-architecture-title {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+.cover-architecture-detail {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.625rem;
+}
+.cover-architecture:hover,
+.cover-architecture:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 700px) {
+  .cover-metrics-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .cover-cards {
+    grid-template-columns: 1fr;
+  }
+  .cover-kpi {
+    min-height: 6.5rem;
+  }
+  .cover-metrics {
+    margin-block: 1.75rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cover-card,
+  .cover-card::before,
+  .cover-card::after,
+  .cover-card .portal-arrow,
+  .cover-card .portal-chip {
+    transition: none;
+  }
+  .cover-card:hover {
+    transform: none;
+  }
+}
+
 /* The cover's single primary action. It is the only button on a very quiet page, so it
    carries a little more weight than a normal one — and lifts on hover, which is the whole
    affordance: this page is a door, not a report. */

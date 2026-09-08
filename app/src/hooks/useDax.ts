@@ -7,7 +7,8 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 
-import { executeDax, type DaxRow } from '@/services/powerbi';
+import { useQuerySource } from '@/data/querySource';
+import type { DaxRow } from '@/services/powerbi';
 
 export interface DaxState<T> {
   data: T | null;
@@ -17,6 +18,7 @@ export interface DaxState<T> {
 }
 
 export function useDax<T>(dax: string, map: (rows: DaxRow[]) => T): DaxState<T> {
+  const { execute } = useQuerySource();
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export function useDax<T>(dax: string, map: (rows: DaxRow[]) => T): DaxState<T> 
     setLoading(true);
     setError(null);
 
-    executeDax(dax)
+    execute(dax)
       .then((rows) => {
         if (cancelled) return;
         setData(map(rows));
@@ -49,7 +51,7 @@ export function useDax<T>(dax: string, map: (rows: DaxRow[]) => T): DaxState<T> 
     // `map` is a module-level function in practice; depending on it would re-run the query on
     // every render if a caller ever passed an inline lambda.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dax, nonce]);
+  }, [dax, nonce, execute]);
 
   return { data, loading, error, reload };
 }

@@ -1,10 +1,12 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { MemoryRouter, useLocation } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AssistantProvider } from '@/components/AssistantProvider';
+import { KpiCard } from '@/components/KpiCard';
 import { ContractsPage } from '@/pages/ContractsPage';
 import { CoverPage } from '@/pages/CoverPage';
 import { DiagnosticPage } from '@/pages/DiagnosticPage';
@@ -12,6 +14,8 @@ import { AGREEMENTS } from '@/data/contracts';
 import { ALL_NAV, NAV, SECONDARY_NAV } from '@/domain/nav';
 import { FOCUS_BY_FAMILY, SECTION_BY_FAMILY } from '@/domain/nav';
 import { OPENERS, starters } from '@/domain/openers';
+import { COVER_DAX } from '@/data/queries';
+import { executeDax } from '@/services/powerbi';
 
 /**
  * Every figure in this app comes from the semantic model at render time, so a screen test
@@ -26,10 +30,16 @@ vi.mock('@/services/powerbi', () => ({
   powerbiConfigured: true,
 }));
 
-function mount(ui: React.ReactElement) {
+function LocationProbe() {
+  const location = useLocation();
+  return <output data-testid="location">{location.pathname}{location.search}</output>;
+}
+
+function mount(ui: React.ReactElement, path = '/') {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[path]}>
       <AssistantProvider>{ui}</AssistantProvider>
+      <LocationProbe />
     </MemoryRouter>,
   );
 }
@@ -40,22 +50,83 @@ function expectNoBrokenNumbers(container: HTMLElement) {
 }
 
 describe('the cover', () => {
-  it('offers a door to every section', () => {
+  beforeEach(() => {
+    vi.mocked(executeDax).mockReset().mockResolvedValue([]);
+  });
+
+  it('keeps the curated opening questions', async () => {
     const { container } = mount(<CoverPage />);
 
-    // A section absent from the cover is a section nobody finds.
-    const reachable = new Set(starters(OPENERS).map((o) => o.family));
-    expect(reachable.size).toBe(starters(OPENERS).length);
+    const questions = screen.getByRole('region', { name: /Explore/ });
+    expect(within(questions).getAllByRole('button')).toHaveLength(starters(OPENERS).length);
+    await waitFor(() => expect(screen.queryByText('Loading data…')).not.toBeInTheDocument());
 
     expectNoBrokenNumbers(container);
   });
 
-  it('shows a question, never an identifier', () => {
+  it('shows a question, never an identifier', async () => {
     mount(<CoverPage />);
     for (const o of starters(OPENERS)) {
-      const label = screen.getAllByText(o.label);
-      expect(label.length).toBeGreaterThan(0);
+      expect(screen.getByRole('button', { name: o.label })).toBeInTheDocument();
     }
+    await waitFor(() => expect(screen.queryByText('Loading data…')).not.toBeInTheDocument());
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Your media ecosystem. Connected.');
+  });
+
+  it.each(['/', '/preview'])('preserves question, route and panel from %s', async (path) => {
+    mount(<CoverPage />, path);
+    const user = userEvent.setup();
+    await waitFor(() => expect(screen.queryByText('Loading data…')).not.toBeInTheDocument());
+    for (const o of starters(OPENERS)) {
+      await user.click(screen.getByRole('button', { name: o.label }));
+      const prefix = path === '/preview' ? path : '';
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        `${prefix}${SECTION_BY_FAMILY[o.family]}?ask=${o.id}&focus=${FOCUS_BY_FAMILY[o.family]}`,
+      );
+    }
+    await user.click(screen.getByRole('button', { name: /Architecture/ }));
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      `${path === '/preview' ? path : ''}/architecture`,
+    );
+  });
+
+  it('fills the six compact tiles from the semantic model', async () => {
+    vi.mocked(executeDax).mockResolvedValueOnce([{
+      '[Campaigns]': 81, '[Advertisers]': 7, '[Markets]': 9,
+      '[MediaOwners]': 13, '[Over]': 4, '[Under]': 2,
+    }]);
+    const { container } = mount(<CoverPage />);
+    const tiles = await screen.findAllByTitle(/Measure .+ — semantic model/);
+    expect(tiles).toHaveLength(6);
+    for (const [label, value] of [
+      ['Campaigns', '81'], ['Advertisers', '7'], ['Markets', '9'],
+      ['Media owners', '13'], ['Over-delivered', '4'], ['Under-delivered', '2'],
+    ]) {
+      const tile = tiles.find((t) => within(t).queryByText(label));
+      expect(tile).toBeDefined();
+      expect(within(tile!).getByText(value)).toBeInTheDocument();
+    }
+    expect(executeDax).toHaveBeenCalledWith(COVER_DAX);
+    expectNoBrokenNumbers(container);
+  });
+
+  it('keeps the questions available after a data error and supports retry', async () => {
+    vi.mocked(executeDax).mockRejectedValueOnce(new Error('Model unavailable'));
+    mount(<CoverPage />);
+    expect(await screen.findByText('Model unavailable')).toBeInTheDocument();
+    expect(screen.queryAllByTitle(/Measure .+ — semantic model/)).toHaveLength(0);
+    expect(screen.getByRole('button', { name: starters(OPENERS)[0].label })).toBeEnabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findAllByTitle(/Measure .+ — semantic model/)).toHaveLength(6);
+    expect(screen.queryByText('Model unavailable')).not.toBeInTheDocument();
+  });
+
+  it('leaves workspace KPIs on the default presentation', () => {
+    render(<KpiCard label="Campaigns" value="81" measure="Total Campaigns" hint="In scope" />);
+    const tile = screen.getByTitle('Measure Total Campaigns — semantic model');
+    expect(tile).not.toHaveClass('cover-kpi');
+    expect(within(tile).getByText('81')).toHaveClass('text-xl');
+    expect(within(tile).getByText('In scope')).toBeInTheDocument();
   });
 });
 

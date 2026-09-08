@@ -19,12 +19,16 @@
  *    and read as oversized once four cards sat on one row — a KPI grid is scanned, and a
  *    figure only has to be the largest thing in its own card, not on the screen.
  */
+import { useQuerySource } from '@/data/querySource';
+
 interface Props {
   label: string;
   value: string;
   measure: string;
   hint?: string;
   tone?: 'default' | 'alert' | 'good';
+  variant?: 'default' | 'cover';
+  icon?: string;
 }
 
 const TONES: Record<NonNullable<Props['tone']>, string> = {
@@ -33,20 +37,34 @@ const TONES: Record<NonNullable<Props['tone']>, string> = {
   good: '#059669',
 };
 
-export function KpiCard({ label, value, measure, hint, tone = 'default' }: Props) {
+export function KpiCard({
+  label, value, measure, hint, tone = 'default', variant = 'default', icon,
+}: Props) {
+  const { preview } = useQuerySource();
+  const cover = variant === 'cover';
   return (
-    <div className="glass rounded-xl p-4" title={`Measure ${measure} — semantic model`}>
+    <div
+      className={cover ? 'glass cover-kpi' : 'glass rounded-xl p-4'}
+      title={preview ? `Preview sample for ${measure}` : `Measure ${measure} — semantic model`}
+    >
+      {cover && icon ? <span className="cover-kpi-icon" aria-hidden>{icon}</span> : null}
       <p
-        className="text-[0.625rem] font-semibold uppercase tracking-wide"
-        style={{ color: 'var(--text-muted)' }}
+        className={cover ? 'cover-kpi-label' : 'text-[0.625rem] font-semibold uppercase tracking-wide'}
+        style={{ color: cover ? 'var(--text-secondary)' : 'var(--text-muted)' }}
       >
         {label}
       </p>
-      <p className="mt-1.5 text-xl font-bold tabular-nums" style={{ color: TONES[tone] }}>
+      <p
+        className={cover ? 'cover-kpi-value' : 'mt-1.5 text-xl font-bold tabular-nums'}
+        style={{ color: TONES[tone] }}
+      >
         {value}
       </p>
       {hint && (
-        <p className="mt-0.5 text-[0.6875rem]" style={{ color: 'var(--text-secondary)' }}>
+        <p
+          className={cover ? 'cover-kpi-hint' : 'mt-0.5 text-[0.6875rem]'}
+          style={{ color: 'var(--text-secondary)' }}
+        >
           {hint}
         </p>
       )}

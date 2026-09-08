@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 import { KpiCard } from '@/components/KpiCard';
 import { Icon } from '@/components/Icon';
 import { QueryState } from '@/components/QueryState';
@@ -12,6 +14,7 @@ import {
 import { FAMILY_STYLE, OPENERS, starters } from '@/domain/openers';
 import { useDax } from '@/hooks/useDax';
 import { useGo } from '@/hooks/useGo';
+import { fmtInt } from '@/lib/format';
 
 /**
  * The cover.
@@ -30,142 +33,138 @@ export function CoverPage() {
   const cards = starters(OPENERS);
 
   return (
-    <div className="mx-auto max-w-[1400px] p-6 sm:p-10">
-      <header className="max-w-3xl">
-        <p
-          className="text-xs font-semibold uppercase tracking-[0.18em]"
-          style={{ color: 'var(--text-muted)' }}
-        >
-          Zava Media · operations console
+    <div className="cover-page">
+      <header className="cover-hero">
+        <p className="glass cover-eyebrow">
+          <span aria-hidden>✦</span>
+          Zava Media · connected context
         </p>
-        <h1
-          className="mt-3 text-3xl font-bold tracking-tight"
-          style={{ color: 'var(--text-primary)' }}
-        >
-          Every campaign, from plan to invoice.
+        <h1 className="cover-title">
+          Your media ecosystem.{' '}
+          <span className="portal-accent">Connected.</span>
         </h1>
-        <p className="mt-3 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-          Delivery against plan by market and quarter, the terms of each master agreement, and
-          what has been billed against what was actually spent.
+        <p className="cover-intro">
+          Campaigns, delivery, contracts and billing — connected through a shared business
+          context. Explore the figures, the relationships and the terms behind each account.
         </p>
       </header>
 
-      {/* Counts come from the model, not from the copy. A hardcoded "80 campaigns" keeps its
-          value after the data changes, which is exactly the kind of quiet lie this app exists
-          not to tell. */}
-      <div className="mt-8">
+      <section className="cover-metrics" aria-label="Portfolio at a glance">
         <QueryState loading={loading} error={error} onRetry={reload}>
           {data ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              <KpiCard label="Campaigns" value={String(data.campaigns)} measure="Total Campaigns" />
+            <div className="cover-metrics-grid">
               <KpiCard
+                variant="cover"
+                icon="🎯"
+                label="Campaigns"
+                value={fmtInt(data.campaigns)}
+                measure="Total Campaigns"
+              />
+              <KpiCard
+                variant="cover"
+                icon="👥"
                 label="Advertisers"
-                value={String(data.advertisers)}
+                value={fmtInt(data.advertisers)}
                 measure="Total Advertisers"
               />
-              <KpiCard label="Markets" value={String(data.markets)} measure="Total Markets" />
               <KpiCard
+                variant="cover"
+                icon="🌍"
+                label="Markets"
+                value={fmtInt(data.markets)}
+                measure="Total Markets"
+              />
+              <KpiCard
+                variant="cover"
+                icon="📡"
                 label="Media owners"
-                value={String(data.mediaOwners)}
+                value={fmtInt(data.mediaOwners)}
                 measure="Total Media Owners"
               />
               <KpiCard
+                variant="cover"
+                icon="↗"
                 label="Over-delivered"
-                value={String(data.over)}
+                value={fmtInt(data.over)}
                 measure="Over-delivered Campaigns"
-                tone={data.over > 0 ? 'alert' : 'default'}
               />
               <KpiCard
+                variant="cover"
+                icon="↘"
                 label="Under-delivered"
-                value={String(data.under)}
+                value={fmtInt(data.under)}
                 measure="Under-delivered Campaigns"
-                tone={data.under > 0 ? 'alert' : 'default'}
               />
             </div>
           ) : null}
         </QueryState>
-      </div>
+      </section>
 
-      <h2 className="mt-10 text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-        Where to start
-      </h2>
-      <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-        Pick a question and it opens the section that answers it, on the panel that carries it.
-      </p>
+      <section className="cover-explore" aria-labelledby="cover-explore-title">
+        <h2 id="cover-explore-title" className="cover-section-label">
+          Explore — start with a business question
+        </h2>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {cards.map((o) => {
-          const style = FAMILY_STYLE[o.family];
-          const badge = badgeForFamily(o.family);
-          return (
-            <button
-              key={o.id}
-              onClick={() =>
-                go(`${routeForFamily(o.family)}?ask=${o.id}&focus=${focusForFamily(o.family)}`)
-              }
-              className="glass rounded-xl p-4 text-left transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2"
-              style={{ borderTop: `3px solid ${style.accent}` }}
-            >
-              <div className="flex items-center gap-2">
-                <span aria-hidden className="text-base">
-                  {style.icon}
-                </span>
-                <span
-                  className="text-[0.625rem] font-semibold uppercase tracking-wide"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  {style.area}
-                </span>
-                {o.kind === 'mixed' ? (
-                  <span
-                    className="ml-auto rounded-full px-2 py-0.5 text-[0.625rem] font-semibold"
-                    style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
-                  >
-                    Data + contract
-                  </span>
-                ) : null}
-              </div>
-
-              <p
-                className="mt-2 text-sm font-medium leading-snug"
-                style={{ color: 'var(--text-primary)' }}
+        <div className="cover-cards">
+          {cards.map((o) => {
+            const style = FAMILY_STYLE[o.family];
+            const badge = badgeForFamily(o.family);
+            const cardStyle: CSSProperties & { '--card-accent': string } = {
+              '--card-accent': badge.tone,
+            };
+            return (
+              <button
+                key={o.id}
+                aria-label={o.label}
+                onClick={() =>
+                  go(`${routeForFamily(o.family)}?ask=${o.id}&focus=${focusForFamily(o.family)}`)
+                }
+                className="glass portal-card cover-card"
+                style={cardStyle}
               >
-                {o.label}
-              </p>
-
-              <div className="mt-3 flex items-center gap-2 text-[0.6875rem]">
-                <span
-                  className="rounded px-1.5 py-0.5 font-medium"
-                  style={{ color: badge.tone, border: `1px solid ${badge.tone}` }}
-                >
-                  {badge.label}
+                <span className="cover-card-heading">
+                  <span aria-hidden className="cover-card-icon">
+                    {style.icon}
+                  </span>
+                  <span>{style.area}</span>
                 </span>
-                <span style={{ color: 'var(--text-muted)' }}>
-                  → {sectionLabelForFamily(o.family)}
-                </span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
 
-      {/* Second-rank, and it looks it. Architecture is the question that lands after the demo,
-          not the reason anyone opened the console — so it gets one muted line under the cards
-          rather than a card of its own competing with the six real questions. */}
-      <div className="mt-8 border-t pt-4" style={{ borderColor: 'var(--border)' }}>
+                <span className="cover-card-question">{o.label}</span>
+
+                <span className="cover-card-footer">
+                  <span className="cover-card-chips">
+                    <span className="portal-chip">{badge.label}</span>
+                    <span className="portal-chip">Explore {sectionLabelForFamily(o.family)}</span>
+                  </span>
+                  <span aria-hidden className="portal-arrow">→</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="cover-caption">
+          Open a question to explore the account, with the figures alongside the conversation.
+        </p>
+      </section>
+
+      <footer className="cover-platform">
         {SECONDARY_NAV.map((entry) => (
           <button
             key={entry.to}
             onClick={() => go(entry.to)}
-            className="inline-flex items-center gap-1.5 text-xs transition hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
-            style={{ color: 'var(--text-muted)' }}
+            className="glass cover-architecture"
           >
-            <Icon d={entry.icon} className="h-3.5 w-3.5" />
-            {entry.label}
-            <span className="hidden sm:inline">— {entry.blurb}</span>
+            <Icon d={entry.icon} className="h-5 w-5 shrink-0" />
+            <span>
+              <span className="cover-architecture-title">{entry.label}</span>
+              <span className="cover-architecture-detail">
+                The data, ontology and agents behind the experience
+              </span>
+            </span>
+            <span aria-hidden className="ml-auto">→</span>
           </button>
         ))}
-      </div>
+      </footer>
     </div>
   );
 }

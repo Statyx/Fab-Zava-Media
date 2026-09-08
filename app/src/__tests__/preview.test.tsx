@@ -1,0 +1,123 @@
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import App from '@/App';
+import { AssistantProvider } from '@/components/AssistantProvider';
+import { QuerySourceContext } from '@/data/querySource';
+import { useAssistant } from '@/domain/assistant';
+import { OPENERS, starters } from '@/domain/openers';
+import { previewSource } from '@/preview/data';
+import { COVER_DAX } from '@/data/queries';
+import { executeDax } from '@/services/powerbi';
+import { askDataAgent } from '@/services/dataAgent';
+import { askSupervisor } from '@/services/foundryAgent';
+
+vi.mock('@/hooks/AuthContext', () => ({
+  useAuth: () => ({ isAuthenticated: false, loading: false, user: null, signOut: vi.fn() }),
+}));
+vi.mock('@/services/powerbi', () => ({
+  executeDax: vi.fn().mockRejectedValue(new Error('Power BI must not be called from preview')),
+  semanticModelId: 'test-model',
+  powerbiConfigured: true,
+}));
+vi.mock('@/services/dataAgent', () => ({
+  askDataAgent: vi.fn(),
+  dataAgentConfigured: () => true,
+  DataAgentNotConfiguredError: class extends Error {},
+}));
+vi.mock('@/services/foundryAgent', () => ({
+  askSupervisor: vi.fn(),
+  supervisorConfigured: () => true,
+  SupervisorNotConfiguredError: class extends Error {},
+}));
+
+beforeAll(() => {
+  // jsdom has no scrolling implementation.
+  Element.prototype.scrollIntoView = vi.fn();
+});
+afterAll(() => {
+  Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
+});
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+describe('development preview', () => {
+  it('renders labelled cover tiles without an account or a Power BI request', async () => {
+    window.history.replaceState({}, '', '/preview');
+    render(<App />);
+
+    expect(await screen.findAllByTitle(/^Preview sample for/)).toHaveLength(6);
+    expect(screen.getByText('Preview data')).toBeInTheDocument();
+    expect(screen.getByRole('note')).toHaveTextContent('sample figures, not live results');
+    expect(screen.queryByText('Live Fabric data')).not.toBeInTheDocument();
+    expect(screen.queryByText('The query failed')).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/semantic model/)).not.toBeInTheDocument();
+    expect(executeDax).not.toHaveBeenCalled();
+  });
+
+  it.each(['/preview/portfolio', '/preview/delivery', '/preview/billing'])(
+    'keeps sample data on %s without interactive authentication',
+    async (path) => {
+      window.history.replaceState({}, '', path);
+      render(<App />);
+      expect(await screen.findByText('Preview data')).toBeInTheDocument();
+      await waitFor(() => expect(screen.queryByText('Loading data…')).not.toBeInTheDocument());
+      expect(screen.queryByText('The query failed')).not.toBeInTheDocument();
+      expect(screen.getByRole('textbox', { name: 'Ask the Zava assistant a question' })).toBeDisabled();
+      expect(executeDax).not.toHaveBeenCalled();
+      expect(askDataAgent).not.toHaveBeenCalled();
+      expect(askSupervisor).not.toHaveBeenCalled();
+    },
+  );
+
+  it('preserves cover navigation and leaves preview through the authentication guard', async () => {
+    window.history.replaceState({}, '', '/preview');
+    render(<App />);
+    await screen.findByText('Preview data');
+    await userEvent.click(screen.getByRole('button', { name: starters(OPENERS)[0].label }));
+    expect(window.location.pathname).toBe('/preview/delivery');
+    expect(await screen.findByText(/Replaying a recorded answer/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('link', { name: 'Open live app' }));
+    await waitFor(() => expect(window.location.pathname).toBe('/auth'));
+    expect(screen.queryByText('Preview data')).not.toBeInTheDocument();
+    expect(executeDax).not.toHaveBeenCalled();
+    expect(askDataAgent).not.toHaveBeenCalled();
+    expect(askSupervisor).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unknown query instead of using live transport or fake zero rows', async () => {
+    await expect(previewSource.execute('EVALUATE an_unknown_query'))
+      .rejects.toThrow('No design-preview data is defined');
+    expect(executeDax).not.toHaveBeenCalled();
+  });
+
+  it('does not let a caller mutate the next set of sample figures', async () => {
+    const rows = await previewSource.execute(COVER_DAX);
+    rows[0]['[Campaigns]'] = 999;
+    expect((await previewSource.execute(COVER_DAX))[0]['[Campaigns]']).toBe(80);
+  });
+});
+
+function LiveQuestionProbe() {
+  const { askText, turns } = useAssistant();
+  return (
+    <>
+      <button onClick={() => askText('A new question with sample context')}>Ask live</button>
+      <p>{turns.at(-1)?.error}</p>
+    </>
+  );
+}
+
+it('never forwards sample context to a live agent, including page-triggered questions', async () => {
+  render(
+    <QuerySourceContext.Provider value={previewSource}>
+      <AssistantProvider><LiveQuestionProbe /></AssistantProvider>
+    </QuerySourceContext.Provider>,
+  );
+  await userEvent.click(screen.getByRole('button', { name: 'Ask live' }));
+  expect(await screen.findByText(/only replays recorded questions/)).toBeInTheDocument();
+  expect(askDataAgent).not.toHaveBeenCalled();
+  expect(askSupervisor).not.toHaveBeenCalled();
+});
