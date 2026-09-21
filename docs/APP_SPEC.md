@@ -63,6 +63,7 @@ screen — it is infrastructure trivia during a demo and belongs on `/diagnostic
 | `/contrats` | the five master agreements — **no figures** | required | yes, header pills |
 | `/facturation` | delivered-not-billed, the grain panel, rebates | required | yes, header pills |
 | `/architecture` | the chain and the boundary rule | required | yes, secondary row |
+| `/iq-in-practice` | qualify delivery gaps and prepare a sourced follow-up | required | yes, labelled header tab |
 | `/diagnostic` | connectivity proof | **outside the guard** | **no** |
 | `/preview/*` | the same screens without a tenant | **DEV only** | no |
 | `*` | → `/` | — | — |
@@ -80,6 +81,109 @@ review, not a snapshot of Fabric. The header and KPI tooltips identify those sam
 questions replay their recorded answers (from the original data); new live questions require
 opening the authenticated app. Neither the fixtures nor the preview route ship in production,
 and a failed live query still shows its error and Retry rather than substituting sample data.
+
+### Microsoft IQ
+
+The display name is **Microsoft IQ** in the header, cover entry and page eyebrow. The route
+remains `/iq-in-practice` (and `/preview/iq-in-practice` in development) to preserve links.
+
+The full-width page sits outside `WorkspaceLayout`. Its compact cover link leaves the
+three business openers unchanged. The header uses an IQ-specific source label, including
+on trailing-slash routes, rather than claiming the whole dossier is live.
+
+**"Which delivery gaps need action?"** follows two fictional closed-Q3 cases at the fixed
+scenario date **15 October 2026**: Contoso Spain +12% and Litware UK +11%. The cards reveal
+facts, contractual treatment, simulated work progress and a proposed follow-up. Contoso
+requires a compensation credit under article 6.2; Litware excludes a credit for this
+variance under 6.1–6.2. Neither finding establishes the health of the entire account.
+
+`python -m design.notebooks.export_iq_dossiers` generates reference facts, campaign
+membership and verbatim contract excerpts. It uses the independent ontology-binding
+reference to verify campaign scope and rejects inconsistent advertiser/brand mappings.
+The files stand for Databricks outputs in the story; no Databricks integration is executed.
+
+The page opens directly: a compatible recording is preferred with a disclosed five-second
+replay; otherwise the labelled **Repository example** is selected at entry, without a
+blocking mode-choice screen. This initial source selection is not a fallback after a failed
+live request. Captures must match the exact question, case, scenario date and source
+fingerprint. Explicitly selecting unavailable recordings still shows an error and requires
+choosing another source; it never triggers a live call or manufactures agent prose. The capture command is
+`python -m foundry.capture_iq_dossiers`. Read its output: an incomplete capture is not ready
+for a customer recording. Original questions and their frozen answers remain untouched.
+
+The optional **Read live** action reads existing Power BI measurements, graph membership
+and a Foundry answer. It is disabled in the development preview. It requires the existing
+workspace, semantic model, Graph Model (`VITE_ZAVA_GRAPH_MODEL_ID`) and Foundry configuration.
+Changed figures/scope fail rather than silently reusing the prepared conclusion. An error
+remains visible; switching to recorded/reference evidence is an explicit action.
+
+Sign-in requests only the Fabric `.default` scope. Do not add Foundry `.default` to
+`extraScopesToConsent`: MSAL merges it into the same authorize request and Entra rejects
+multiple static resource scopes with `AADSTS70011`. Power BI and Foundry tokens are requested
+separately by their clients. Any required consent must be granted for those resources; this
+fix does not change the app registration's permissions. Auth failures remain visible even
+when the loading guard remounts the sign-in page.
+
+Explicit sign-in uses `prompt: 'login'` to ask Entra for fresh authentication rather
+than reusing a stale SSO session (`AADSTS50197`). Valid cached sessions still resume
+silently at startup. A failed silent request must not become an authenticated session
+just because MSAL retains an account entry: `getCurrentUser` only exposes an identity
+after successful authentication. This neither clears other applications' cookies nor
+changes the configured tenant or its permissions. Fresh authentication cannot restore
+a deleted user or grant missing access.
+
+The two cases use reviewed scenario-specific treatment rules, not a general legal engine.
+The full Foundry answer and reported citations remain separate evidence. No credit amount
+is fabricated: contracted channel rates, amount, approval and actual issuance remain to
+be confirmed. The existing contracts agent uses `file_search`; this does not claim a
+deployed Foundry IQ knowledge base.
+
+`artifacts/iq_context/work-notes.json` supplies a **Work IQ — simulated** Finance note:
+Contoso's calculation is prepared and awaiting validation. It changes the proposed next
+step, not the clause or the measurements. Missing notes mean unknown progress, not
+"nobody started"; conflicting notes require human review. No Microsoft 365 calls or
+permission checks are simulated as real. Drafts can be viewed or copied only.
+
+Reset, source changes and work-context changes discard old answers/drafts and prevent late
+requests from reappearing under a different context. `Why this scope?` and `How IQ contributes`
+keep graph/source detail off the main business narrative. Nothing writes to Fabric, creates
+an entity, sends a message or issues a credit from this page.
+
+The contribution controls use a consistent, labelled color code: Fabric IQ (teal),
+Foundry agents (amber), Work IQ (purple, simulated), and Web IQ (blue, simulated).
+Colors identify sources, not risk or confidence. Excluding Fabric figures/scope or Foundry
+contract context leaves both case treatments unqualified and withholds definitive drafts.
+The controls affect the demonstration's included context, not the underlying services;
+source changes clear displayed drafts and preserve explicit choices between steps.
+
+The walkthrough has five stages: **Facts → Contract → Work IQ → Web IQ → Draft**.
+The Web IQ step follows the simulated work context and must be visited before Draft is
+enabled. Its contribution is locked in earlier steps. At Web IQ, each card presents its
+fictional public announcement, included by default; the presenter can exclude it before drafting.
+Going back preserves the selection and hides the later-stage context, while Reset or a
+source reload requires reviewing Web IQ again.
+
+Web IQ is **not connected**. `artifacts/iq_context/web-notes.json` contains two explicitly
+fictional announcements: a Contoso EV roadshow in Spain in November and a Litware Home
+UK autumn promotion. Each has a fictional publisher, publication date, case scope and
+meeting prompt, with no invented real URL. `export_iq_dossiers` validates and generates
+`iq-web-context.generated.json` separately so fictitious news does not alter real
+Fabric/Foundry capture inputs or fingerprints. Notices published after the scenario date
+or belonging to another case are not used.
+
+The blue cards display **Web IQ — simulated**, the notice and its relevance for the
+meeting. Selected notices carry into the draft with an explicit simulation label and
+their fictional source/date; they cannot change any measured value, contract treatment
+or work status. Removing Web IQ removes its announcement from the draft. Work IQ's existing
+decision remains active at the Web IQ stage. Each card ends at **5 · Draft** with colored chips
+identifying the context included (including when no Work IQ note exists for Litware).
+
+Cover card titles and header links share the same navigation entry, icon, label and route.
+Cards follow the header's order for their selected sections. A title opens the section
+without a question or scroll target; the separate **Ask this question** button retains the
+original prompt, `ask` and `focus` behavior. The three starters remain curated examples, not
+a duplicate list of every section. Section headings resolve consistently in preview and
+on trailing-slash URLs.
 
 There is exactly **one** navigation. The blueprint's failure mode #15 is two navigations over
 the same subject: in `app-v2` a four-step arc held every chart and no chat while four personas

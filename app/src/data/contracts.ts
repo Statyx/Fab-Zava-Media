@@ -57,8 +57,9 @@ export const AGREEMENTS: Agreement[] = [
     regime: 'due',
     article: 'art. 6.1–6.2',
     summary:
-      'Excess beyond the tolerance is not billable, and entitles the client to a make-good ' +
-      'in space worth 50% of that excess, to be delivered within 45 days.',
+      'Excess beyond the tolerance is not billable. Above 10% over-delivery per market and ' +
+      'quarter, issue a compensation credit worth 50% of the excess media value at the ' +
+      'contracted channel rate, within 45 days of quarter close.',
   },
   {
     id: 'ADV-002',
@@ -80,7 +81,7 @@ export const AGREEMENTS: Agreement[] = [
     id: 'ADV-004',
     advertiser: 'Litware Retail',
     regime: 'excluded',
-    article: 'art. 6.3',
+    article: 'art. 6.1–6.2',
     summary:
       'Over-delivery is deemed to have no effect: no make-good, no credit note, no ' +
       'carry-over. Article 9.2 separately closes any invoice claim after 120 days.',

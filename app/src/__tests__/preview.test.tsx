@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -7,6 +7,7 @@ import { AssistantProvider } from '@/components/AssistantProvider';
 import { QuerySourceContext } from '@/data/querySource';
 import { useAssistant } from '@/domain/assistant';
 import { OPENERS, starters } from '@/domain/openers';
+import { IQ_NAV } from '@/domain/nav';
 import { previewSource } from '@/preview/data';
 import { COVER_DAX } from '@/data/queries';
 import { executeDax } from '@/services/powerbi';
@@ -85,6 +86,51 @@ describe('development preview', () => {
     expect(executeDax).not.toHaveBeenCalled();
     expect(askDataAgent).not.toHaveBeenCalled();
     expect(askSupervisor).not.toHaveBeenCalled();
+  });
+
+  it.each(['Portfolio', 'Delivery', 'Billing'])(
+    'opens the same %s screen from its header link and cover title without starting an answer',
+    async (label) => {
+      window.history.replaceState({}, '', '/preview');
+      render(<App />);
+      const user = userEvent.setup();
+      await screen.findByText('Preview data');
+      const header = within(screen.getByRole('navigation', { name: 'Main navigation' })).getByRole('link', { name: label });
+      const card = within(screen.getByRole('region', { name: /Explore/ })).getByRole('link', { name: label });
+      expect(card).toHaveAttribute('href', header.getAttribute('href'));
+      expect(card.querySelector('path')).toHaveAttribute('d', header.querySelector('path')!.getAttribute('d'));
+      await user.click(card);
+      expect(await screen.findByRole('heading', { level: 1, name: label })).toBeVisible();
+      const destination = window.location.pathname;
+      expect(window.location.search).toBe('');
+      expect(screen.queryByText(/Replaying a recorded answer/)).not.toBeInTheDocument();
+      await user.click(screen.getByRole('link', { name: /Zava Media/ }));
+      await user.click(within(screen.getByRole('navigation', { name: 'Main navigation' })).getByRole('link', { name: label }));
+      expect(window.location.pathname).toBe(destination);
+      expect(window.location.search).toBe('');
+      expect(await screen.findByRole('heading', { level: 1, name: label })).toBeVisible();
+      expect(askDataAgent).not.toHaveBeenCalled();
+      expect(askSupervisor).not.toHaveBeenCalled();
+    },
+  );
+
+  it('uses Microsoft IQ consistently and preserves the existing URL', async () => {
+    window.history.replaceState({}, '', '/preview');
+    render(<App />);
+    await screen.findByText('Preview data');
+    expect(within(screen.getByRole('navigation', { name: 'Main navigation' }))
+      .getByRole('link', { name: 'Microsoft IQ' })).toHaveAttribute('href', `/preview${IQ_NAV.to}`);
+    await userEvent.click(screen.getByRole('button', { name: /^Microsoft IQ/ }));
+    expect(await screen.findByRole('heading', { name: 'Which delivery gaps need action?' }, { timeout: 5000 })).toBeVisible();
+    expect(document.querySelector('.iq-intro .cover-eyebrow')).toHaveTextContent('Microsoft IQ');
+    expect(screen.queryByText('IQ in practice')).not.toBeInTheDocument();
+  });
+
+  it.each(['/preview/portfolio/', '/preview/delivery/'])('retains the title on %s', async (path) => {
+    window.history.replaceState({}, '', path);
+    render(<App />);
+    const label = path.includes('portfolio') ? 'Portfolio' : 'Delivery';
+    expect(await screen.findByRole('heading', { level: 1, name: label })).toBeVisible();
   });
 
   it('rejects an unknown query instead of using live transport or fake zero rows', async () => {

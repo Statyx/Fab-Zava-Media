@@ -42,8 +42,11 @@ export async function executeDax(dax: string, datasetId = semanticModelId): Prom
   if (!res.ok) throw new Error(`Power BI ${res.status}: ${body.slice(0, 600)}`);
 
   const parsed = JSON.parse(body) as {
-    results?: Array<{ tables?: Array<{ rows?: DaxRow[] }> }>;
+    error?: unknown;
+    results?: Array<{ error?: unknown; tables?: Array<{ error?: unknown; rows?: DaxRow[] }> }>;
   };
+  const queryError = parsed.error ?? parsed.results?.[0]?.error ?? parsed.results?.[0]?.tables?.[0]?.error;
+  if (queryError) throw new Error(`Power BI query error: ${JSON.stringify(queryError).slice(0, 600)}`);
   return parsed.results?.[0]?.tables?.[0]?.rows ?? [];
 }
 

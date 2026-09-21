@@ -1,0 +1,33 @@
+{
+  "scenarioId": "q3-close-2026",
+  "asOf": "2026-10-15",
+  "simulated": true,
+  "notes": [
+    {
+      "id": "SIM-WEB-CONTOSO-01",
+      "caseId": "contoso-es",
+      "advertiserId": "ADV-001",
+      "marketId": "MKT-ES",
+      "quarter": "2026-Q3",
+      "publishedOn": "2026-10-09",
+      "source": "Contoso Mobility newsroom (fictional)",
+      "headline": "Contoso EV announces a Spanish roadshow starting 2 November",
+      "summary": "Contoso EV has announced a roadshow in Madrid and Barcelona from 2 to 15 November 2026, supported by a new digital media campaign in Spain.",
+      "meetingPrompt": "Discuss the upcoming launch when reviewing next-quarter planning, without assuming the Q3 credit has been approved or issued.",
+      "simulated": true
+    },
+    {
+      "id": "SIM-WEB-LITWARE-01",
+      "caseId": "litware-uk",
+      "advertiserId": "ADV-004",
+      "marketId": "MKT-UK",
+      "quarter": "2026-Q3",
+      "publishedOn": "2026-10-08",
+      "source": "Litware Retail press room (fictional)",
+      "headline": "Litware Home's UK autumn campaign opens on 26 October",
+      "summary": "Litware Home has announced an autumn promotion across its UK stores and online shop from 26 October to 8 November 2026, with a new wave of retail media activity.",
+      "meetingPrompt": "Confirm the separate Q4 plan and budget for the autumn campaign; do not treat Q3 extra delivery as a credit or carry-over.",
+      "simulated": true
+    }
+  ]
+}

@@ -18,7 +18,7 @@ const msLogo = (
 );
 
 export function AuthPage() {
-  const { signIn, fabricAuthEnabled } = useAuth();
+  const { signIn, fabricAuthEnabled, error: authError } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -83,8 +83,12 @@ export function AuthPage() {
               {buttonLabel}
             </button>
 
-            {error && (
-              <p className={`mt-3 text-center text-sm ${statusText('fail')}`}>{error}</p>
+            <p className="mt-3 text-center text-xs" style={{ color: 'var(--text-secondary)' }}>
+              This sign-in asks for fresh credentials for the Zava environment. Your other Microsoft sessions stay open.
+            </p>
+
+            {(error || authError) && (
+              <p role="alert" className={`mt-3 text-center text-sm ${statusText('fail')}`}>{error || authError}</p>
             )}
           </div>
         </div>

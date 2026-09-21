@@ -4,7 +4,6 @@ import {
   activeAccount,
   ensureMsalReady,
   FABRIC_SCOPES,
-  FOUNDRY_SCOPES,
   getToken,
   msal,
 } from './msal';
@@ -30,23 +29,23 @@ function toUser(a: AccountInfo): AuthUser {
  */
 export class MsalAuthService implements IAuthService {
   readonly fabricAuthEnabled = true;
+  private sessionVerified = false;
 
   async signIn(): Promise<AuthUser> {
+    this.sessionVerified = false;
     await ensureMsalReady();
-    // Sign in and consent to the Fabric scopes in the same gesture, so the first data call does
-    // not trigger a second popup the user did not ask for.
-    //
-    // `extraScopesToConsent` carries Foundry through the same dialog. It cannot go in `scopes`:
-    // one token request is one audience, and mixing resources there makes MSAL throw. Without
-    // it the consent prompt lands on the *first crossing question* instead — which is the first
-    // card on the entry screen, mid-demo, in front of the room.
+    // MSAL merges extraScopesToConsent into the authorize request. Adding Foundry's
+    // .default there exceeds Entra's static-scope limit (AADSTS70011), even though
+    // it is not in `scopes`. Each service requests its own resource token separately.
     const r = await msal.loginPopup({
       scopes: FABRIC_SCOPES,
-      extraScopesToConsent: FOUNDRY_SCOPES,
+      // Explicit sign-in must not silently reuse an invalid Entra SSO session (50197).
+      prompt: 'login',
     });
     if (r.account) msal.setActiveAccount(r.account);
     const a = activeAccount();
     if (!a) throw new Error('Sign-in returned no account.');
+    this.sessionVerified = true;
     return toUser(a);
   }
 
@@ -54,10 +53,14 @@ export class MsalAuthService implements IAuthService {
     await ensureMsalReady();
     const account = activeAccount() ?? undefined;
     await msal.logoutPopup({ account });
+    this.sessionVerified = false;
   }
 
   async getCurrentUser(): Promise<AuthUser | null> {
     await ensureMsalReady();
+    // AuthProvider falls back to this after silent startup. A cached identity is
+    // not a verified session if that startup request failed.
+    if (!this.sessionVerified) return null;
     const a = activeAccount();
     return a ? toUser(a) : null;
   }
@@ -72,11 +75,13 @@ export class MsalAuthService implements IAuthService {
    * unbounded spinner, and it runs against a host we cannot reproduce locally.
    */
   async initEmbeddedAuth(): Promise<AuthUser | null> {
+    this.sessionVerified = false;
     await withTimeout(ensureMsalReady(), 'msal.initialize + handleRedirectPromise');
 
     if (activeAccount()) {
       try {
         await withTimeout(getToken(FABRIC_SCOPES, false), 'acquireTokenSilent');
+        this.sessionVerified = true;
         return await this.getCurrentUser();
       } catch {
         return null;
@@ -92,6 +97,7 @@ export class MsalAuthService implements IAuthService {
     try {
       const r = await withTimeout(msal.ssoSilent({ scopes: FABRIC_SCOPES }), 'ssoSilent');
       if (r.account) msal.setActiveAccount(r.account);
+      this.sessionVerified = true;
       return await this.getCurrentUser();
     } catch {
       return null;

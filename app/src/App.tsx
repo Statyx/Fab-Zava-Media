@@ -4,7 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
 import { AssistantProvider } from '@/components/AssistantProvider';
 import { AuthPage } from '@/components/AuthPage';
-import { ARCHITECTURE_ROUTE, DIAGNOSTIC_ROUTE } from '@/domain/nav';
+import { ARCHITECTURE_ROUTE, DIAGNOSTIC_ROUTE, IQ_NAV, IQ_ROUTE } from '@/domain/nav';
 import { useAuth } from '@/hooks/AuthContext';
 import { WorkspaceLayout } from '@/layouts/WorkspaceLayout';
 import { ArchitecturePage } from '@/pages/ArchitecturePage';
@@ -19,6 +19,12 @@ import { isFramed, STARTUP_TIMEOUT_MS } from '@/services/authStartup';
 const PreviewLayout = import.meta.env.DEV
   ? lazy(() => import('@/preview/PreviewLayout'))
   : null;
+
+const IqInPracticePage = lazy(() => import('@/pages/IqInPracticePage').then((m) => ({ default: m.IqInPracticePage })));
+
+function IqPage() {
+  return <Suspense fallback={<p className="p-6">Loading {IQ_NAV.label}…</p>}><IqInPracticePage /></Suspense>;
+}
 
 /**
  * A spinner with no exit is the failure this guard exists to avoid.
@@ -156,6 +162,10 @@ function App() {
                 }
               />
               <Route
+                path="iq-in-practice"
+                element={<AppShell><IqPage /></AppShell>}
+              />
+              <Route
                 element={
                   <AppShell>
                     <WorkspaceLayout />
@@ -186,6 +196,11 @@ function App() {
 
           {/* The layout route carries no path, so each section keeps its own URL and the
               assistant panel is mounted once for all of them rather than per screen. */}
+          <Route
+            path={IQ_ROUTE}
+            element={<Guarded><IqPage /></Guarded>}
+          />
+
           <Route
             element={
               <Guarded>

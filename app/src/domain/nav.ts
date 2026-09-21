@@ -81,6 +81,14 @@ export const DIAGNOSTIC_ROUTE = '/diagnostic';
 
 export const ARCHITECTURE_ROUTE = '/architecture';
 
+export const IQ_ROUTE = '/iq-in-practice';
+export const IQ_NAV: NavEntry = {
+  to: IQ_ROUTE,
+  label: 'Microsoft IQ',
+  blurb: 'From delivery gaps to a sourced next step.',
+  icon: GRAPH,
+};
+
 /**
  * Second-rank destinations: reachable, but not part of the work.
  *
@@ -103,7 +111,7 @@ export const SECONDARY_NAV: NavEntry[] = [
 ];
 
 /** Every titled destination, in the order the shell renders them. */
-export const ALL_NAV: NavEntry[] = [...NAV, ...SECONDARY_NAV];
+export const ALL_NAV: NavEntry[] = [...NAV, IQ_NAV, ...SECONDARY_NAV];
 
 /**
  * Which section answers a given family of question.
@@ -150,6 +158,13 @@ export function focusForFamily(family: OpenerFamily): string {
   return FOCUS_BY_FAMILY[family];
 }
 
+export function sectionEntryForFamily(family: OpenerFamily): NavEntry {
+  const route = routeForFamily(family);
+  const entry = NAV.find((n) => n.to === route);
+  if (!entry) throw new Error(`No navigation entry for ${family}: ${route}`);
+  return entry;
+}
+
 /**
  * The prefix the app is currently being served under.
  *
@@ -170,8 +185,7 @@ export function basePath(pathname: string): string {
  * legible *before* the click, not after it.
  */
 export function sectionLabelForFamily(family: OpenerFamily): string {
-  const to = SECTION_BY_FAMILY[family];
-  return NAV.find((n) => n.to === to)?.label ?? 'Open';
+  return sectionEntryForFamily(family).label;
 }
 
 /**

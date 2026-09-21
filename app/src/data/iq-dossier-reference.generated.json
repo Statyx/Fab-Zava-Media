@@ -1,0 +1,126 @@
+{
+  "scenarioId": "q3-close-2026",
+  "asOf": "2026-10-15",
+  "kind": "repository",
+  "cases": [
+    {
+      "id": "contoso-es",
+      "advertiserId": "ADV-001",
+      "advertiser": "Contoso Mobility",
+      "marketId": "MKT-ES",
+      "market": "Spain",
+      "quarter": "2026-Q3",
+      "campaignIds": [
+        "CMP-0041",
+        "CMP-0046"
+      ],
+      "campaigns": [
+        {
+          "id": "CMP-0041",
+          "name": "Contoso EV ES 2026-Q3 Performance",
+          "brand": "Contoso EV"
+        },
+        {
+          "id": "CMP-0046",
+          "name": "Contoso Fleet ES 2026-Q3 Performance",
+          "brand": "Contoso Fleet"
+        }
+      ],
+      "facts": {
+        "planned": 286404580,
+        "delivered": 320773136,
+        "variance": 0.12000002234601137
+      },
+      "contract": {
+        "file": "ADV-001-contoso-mobility.md",
+        "reference": "ZM-ADV-001-2026",
+        "treatment": "credit",
+        "fingerprint": "cef6ec49068db0e42776fcece9156f38f9ac67ffc0ead03d0b9dd65edb63432b",
+        "articles": [
+          {
+            "number": "5.2",
+            "text": "**5.2** Quarterly media plans approved by the Advertiser constitute the **contracted\nvolume** for the purposes of Article 6."
+          },
+          {
+            "number": "6.1",
+            "text": "**6.1 Over-delivery.** Any delivery exceeding the contracted volume of a quarterly media\nplan by more than **5 %** is **not billable** to the Advertiser. The excess volume\naccrues to the Advertiser at no charge."
+          },
+          {
+            "number": "6.2",
+            "text": "**6.2 Compensation credit (\"make-good\").** Where over-delivery exceeds **10 %** for a\ngiven market and quarter, the Agency shall issue a **compensation credit** equal to\n**50 % of the media value of the excess**, valued at the contracted net rate of the\nchannel concerned. The credit is applicable against the following quarter.\n\nThe credit shall be issued within **45 days** of the close of the quarter concerned,\n**without any prior request from the Advertiser**."
+          },
+          {
+            "number": "6.4",
+            "text": "**6.4** Variances are assessed **per market and per quarter**. Offsetting between markets\nis not permitted."
+          }
+        ]
+      }
+    },
+    {
+      "id": "litware-uk",
+      "advertiserId": "ADV-004",
+      "advertiser": "Litware Retail",
+      "marketId": "MKT-UK",
+      "market": "United Kingdom",
+      "quarter": "2026-Q3",
+      "campaignIds": [
+        "CMP-0068",
+        "CMP-0072"
+      ],
+      "campaigns": [
+        {
+          "id": "CMP-0068",
+          "name": "Litware Home GB 2026-Q3 Loyalty",
+          "brand": "Litware Home"
+        },
+        {
+          "id": "CMP-0072",
+          "name": "Litware Fashion GB 2026-Q3 Performance",
+          "brand": "Litware Fashion"
+        }
+      ],
+      "facts": {
+        "planned": 225945766,
+        "delivered": 250799805,
+        "variance": 0.11000002097848571
+      },
+      "contract": {
+        "file": "ADV-004-litware-retail.md",
+        "reference": "ZM-ADV-004-2026",
+        "treatment": "excluded",
+        "fingerprint": "7ab3bfc132650ab998f7a925bab8be23698f8f73904fbda976fabf1063781d95",
+        "articles": [
+          {
+            "number": "6.1",
+            "text": "**6.1** No compensation, no credit and no penalty is due in respect of any variance\nbetween forecast volume and volume actually delivered, **whatever its direction or\nmagnitude**."
+          },
+          {
+            "number": "6.2",
+            "text": "**6.2** The Advertiser may not rely on over-delivery to obtain a discount, a budget\ncarry-over, a credit or a make-good in any subsequent quarter."
+          },
+          {
+            "number": "6.3",
+            "text": "**6.3** Symmetrically, the Agency may not invoice any volume in excess of the media\nbudget approved in the plan, including where over-delivery is observed."
+          }
+        ]
+      }
+    }
+  ],
+  "workNotes": [
+    {
+      "id": "SIM-FINANCE-CONTOSO-01",
+      "caseId": "contoso-es",
+      "advertiserId": "ADV-001",
+      "marketId": "MKT-ES",
+      "quarter": "2026-Q3",
+      "date": "2026-10-12",
+      "authorRole": "Finance",
+      "nextRole": "Account lead",
+      "status": "prepared-awaiting-validation",
+      "text": "The Contoso Spain Q3 credit calculation is prepared and has been sent to the account lead. Validation is still pending.",
+      "simulated": true
+    }
+  ],
+  "scopeFingerprint": "199d0a26a61c242492ad71bd71a4873148b4a9c3fadfbe5907771603c1ccbac6",
+  "fingerprint": "a4b0d7e803953efb54e3fcfcd16c9913c0222968204e3145d70d76c071efd5f9"
+}

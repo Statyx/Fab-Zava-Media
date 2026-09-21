@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 import { KpiCard } from '@/components/KpiCard';
 import { Icon } from '@/components/Icon';
@@ -6,12 +7,15 @@ import { QueryState } from '@/components/QueryState';
 import { COVER_DAX, mapCover } from '@/data/queries';
 import {
   badgeForFamily,
+  basePath,
   focusForFamily,
+  IQ_NAV,
+  NAV,
   routeForFamily,
+  sectionEntryForFamily,
   SECONDARY_NAV,
-  sectionLabelForFamily,
 } from '@/domain/nav';
-import { FAMILY_STYLE, OPENERS, starters } from '@/domain/openers';
+import { OPENERS, starters } from '@/domain/openers';
 import { useDax } from '@/hooks/useDax';
 import { useGo } from '@/hooks/useGo';
 import { fmtInt } from '@/lib/format';
@@ -28,9 +32,12 @@ import { fmtInt } from '@/lib/format';
  */
 export function CoverPage() {
   const go = useGo();
+  const base = basePath(useLocation().pathname);
   const { data, loading, error, reload } = useDax(COVER_DAX, mapCover);
 
-  const cards = starters(OPENERS);
+  const cards = starters(OPENERS).sort((a, b) =>
+    NAV.indexOf(sectionEntryForFamily(a.family)) - NAV.indexOf(sectionEntryForFamily(b.family)),
+  );
 
   return (
     <div className="cover-page">
@@ -107,47 +114,61 @@ export function CoverPage() {
 
         <div className="cover-cards">
           {cards.map((o) => {
-            const style = FAMILY_STYLE[o.family];
+            const section = sectionEntryForFamily(o.family);
             const badge = badgeForFamily(o.family);
             const cardStyle: CSSProperties & { '--card-accent': string } = {
               '--card-accent': badge.tone,
             };
             return (
-              <button
+              <article
                 key={o.id}
-                aria-label={o.label}
-                onClick={() =>
-                  go(`${routeForFamily(o.family)}?ask=${o.id}&focus=${focusForFamily(o.family)}`)
-                }
                 className="glass portal-card cover-card"
                 style={cardStyle}
               >
-                <span className="cover-card-heading">
+                <Link to={`${base}${section.to}`} aria-label={section.label} className="cover-card-heading">
                   <span aria-hidden className="cover-card-icon">
-                    {style.icon}
+                    <Icon d={section.icon} className="h-5 w-5" />
                   </span>
-                  <span>{style.area}</span>
-                </span>
+                  <span>{section.label}</span>
+                  <span className="cover-card-open">Open section <span aria-hidden>→</span></span>
+                </Link>
 
-                <span className="cover-card-question">{o.label}</span>
+                <button
+                  type="button"
+                  aria-label={o.label}
+                  onClick={() =>
+                    go(`${routeForFamily(o.family)}?ask=${o.id}&focus=${focusForFamily(o.family)}`)
+                  }
+                  className="cover-question-action"
+                >
+                  <span className="cover-card-question">{o.label}</span>
 
-                <span className="cover-card-footer">
-                  <span className="cover-card-chips">
-                    <span className="portal-chip">{badge.label}</span>
-                    <span className="portal-chip">Explore {sectionLabelForFamily(o.family)}</span>
+                  <span className="cover-card-footer">
+                    <span className="cover-card-chips">
+                      <span className="portal-chip">{badge.label}</span>
+                      <span className="portal-chip">Ask this question</span>
+                    </span>
+                    <span aria-hidden className="portal-arrow">→</span>
                   </span>
-                  <span aria-hidden className="portal-arrow">→</span>
-                </span>
-              </button>
+                </button>
+              </article>
             );
           })}
         </div>
         <p className="cover-caption">
-          Open a question to explore the account, with the figures alongside the conversation.
+          Open a section by its title, or ask the question below to start the conversation.
         </p>
       </section>
 
       <footer className="cover-platform">
+        <button onClick={() => go(IQ_NAV.to)} className="glass cover-architecture cover-iq">
+          <Icon d={IQ_NAV.icon} className="h-5 w-5 shrink-0" />
+          <span>
+            <span className="cover-architecture-title">{IQ_NAV.label}</span>
+            <span className="cover-architecture-detail">{IQ_NAV.blurb}</span>
+          </span>
+          <span aria-hidden className="ml-auto">→</span>
+        </button>
         {SECONDARY_NAV.map((entry) => (
           <button
             key={entry.to}

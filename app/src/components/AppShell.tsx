@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { Icon } from '@/components/Icon';
 import { ModeBadge } from '@/components/ModeBadge';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { NAV, SECONDARY_NAV, basePath } from '@/domain/nav';
+import { IQ_NAV, IQ_ROUTE, NAV, SECONDARY_NAV, basePath } from '@/domain/nav';
 import { useAuth } from '@/hooks/AuthContext';
 
 /**
@@ -18,7 +18,9 @@ import { useAuth } from '@/hooks/AuthContext';
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
-  const base = basePath(useLocation().pathname);
+  const { pathname } = useLocation();
+  const base = basePath(pathname);
+  const isIq = pathname.replace(/\/+$/, '') === `${base}${IQ_ROUTE}`;
 
   return (
     <div
@@ -33,7 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           WebkitBackdropFilter: 'blur(24px)',
         }}
       >
-        <div className="mx-auto flex h-[84px] max-w-[1400px] items-center gap-6 px-6">
+        <div className="app-header-inner mx-auto flex min-h-[84px] max-w-[1400px] items-center gap-4 px-6">
           <NavLink to={base || '/'} className="flex shrink-0 items-center gap-3">
             <span
               className="flex h-10 w-10 items-center justify-center rounded-xl text-lg"
@@ -50,11 +52,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
           </NavLink>
 
-          <nav className="ml-auto flex items-center gap-1">
+          <nav className="app-main-nav ml-auto flex items-center gap-1" aria-label="Main navigation">
             {NAV.map((entry) => (
               <NavLink
                 key={entry.to}
                 to={`${base}${entry.to}`}
+                aria-label={entry.label}
                 end
                 className={({ isActive }) =>
                   [
@@ -66,9 +69,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 style={({ isActive }) => (isActive ? { background: 'var(--accent)' } : undefined)}
               >
                 <Icon d={entry.icon} className="h-4 w-4" />
-                <span className="hidden lg:inline">{entry.label}</span>
+                <span className="hidden whitespace-nowrap xl:inline">{entry.label}</span>
               </NavLink>
             ))}
+
+            <NavLink
+              to={`${base}${IQ_NAV.to}`}
+              className={({ isActive }) =>
+                `app-iq-link flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium ${isActive ? 'text-white' : 'text-slate-300 hover:bg-white/5'}`
+              }
+              style={({ isActive }) => isActive ? { background: 'var(--accent)' } : undefined}
+            >
+              <Icon d={IQ_NAV.icon} className="h-4 w-4" />
+              <span className="whitespace-nowrap">{IQ_NAV.label}</span>
+            </NavLink>
 
             {/* Second-rank destinations, behind a separator and deliberately smaller: icon only,
                 named by its tooltip. Architecture has to be reachable without competing with the
@@ -96,8 +110,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
 
-          <div className="flex shrink-0 items-center gap-3 border-l border-white/10 pl-4">
-            <ModeBadge />
+          <div className="app-header-tools flex shrink-0 items-center gap-3 border-l border-white/10 pl-4">
+            {isIq
+              ? <span className="text-xs text-slate-300" title="The comparison labels its own source; the global data badge does not apply here.">IQ walkthrough</span>
+              : <ModeBadge />}
             <ThemeToggle />
             {user ? (
               <div className="hidden text-right leading-tight sm:block">

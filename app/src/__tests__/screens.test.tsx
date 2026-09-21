@@ -11,7 +11,7 @@ import { ContractsPage } from '@/pages/ContractsPage';
 import { CoverPage } from '@/pages/CoverPage';
 import { DiagnosticPage } from '@/pages/DiagnosticPage';
 import { AGREEMENTS } from '@/data/contracts';
-import { ALL_NAV, NAV, SECONDARY_NAV } from '@/domain/nav';
+import { ALL_NAV, IQ_NAV, NAV, SECONDARY_NAV, sectionEntryForFamily } from '@/domain/nav';
 import { FOCUS_BY_FAMILY, SECTION_BY_FAMILY } from '@/domain/nav';
 import { OPENERS, starters } from '@/domain/openers';
 import { COVER_DAX } from '@/data/queries';
@@ -88,6 +88,24 @@ describe('the cover', () => {
     expect(screen.getByTestId('location')).toHaveTextContent(
       `${path === '/preview' ? path : ''}/architecture`,
     );
+  });
+
+  it.each(['/', '/preview'])('opens section titles without asking a question from %s', async (path) => {
+    mount(<CoverPage />, path);
+    const user = userEvent.setup();
+    const region = screen.getByRole('region', { name: /Explore/ });
+    const sections = NAV.filter((entry) => starters(OPENERS).some((o) => sectionEntryForFamily(o.family) === entry));
+    expect(within(region).getAllByRole('link').map((link) => link.getAttribute('aria-label')))
+      .toEqual(sections.map((entry) => entry.label));
+    await waitFor(() => expect(screen.queryByText('Loading data…')).not.toBeInTheDocument());
+    for (const entry of sections) {
+      const link = within(region).getByRole('link', { name: entry.label });
+      expect(link.querySelector('path')).toHaveAttribute('d', entry.icon);
+      await user.click(link);
+      expect(screen.getByTestId('location').textContent).toBe(`${path === '/preview' ? path : ''}${entry.to}`);
+    }
+    await user.click(screen.getByRole('button', { name: new RegExp(`^${IQ_NAV.label}`) }));
+    expect(screen.getByTestId('location').textContent).toBe(`${path === '/preview' ? path : ''}${IQ_NAV.to}`);
   });
 
   it('fills the six compact tiles from the semantic model', async () => {

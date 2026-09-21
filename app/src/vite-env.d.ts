@@ -7,11 +7,9 @@
  * All of these are inlined into the bundle at build time and are therefore public. IDs and
  * tenant GUIDs are fine here; a secret never is.
  *
- * Note the absence of a mode switch. The network-operations console this shell came from
- * shipped an embedded dataset and could fall back to it, so it needed a flag to choose. Zava
- * has no seed: every figure on every screen is a DAX result. There is nothing to switch to,
- * so the only question is whether the model is reachable — which `VITE_SEMANTIC_MODEL_ID`
- * already answers.
+ * Operational screens use the semantic model, never a bundled fallback. The development
+ * preview and the explicitly labelled IQ repository walkthrough have their own reference
+ * data; neither substitutes it after a failed live request.
  */
 interface ImportMetaEnv {
   /** Entra app registration used for the interactive sign-in. */
@@ -27,6 +25,8 @@ interface ImportMetaEnv {
   /** Fabric workspace and data agent backing the assistant rail. */
   readonly VITE_ZAVA_WORKSPACE_ID?: string;
   readonly VITE_ZAVA_DATA_AGENT_ID?: string;
+  /** Existing ontology-associated Graph Model, for explicit read-only dossier queries. */
+  readonly VITE_ZAVA_GRAPH_MODEL_ID?: string;
 
   /**
    * The Foundry supervisor, which is the only route to the contract corpus.

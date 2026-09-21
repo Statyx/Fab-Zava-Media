@@ -1,0 +1,20 @@
+{
+  "scenarioId": "q3-close-2026",
+  "asOf": "2026-10-15",
+  "simulated": true,
+  "notes": [
+    {
+      "id": "SIM-FINANCE-CONTOSO-01",
+      "caseId": "contoso-es",
+      "advertiserId": "ADV-001",
+      "marketId": "MKT-ES",
+      "quarter": "2026-Q3",
+      "date": "2026-10-12",
+      "authorRole": "Finance",
+      "nextRole": "Account lead",
+      "status": "prepared-awaiting-validation",
+      "text": "The Contoso Spain Q3 credit calculation is prepared and has been sent to the account lead. Validation is still pending.",
+      "simulated": true
+    }
+  ]
+}
