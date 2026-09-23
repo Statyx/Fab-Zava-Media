@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Zava Media — déroulé de démo et wording IQ</title>
+<title>Zava Media — demo script and IQ wording</title>
 <style>
   :root {
     --bg: #0f1420; --panel: #171e2e; --panel-2: #1e2638; --text: #e8ecf4; --muted: #9aa6bd;
@@ -55,9 +55,9 @@
   .label:first-child { margin-top: 0; }
   .say { margin: 6px 0; padding: 10px 14px; border-left: 3px solid var(--accent); background: rgba(122,162,255,.07); border-radius: 0 8px 8px 0; font-style: italic; }
   .wow { margin: 10px 0 0; padding: 10px 14px; border-radius: 8px; background: rgba(67,192,122,.1); border: 1px solid rgba(67,192,122,.35); }
-  .wow::before { content: "Moment clé — "; font-weight: 700; color: var(--ok); font-style: normal; }
+  .wow::before { content: "Key moment — "; font-weight: 700; color: var(--ok); font-style: normal; }
   .trap { margin: 10px 0 0; padding: 10px 14px; border-radius: 8px; background: rgba(240,180,41,.08); border: 1px solid rgba(240,180,41,.35); }
-  .trap::before { content: "Attention — "; font-weight: 700; color: var(--warn); }
+  .trap::before { content: "Watch out — "; font-weight: 700; color: var(--warn); }
   ul, ol { margin: 6px 0; padding-left: 22px; }
   li { margin: 3px 0; }
   .ask { position: relative; margin: 8px 0; padding: 12px 88px 12px 14px; background: #0b0f18; border: 1px solid var(--line); border-radius: 8px; font-family: Consolas, "Cascadia Mono", monospace; font-size: 0.88rem; white-space: pre-wrap; }
@@ -70,6 +70,12 @@
   details { margin: 8px 0; }
   summary { cursor: pointer; color: var(--accent); }
   footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; }
+  .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+  .brand-name { font-weight: 700; white-space: nowrap; }
+  .step-cue { margin: 10px 0 0; padding: 8px 12px; border-radius: 8px; background: var(--panel-2); border: 1px dashed var(--line); font-size: 0.92rem; }
+  .step-cue::before { content: "Branding cue — "; font-weight: 700; color: var(--accent); }
+  .screen { margin: 6px 0; padding: 8px 12px; border-radius: 8px; background: #0b0f18; border: 1px solid var(--line); font-size: 0.92rem; }
+  .screen b { color: var(--text); }
   @media (max-width: 800px) { .scene .body { grid-template-columns: 1fr; } .scene .col + .col { border-left: 0; border-top: 1px solid var(--line); } nav.toc ol { columns: 1; } }
   @media print {
     body { background: #fff; color: #111; font-size: 12px; }
@@ -87,401 +93,593 @@
 <main>
 
 <header>
-  <h1>Zava Media — déroulé de la démo</h1>
-  <p class="lede">Une agence média fictive, cinq annonceurs, une question que ni la donnée ni le contrat ne résolvent seuls.
-  Ce document donne l’ordre des écrans, les clics, la phrase à dire et le wording de la partie <strong>Zava IQ</strong>,
-  sans jamais présenter comme live ce qui est enregistré ou simulé.</p>
+  <h1>Zava Media — demo script</h1>
+  <p class="lede">A fictional media agency, five advertisers, and one question that neither the data nor the contract can answer alone.
+  This script gives the order of the screens, the clicks, what to say and the wording for the <strong>Zava IQ</strong> part,
+  so the audience understands the context of what they are about to see — before they see it.</p>
   <div class="meta">
-    <span class="chip">≈ 20 min · version courte 10 min</span>
-    <span class="chip">Public métier + technique</span>
-    <span class="chip">Présentation en français · application et questions en anglais</span>
-    <span class="chip">Données synthétiques · seed 42</span>
+    <span class="chip">≈ 20 min · short version 10 min</span>
+    <span class="chip">Business + technical audience</span>
+    <span class="chip">Script, app and questions in English</span>
+    <span class="chip">Synthetic data · seed 42</span>
   </div>
-  <nav class="toc" aria-label="Sommaire">
+  <nav class="toc" aria-label="Contents">
     <ol>
-      <li><a href="#fil-rouge">Le fil rouge</a></li>
-      <li><a href="#avant">Avant la démo</a></li>
-      <li><a href="#deroule">Déroulé écran par écran</a></li>
-      <li><a href="#iq">Zava IQ — le wording</a></li>
-      <li><a href="#honnetete">Live, enregistré, simulé</a></li>
-      <li><a href="#challenge">Questions de challenge pour la salle</a></li>
+      <li><a href="#fil-rouge">The storyline</a></li>
+      <li><a href="#avant">Before the demo</a></li>
+      <li><a href="#deroule">Screen by screen</a></li>
+      <li><a href="#iq">Zava IQ — layers and wording</a></li>
+      <li><a href="#zava-iq-en">Zava IQ — step-by-step walkthrough</a></li>
+      <li><a href="#honnetete">Live, recorded, scripted</a></li>
+      <li><a href="#challenge">Challenge questions for the room</a></li>
       <li><a href="#planb">Plan B</a></li>
-      <li><a href="#questions">Questions à coller</a></li>
+      <li><a href="#questions">Questions to paste</a></li>
     </ol>
   </nav>
 </header>
 
 <section id="fil-rouge">
-  <h2>1. Le fil rouge</h2>
-  <div class="hero-q">« Avons-nous surlivré Contoso Mobility en Espagne au T3 — et leur contrat prévoit-il une compensation ? »</div>
-  <p>Le chiffre est calculé dans <strong>Fabric</strong>, en DAX, sur le Lakehouse. La clause est retrouvée par <strong>Foundry</strong> dans le corpus contractuel.
-  Le modèle de langage route, cite et formule — <strong>il ne calcule jamais</strong>, et ne transforme jamais une clause en règle inventée.</p>
+  <h2>1. The storyline</h2>
+  <div class="hero-q">“Did we over-deliver Contoso Mobility in Spain in Q3 — and does their contract provide for compensation?”</div>
+  <p>The figure is calculated in <strong>Fabric</strong>, in DAX, on the Lakehouse. The clause is retrieved by <strong>Foundry</strong> from the contract corpus.
+  The language model routes, cites and phrases — <strong>it never calculates</strong>, and never turns a clause into an invented rule.</p>
 
   <table>
-    <thead><tr><th>Annonceur × marché × trimestre</th><th class="num">Écart vs plan</th><th>Contrat</th><th>Conséquence</th></tr></thead>
+    <thead><tr><th>Advertiser × market × quarter</th><th class="num">Gap vs plan</th><th>Contract</th><th>Consequence</th></tr></thead>
     <tbody>
-      <tr><td>Contoso Mobility × Espagne × T3</td><td class="num"><strong>+12,00 %</strong></td><td>ADV-001 art. 6.1–6.2, 6.4</td><td>Excédent non facturable <em>et</em> crédit de compensation de 50 % de la valeur média de l’excédent, sous 45 jours, sans demande du client. Pas de compensation entre marchés.</td></tr>
-      <tr><td>Litware Retail × Royaume-Uni × T3</td><td class="num"><strong>+11,00 %</strong></td><td>ADV-004 art. 6.1–6.3</td><td><strong>Rien.</strong> Compensation, crédit et report exclus ; l’agence ne peut pas non plus facturer l’excédent.</td></tr>
-      <tr><td>Fabrikam Beauty × Italie × T3</td><td class="num"><strong>−8,00 %</strong></td><td>ADV-002 art. 6.2</td><td>Pénalité de 2 % du budget média net, due par l’agence, de plein droit, sans mise en demeure.</td></tr>
+      <tr><td>Contoso Mobility × Spain × Q3</td><td class="num"><strong>+12.00%</strong></td><td>ADV-001 art. 6.1–6.2, 6.4</td><td>The excess cannot be billed <em>and</em> a compensation credit of 50% of the media value of the excess is due within 45 days, without the client asking. No netting across markets.</td></tr>
+      <tr><td>Litware Retail × United Kingdom × Q3</td><td class="num"><strong>+11.00%</strong></td><td>ADV-004 art. 6.1–6.3</td><td><strong>Nothing.</strong> Compensation, credit and carry-over are excluded; the agency cannot bill the excess either.</td></tr>
+      <tr><td>Fabrikam Beauty × Italy × Q3</td><td class="num"><strong>−8.00%</strong></td><td>ADV-002 art. 6.2</td><td>A penalty of 2% of the net media budget, owed by the agency, automatically, without formal notice.</td></tr>
     </tbody>
   </table>
-  <div class="say">Trois écarts du même ordre de grandeur. Trois conséquences opposées. Les chiffres disent <strong>combien</strong> ; le contrat dit <strong>quoi faire</strong>. Aucun des deux ne suffit seul.</div>
+  <div class="say">Three gaps of the same size. Three opposite consequences. The numbers say <strong>how much</strong>; the contract says <strong>what to do</strong>. Neither is enough on its own.</div>
 </section>
 
 <section id="avant">
-  <h2>2. Avant la démo</h2>
+  <h2>2. Before the demo</h2>
   <div class="grid">
     <div class="card">
-      <h3>La veille</h3>
+      <h3>The day before</h3>
       <ul class="checklist">
-        <li>Capacité Fabric active (une capacité en pause casse tout, sans message clair).</li>
-        <li>Suite de tests verte : <code>python -m pytest tests/ -q</code>.</li>
-        <li>Répétition complète dans le navigateur qui servira sur scène (Edge normal, déjà connecté au bon tenant).</li>
-        <li>Optionnel : générer les preuves enregistrées de la page IQ avec <code>python -m foundry.capture_iq_dossiers</code>, puis relire sa sortie. Une capture incomplète n’est pas prête pour un client.</li>
+        <li>Fabric capacity running (a paused capacity breaks everything, with no clear message).</li>
+        <li>Test suite green: <code>python -m pytest tests/ -q</code>.</li>
+        <li>Full rehearsal in the browser you will use on stage (regular Edge, already signed in to the right tenant).</li>
+        <li>Optional: regenerate the recorded evidence for the IQ page with <code>python -m foundry.capture_iq_dossiers</code>, then read its output. An incomplete capture is not ready for a customer.</li>
       </ul>
     </div>
     <div class="card">
-      <h3>Une heure avant</h3>
+      <h3>One hour before</h3>
       <ul class="checklist">
-        <li><code>python deploy_all.py --warmup</code> — on paie le démarrage à froid hors scène.</li>
-        <li>Ouvrir l’URL de l’application (<code>application_url</code> dans <code>state.json</code>) et se connecter.</li>
-        <li>Poser une fois la question live de la scène 3 : elle réveille la chaîne Fabric + Foundry.</li>
-        <li>Deuxième onglet ouvert sur <code>/diagnostic</code> (hors navigation, accessible sans connexion).</li>
+        <li><code>python deploy_all.py --warmup</code> — pay the cold start off stage.</li>
+        <li>Open the application URL (<code>application_url</code> in <code>state.json</code>) and sign in.</li>
+        <li>Ask the live question from scene 3 once: it wakes up the Fabric + Foundry chain.</li>
+        <li>Second tab open on <code>/diagnostic</code> (not in the navigation, reachable without signing in).</li>
       </ul>
     </div>
     <div class="card">
-      <h3>Cinq minutes avant</h3>
+      <h3>Five minutes before</h3>
       <ul class="checklist">
-        <li>Zoom navigateur à 100 %, fenêtre plein écran, thème choisi.</li>
-        <li>Revenir sur l’accueil ; fermer le panneau assistant s’il contient des réponses de répétition.</li>
-        <li>Notifications coupées.</li>
+        <li>Browser zoom at 100%, full-screen window, theme chosen.</li>
+        <li>Go back to the home page; close the assistant panel if it still holds rehearsal answers.</li>
+        <li>Notifications off.</li>
       </ul>
     </div>
   </div>
 </section>
 
 <section id="deroule">
-  <h2>3. Déroulé écran par écran</h2>
-  <p>Les libellés entre guillemets sont ceux affichés par l’application. Durées indicatives ; la version courte (10 min) garde les scènes 1, 2, 3, 7 et 9.</p>
+  <h2>3. Screen by screen</h2>
+  <p>Text in quotes is exactly what the app displays. Timings are indicative; the short version (10 min) keeps scenes 1, 2, 3, 7 and 9.</p>
 
   <!-- Scene 1 -->
   <article class="scene">
-    <header><span class="n">1</span><span class="t">Accueil — « Your media ecosystem. Connected. »</span><span class="d">1 min 30</span></header>
+    <header><span class="n">1</span><span class="t">Home — “Your media ecosystem. Connected.”</span><span class="d">1 min 30</span></header>
     <div class="body">
       <div class="col">
-        <div class="label">À montrer</div>
+        <div class="label">What to show</div>
         <ul>
-          <li>Les six indicateurs : 80 campagnes, 5 annonceurs, 5 marchés, 6 régies, 4 en surlivraison, 2 en sous-livraison.</li>
-          <li>Survoler un indicateur : l’infobulle nomme la mesure du modèle sémantique qui l’a produit.</li>
-          <li>Les trois cartes « Explore — start with a business question ».</li>
+          <li>The six indicators: 80 campaigns, 5 advertisers, 5 markets, 6 media owners, 4 over-delivering, 2 under-delivering.</li>
+          <li>Hover an indicator: the tooltip names the semantic-model measure that produced it.</li>
+          <li>The three cards “Explore — start with a business question”.</li>
         </ul>
       </div>
       <div class="col">
-        <div class="label">À dire</div>
-        <div class="say">Ce n’est pas un dashboard de plus. Chaque chiffre vient d’une mesure nommée dans Fabric, et chaque carte est une vraie question qu’on peut poser à l’application.</div>
-        <div class="say">Quatre campagnes surlivrent. Question naïve : c’est une bonne nouvelle ? Réponse : ça dépend du contrat. C’est tout le sujet.</div>
+        <div class="label">What to say</div>
+        <div class="say">This is not one more dashboard. Every number comes from a named measure in Fabric, and every card is a real question you can ask the application.</div>
+        <div class="say">Four campaigns are over-delivering. Naive question: is that good news? Answer: it depends on the contract. That is the whole point.</div>
       </div>
     </div>
   </article>
 
   <!-- Scene 2 -->
   <article class="scene">
-    <header><span class="n">2</span><span class="t">Première question — chiffres + contrat</span><span class="d">2 min 30</span></header>
+    <header><span class="n">2</span><span class="t">First question — figures + contract</span><span class="d">2 min 30</span></header>
     <div class="body">
       <div class="col">
-        <div class="label">Clic</div>
-        <p>Carte <strong>Delivery</strong> → bouton « Ask this question » : <em>« Which markets are off plan in Q3, and what does the contract say about it? »</em></p>
-        <div class="label">Ce qui se passe</div>
-        <p>La question préparée rejoue une réponse enregistrée (≈ 5 s), sans mention à l’écran. La réponse affiche les deux sources : données de campagne et accords signés. Si on vous demande, le run live a pris ≈ 81 s.</p>
+        <div class="label">Click</div>
+        <p><strong>Delivery</strong> card → “Ask this question” button: <em>“Which markets are off plan in Q3, and what does the contract say about it?”</em></p>
+        <div class="label">What happens</div>
+        <p>The prepared question replays a recorded answer (≈ 5 s), with no label on screen. The answer shows both sources: campaign data and signed agreements. If asked, the live run took ≈ 81 s.</p>
       </div>
       <div class="col">
-        <div class="label">À dire</div>
-        <div class="say">La première question mobilise volontairement les deux mondes. L’agent Fabric mesure l’écart ; l’agent contrats retrouve la clause ; le superviseur assemble et cite.</div>
-        <div class="say">Pour ne pas vous faire attendre, cette question-là est un enregistrement d’un vrai run — l’écran le dit, et il affiche la durée réelle : 81 secondes. Dans deux minutes, je vous en pose une en direct.</div>
-        <div class="wow">Contoso Espagne +12 % → crédit de compensation ; Fabrikam Italie −8 % → pénalité ; Litware → rien, quel que soit l’écart.</div>
+        <div class="label">What to say</div>
+        <div class="say">This first question deliberately draws on both worlds. The Fabric agent measures the gap; the contracts agent finds the clause; the supervisor assembles the answer and cites both.</div>
+        <div class="say">In two minutes I will ask one live, so you can see the full chain run.</div>
+        <div class="wow">Contoso Spain +12% → compensation credit; Fabrikam Italy −8% → penalty; Litware → nothing, whatever the gap.</div>
       </div>
     </div>
   </article>
 
   <!-- Scene 3 -->
   <article class="scene">
-    <header><span class="n">3</span><span class="t">Delivery — « Plan against delivery »</span><span class="d">3 min</span></header>
+    <header><span class="n">3</span><span class="t">Delivery — “Plan against delivery”</span><span class="d">3 min</span></header>
     <div class="body">
       <div class="col">
-        <div class="label">À montrer</div>
+        <div class="label">What to show</div>
         <ul>
-          <li>Les barres divergentes centrées sur le plan, la bande de tolérance ±5 %.</li>
-          <li>Les trois encadrés de régimes, côte à côte.</li>
+          <li>The diverging bars centred on plan, and the ±5% tolerance band.</li>
+          <li>The three regime boxes, side by side.</li>
         </ul>
-        <div class="label">Clic — question live</div>
-        <p>Taper dans l’assistant la question <a href="#q-live">Q1</a> (Contoso, Espagne, T3). Compter 60 à 100 s.</p>
-        <div class="label">Réponse attendue</div>
-        <p>286 404 580 impressions prévues, 320 773 136 livrées (+12 %) ; article 6.2, crédit de 50 % de la valeur média de l’excédent ; badges des deux sources.</p>
+        <div class="label">Click — live question</div>
+        <p>Type question <a href="#q-live">Q1</a> (Contoso, Spain, Q3) in the assistant. Allow 60 to 100 s.</p>
+        <div class="label">Expected answer</div>
+        <p>286,404,580 impressions planned, 320,773,136 delivered (+12%); article 6.2, credit of 50% of the media value of the excess; badges for both sources.</p>
       </div>
       <div class="col">
-        <div class="label">À dire pendant l’attente</div>
-        <div class="say">Ce délai, c’est le prix d’un choix : la définition des « impressions livrées » vit dans Fabric, une seule fois. On ne la réécrit pas dans un prompt. Deux définitions du même chiffre, ce n’est pas lent — c’est inauditable.</div>
-        <div class="say">Regardez les trois régimes : même taille d’écart, trois issues. La barre ne décide rien ; c’est le contrat qui décide.</div>
-        <div class="wow">Le chiffre et la clause arrivent ensemble, chacun avec sa source. Le crédit n’est pas chiffré en euros : il faut le tarif net contractuel par canal, et l’agent refuse de l’inventer.</div>
-        <div class="trap">Ne pas poser de question live froide sans warm-up : un premier appel a déjà dépassé 100 s.</div>
+        <div class="label">What to say while it runs</div>
+        <div class="say">This wait is the price of a choice: the definition of “delivered impressions” lives in Fabric, once. We do not rewrite it in a prompt. Two definitions of the same number is not slow — it is unauditable.</div>
+        <div class="say">Look at the three regimes: same size of gap, three outcomes. The bar decides nothing; the contract decides.</div>
+        <div class="wow">The figure and the clause arrive together, each with its source. The credit is not priced in euros: that needs the contractual net rate per channel, and the agent refuses to invent it.</div>
+        <div class="trap">Do not ask a cold live question without a warm-up: a first call has already gone past 100 s.</div>
       </div>
     </div>
   </article>
 
   <!-- Scene 4 -->
   <article class="scene">
-    <header><span class="n">4</span><span class="t">Portfolio — « How the portfolio is connected »</span><span class="d">2 min</span></header>
+    <header><span class="n">4</span><span class="t">Portfolio — “How the portfolio is connected”</span><span class="d">2 min</span></header>
     <div class="body">
       <div class="col">
-        <div class="label">À montrer</div>
+        <div class="label">What to show</div>
         <ul>
-          <li>Section « The portfolio over the period » : budget prévu, dépense nette, surlivraison / sous-livraison.</li>
-          <li>Section ontologie : Advertiser → Brand → Campaign, puis Market, Channel, Media owner, Invoice.</li>
+          <li>Section “The portfolio over the period”: planned budget, net spend, over- / under-delivery.</li>
+          <li>Ontology section: Advertiser → Brand → Campaign, then Market, Channel, Media owner, Invoice.</li>
         </ul>
-        <div class="label">Question optionnelle</div>
-        <p>Dans les suggestions de suivi de l’assistant : <em>« Which media owners carry the campaigns in the off-plan market? »</em> — réponse enregistrée, traversée du graphe.</p>
+        <div class="label">Optional question</div>
+        <p>From the assistant’s follow-up suggestions: <em>“Which media owners carry the campaigns in the off-plan market?”</em> — recorded answer, graph traversal.</p>
       </div>
       <div class="col">
-        <div class="label">À dire</div>
-        <div class="say">Le modèle sémantique répond à « combien ». L’ontologie répond à « qui est relié à quoi ». Ici, l’annonceur n’est atteignable que par ses marques : le raccourci direct n’existe pas, exprès. C’est ce qui oblige une vraie traversée de graphe plutôt qu’une jointure déguisée.</div>
-        <div class="say">C’est aussi ce qui permet de vérifier le périmètre : quelles campagnes appartiennent vraiment à Contoso en Espagne.</div>
+        <div class="label">What to say</div>
+        <div class="say">The semantic model answers “how much”. The ontology answers “what is connected to what”. Here the advertiser can only be reached through its brands: there is no direct shortcut, on purpose. That forces a real graph traversal rather than a disguised join.</div>
+        <div class="say">It is also what lets us check the scope: which campaigns really belong to Contoso in Spain.</div>
       </div>
     </div>
   </article>
 
   <!-- Scene 5 -->
   <article class="scene">
-    <header><span class="n">5</span><span class="t">Contracts — « Five master agreements, three regimes »</span><span class="d">2 min</span></header>
+    <header><span class="n">5</span><span class="t">Contracts — “Five master agreements, three regimes”</span><span class="d">2 min</span></header>
     <div class="body">
       <div class="col">
-        <div class="label">À montrer</div>
-        <p>Une page volontairement <strong>sans aucun chiffre</strong>. Les résumés sont des légendes, pas des preuves.</p>
-        <div class="label">Clic — question live</div>
-        <p>Cliquer la ligne <strong>Litware Retail</strong> : question sur le texte seul (≈ 30–40 s).</p>
+        <div class="label">What to show</div>
+        <p>A page deliberately <strong>without a single number</strong>. The summaries are captions, not evidence.</p>
+        <div class="label">Click — live question</div>
+        <p>Click the <strong>Litware Retail</strong> row: a question on the text alone (≈ 30–40 s).</p>
       </div>
       <div class="col">
-        <div class="label">À dire</div>
-        <div class="say">Le droit à compensation n’est pas dans l’entrepôt de données. Il est dans le contrat. Si j’ajoutais des KPI sur cette page pour l’équilibrer, je détruirais la démonstration.</div>
-        <div class="say">Et il faut pouvoir le prouver : la loi Sapin impose à l’agence de montrer comment un chiffre facturé a été produit.</div>
-        <div class="trap">Ne pas utiliser ici les questions préparées « What do the contracts provide for… » ni « What deadlines do those clauses run on? » : leurs enregistrements actuels sont de mauvaise qualité (noms inventés). Préférer le clic sur une ligne de contrat, qui part en live.</div>
+        <div class="label">What to say</div>
+        <div class="say">The right to compensation is not in the data warehouse. It is in the contract. If I added KPIs to this page to balance it, I would destroy the point.</div>
+        <div class="say">And it has to be provable: French transparency law (loi Sapin) requires the agency to show how a billed figure was produced.</div>
+        <div class="trap">Do not use the prepared questions “What do the contracts provide for…” or “What deadlines do those clauses run on?” here: their current recordings are poor (invented names). Prefer clicking a contract row, which runs live.</div>
       </div>
     </div>
   </article>
 
   <!-- Scene 6 -->
   <article class="scene">
-    <header><span class="n">6</span><span class="t">Billing — « What was never billed »</span><span class="d">2 min</span></header>
+    <header><span class="n">6</span><span class="t">Billing — “What was never billed”</span><span class="d">2 min</span></header>
     <div class="body">
       <div class="col">
-        <div class="label">À montrer</div>
+        <div class="label">What to show</div>
         <ul>
-          <li>Deux panneaux côte à côte : <strong>6</strong> lignes de facturation incomplètes (grain campagne × régie) et <strong>2</strong> campagnes concernées (grain campagne), pour <strong>649 159 €</strong>.</li>
-          <li>Bouton « Ask the question » : fenêtre de réclamation lue dans le contrat.</li>
+          <li>Two panels side by side: <strong>6</strong> incomplete billing lines (campaign × media owner grain) and <strong>2</strong> campaigns affected (campaign grain), for <strong>€649,159</strong>.</li>
+          <li>“Ask the question” button: the claim window, read from the contract.</li>
         </ul>
       </div>
       <div class="col">
-        <div class="label">À dire</div>
-        <div class="say">Les deux chiffres sont justes. Ils ne répondent pas à la même question. Une campagne achetée chez trois régies fait trois lignes : demander « combien de campagnes » et recevoir un nombre de lignes, c’est une erreur d’un facteur trois qui ne déclenche aucune alerte.</div>
-        <div class="say">La date limite, elle, ne vient pas des données : Litware accorde 120 jours (art. 9.2). Au-delà, la créance est prescrite — ici le 28 janvier 2027.</div>
+        <div class="label">What to say</div>
+        <div class="say">Both numbers are right. They do not answer the same question. A campaign bought from three media owners makes three lines: ask “how many campaigns” and get a line count, and you are wrong by a factor of three without any alert firing.</div>
+        <div class="say">The deadline does not come from the data: Litware grants 120 days (art. 9.2). After that the claim is time-barred — here on 28 January 2027.</div>
       </div>
     </div>
   </article>
 
   <!-- Scene 7 -->
   <article class="scene">
-    <header><span class="n">7</span><span class="t">Zava IQ — « Which delivery gaps need action? »</span><span class="d">5 min</span></header>
+    <header><span class="n">7</span><span class="t">Zava IQ — “Which delivery gaps need action?”</span><span class="d">5 min</span></header>
     <div class="body">
       <div class="col">
-        <div class="label">Principe</div>
-        <p>Deux dossiers fictifs, à la date de scénario du 15 octobre 2026 (T3 clos) : Contoso Espagne +12 % et Litware Royaume-Uni +11 %. Cinq étapes : Facts → Contract → Work IQ → Web IQ → Send. Chaque ajout de couche affiche 2 s de chargement avec une roue et le nom de la couche : laisser ce temps, c’est le moment de dire ce qu’elle apporte. Le wording détaillé est en <a href="#iq">section 4</a>.</p>
-        <div class="label">Clics</div>
+        <div class="label">Principle</div>
+        <p>Two fictional cases, at the scenario date of 15 October 2026 (Q3 closed): Contoso Spain +12% and Litware UK +11%. Five steps: Facts → Contract → Work IQ → Web IQ → Send. Each new layer shows a 2 s spinner with the layer’s name: let it run — that is your moment to say what the layer adds. The layers and wording are in <a href="#iq">section 4</a>; the full walkthrough (what to show, what to say, branding) is in <a href="#zava-iq-en">section 5</a>.</p>
+        <div class="label">Clicks</div>
         <ol>
-          <li>« Read the contracts » après les faits.</li>
-          <li>Sur un dossier : « Why this scope? » puis « Contract articles ».</li>
-          <li>« Add Work IQ » : montrer les mails, le chat Teams, la réunion et le fichier, puis « What Work IQ changes ».</li>
-          <li>« Add Web IQ », puis « Find who to tell ».</li>
-          <li>Sur Contoso : lire la carte d’Elena Ruiz et ses raisons, puis « Send in Teams ».</li>
-          <li>Décocher Work IQ : destinataire inconnu, Send désactivé, le message redemande le calcul à la Finance. Recocher.</li>
-          <li>Décocher Foundry : le message disparaît. Recocher.</li>
+          <li>“Read the contracts” after the facts.</li>
+          <li>On a case: “Why this scope?” then “Contract articles”.</li>
+          <li>“Add Work IQ”: show the emails, the Teams chat, the meeting and the file, then “What Work IQ changes”.</li>
+          <li>“Add Web IQ”, then “Find who to tell”.</li>
+          <li>On Contoso: read Elena Ruiz’s card and her reasons, then “Send in Teams”.</li>
+          <li>Untick Work IQ: recipient unknown, Send disabled, the message asks Finance for the calculation again. Tick it again.</li>
+          <li>Untick Foundry: the message disappears. Tick it again.</li>
         </ol>
       </div>
       <div class="col">
-        <div class="label">Phrase d’ouverture</div>
-        <div class="say">Jusqu’ici, on a répondu à des questions. Maintenant, on passe à l’action. Et une action a besoin de plus que des chiffres : le contrat, ce qui est déjà en cours, la bonne personne, et le contexte du rendez-vous client.</div>
-        <div class="wow">Retirez Work IQ : l’application ne sait plus à qui écrire, et elle redemanderait à la Finance un calcul déjà fait. Retirez le contrat ou les chiffres : elle refuse de conclure. Le contexte supplémentaire qualifie l’action ; il ne remplace jamais la preuve.</div>
+        <div class="label">Opening line</div>
+        <div class="say">So far we have answered questions. Now we act. And an action needs more than numbers: the contract, what is already underway, the right person, and the context of the client meeting.</div>
+        <div class="wow">Remove Work IQ: the app no longer knows who to write to, and it would ask Finance for a calculation already done. Remove the contract or the figures: it refuses to conclude. Extra context qualifies the action; it never replaces the evidence.</div>
       </div>
     </div>
   </article>
 
   <!-- Scene 8 -->
   <article class="scene">
-    <header><span class="n">8</span><span class="t">Architecture — « The boundary rule »</span><span class="d">1 min 30</span></header>
+    <header><span class="n">8</span><span class="t">Architecture — “The boundary rule”</span><span class="d">1 min 30</span></header>
     <div class="body">
       <div class="col">
-        <div class="label">À montrer</div>
-        <p>La chaîne déployée : Lakehouse, Eventhouse, ontologie, modèle sémantique, Data Agent côté Fabric ; superviseur, agent contrats et vector store côté Foundry ; l’application Fabric App par-dessus.</p>
+        <div class="label">What to show</div>
+        <p>The deployed chain: Lakehouse, Eventhouse, ontology, semantic model and Data Agent on the Fabric side; supervisor, contracts agent and vector store on the Foundry side; the Fabric App on top.</p>
       </div>
       <div class="col">
-        <div class="label">À dire</div>
-        <div class="say">Une règle : le monde de la donnée reste côté donnée. Les mesures, l’agrégation et la sémantique vivent dans Fabric. Foundry orchestre, retrouve la clause et rédige. Il ne réimplémente jamais une métrique.</div>
-        <div class="say">Le Data Agent est un <em>outil</em> — on lui délègue une question, il renvoie une réponse. Le corpus contractuel est une <em>source de connaissance</em> — on récupère du texte et l’agent raisonne dessus.</div>
+        <div class="label">What to say</div>
+        <div class="say">One rule: the data world stays on the data side. Measures, aggregation and semantics live in Fabric. Foundry orchestrates, retrieves the clause and drafts. It never reimplements a metric.</div>
+        <div class="say">The Data Agent is a <em>tool</em> — you delegate a question to it and it returns an answer. The contract corpus is a <em>knowledge source</em> — you retrieve text and the agent reasons over it.</div>
       </div>
     </div>
   </article>
 
   <!-- Scene 9 -->
   <article class="scene">
-    <header><span class="n">9</span><span class="t">Conclusion</span><span class="d">30 s</span></header>
+    <header><span class="n">9</span><span class="t">Close</span><span class="d">30 s</span></header>
     <div class="body">
-      <div class="col"><div class="say">Les chiffres disent combien. Le contrat dit quoi faire. Le contexte de travail dit où on en est et à qui parler. Zava IQ, c’est la capacité de réunir ces trois choses sans jamais en confondre les sources.</div></div>
-      <div class="col"><p>Ouvrir la parole : « Challengez-nous — voici trois cas où les chiffres se ressemblent. » Enchaîner sur la <a href="#challenge">section 6</a>.</p></div>
+      <div class="col"><div class="say">The numbers say how much. The contract says what to do. The work context says where things stand and who to talk to. Zava IQ is the ability to bring those three together without ever mixing up their sources.</div></div>
+      <div class="col"><p>Open the floor: “Challenge us — here are three cases where the numbers look alike.” Continue with <a href="#challenge">section 7</a>.</p></div>
     </div>
   </article>
 </section>
 
 <section id="iq">
-  <h2>4. Zava IQ — le wording</h2>
-  <p>Une phrase par brique, et son statut exact dans cette démo. Les couleurs reprennent celles de l’application : elles identifient une source, pas un niveau de risque ou de confiance.</p>
+  <h2>4. Zava IQ — layers and wording</h2>
+  <p>One sentence per layer, and its exact status in this demo (for the presenter — the screen carries no status labels). The colours match the app: they identify a source, not a level of risk or confidence.</p>
   <div class="grid">
     <div class="card fabric">
-      <h3>Fabric IQ <span class="chip live">connecté</span></h3>
-      <p><strong>Le sens métier de la donnée.</strong> Le modèle sémantique fournit les mesures ; l’ontologie et son graphe relient annonceurs, marques, campagnes, marchés, régies et factures.</p>
-      <p class="mono">Rôle ici : chiffres + périmètre des campagnes.</p>
+      <h3>Fabric IQ <span class="chip live">connected</span></h3>
+      <p><strong>The business meaning of the data.</strong> The semantic model provides the measures; the ontology and its graph connect advertisers, brands, campaigns, markets, media owners and invoices.</p>
+      <p class="mono">Role here: figures + campaign scope.</p>
     </div>
     <div class="card foundry">
-      <h3>Agents Foundry <span class="chip live">connecté</span></h3>
-      <p><strong>La lecture des contrats.</strong> Les agents existants retrouvent et citent les accords signés (recherche documentaire sur un vector store).</p>
-      <p class="mono">Ne pas dire : « une base Foundry IQ est déployée ».</p>
+      <h3>Foundry agents <span class="chip live">connected</span></h3>
+      <p><strong>Reading the contracts.</strong> The existing agents retrieve and cite the signed agreements (document search over a vector store).</p>
+      <p class="mono">Do not say: “a Foundry IQ knowledge base is deployed”.</p>
     </div>
     <div class="card work">
-      <h3>Work IQ <span class="chip sim">simulé</span></h3>
-      <p><strong>Ce qui est déjà en cours, et qui doit agir.</strong> Mails, chats Teams, réunions et fichiers fictifs. Contoso : la Finance a déjà préparé le calcul, il attend la validation d’Elena Ruiz avant la revue du 21 octobre. Litware : la cliente a demandé un report en crédit à James Carter, qui a bloqué la facture T3.</p>
-      <p class="mono">Aucune donnée Microsoft 365 n’est lue.</p>
+      <h3>Work IQ <span class="chip sim">scripted</span></h3>
+      <p><strong>What is already underway, and who has to act.</strong> Fictional emails, Teams chats, meetings and files. Contoso: Finance has already prepared the calculation; it waits for Elena Ruiz’s validation before the 21 October review. Litware: the client asked James Carter to carry the excess over as a credit, and he put the Q3 invoice on hold.</p>
+      <p class="mono">No Microsoft 365 data is read.</p>
     </div>
     <div class="card web">
-      <h3>Web IQ <span class="chip sim">simulé</span></h3>
-      <p><strong>Le contexte public du rendez-vous.</strong> Deux annonces fictives : roadshow Contoso EV en Espagne (2–15 nov.), campagne d’automne Litware Home au Royaume-Uni (26 oct.–8 nov.).</p>
-      <p class="mono">Aucune recherche web n’est faite.</p>
+      <h3>Web IQ <span class="chip sim">scripted</span></h3>
+      <p><strong>Public context for the meeting.</strong> Two fictional announcements: the Contoso EV roadshow in Spain (2–15 Nov) and the Litware Home autumn campaign in the UK (26 Oct–8 Nov).</p>
+      <p class="mono">No web search is performed.</p>
     </div>
   </div>
 
-  <h3 style="margin-top:22px">Le texte étape par étape</h3>
-  <table>
-    <thead><tr><th>Étape</th><th>Ce que montre l’écran</th><th>À dire</th></tr></thead>
+  <h3 style="margin-top:22px">Say / avoid</h3>
+  <table class="do-dont">
+    <thead><tr><th>Say</th><th>Avoid</th></tr></thead>
     <tbody>
-      <tr><td><strong>1 · Facts</strong><br><span class="chip fabric">Fabric IQ</span></td>
-          <td>« Two similar gaps. Treatment still unknown. » — +12 % et +11 %.</td>
-          <td>« Deux écarts presque identiques. À ce stade, la donnée identifie l’écart, pas la réponse contractuelle. Et je sais de quelles campagnes on parle : c’est le graphe qui le garantit. »</td></tr>
-      <tr><td><strong>2 · Contract</strong><br><span class="chip foundry">Foundry</span></td>
-          <td>« Similar figures. Different obligations. » — Contoso : crédit obligatoire (art. 6.2), chaque marché évalué séparément (6.4). Litware : crédit exclu (6.1–6.2).</td>
-          <td>« Même chiffre, obligations opposées. Le contrat change le traitement, pas la mesure. Les extraits affichés sont le texte signé, mot pour mot — pas une paraphrase de l’IA. »</td></tr>
-      <tr><td><strong>3 · Work IQ</strong><br><span class="chip work">simulé</span></td>
-          <td>« Work IQ shows what is already underway, and who owns it. » — par dossier : mail Outlook, chat Teams, réunion, fichier SharePoint, personnes impliquées, et « What Work IQ changes ».</td>
-          <td>« Work IQ va chercher dans les mails, les Teams, l’agenda et les fichiers. Contoso : Marta, à la Finance, a déjà fait le calcul ; il attend la validation d’Elena, qui organise la revue client du 21. Sans ça, j’aurais redemandé le calcul. Litware : la cliente a demandé à James de reporter l’excédent en crédit, et il a bloqué la facture en attendant. Le contrat répond déjà aux deux. Work IQ ne change pas l’obligation : il change qui agit, et comment. »</td></tr>
-      <tr><td><strong>4 · Web IQ</strong><br><span class="chip web">simulé</span></td>
-          <td>« An upcoming campaign adds context to the meeting. » — une annonce fictive par client, incluse par défaut.</td>
-          <td>« Le client lance une nouvelle campagne en novembre : c’est un sujet pour le rendez-vous. Mais ça ne change ni le chiffre du T3 ni ce que dit le contrat. Je peux l’inclure ou la retirer du message. »</td></tr>
-      <tr><td><strong>5 · Send</strong><br><span class="chip work">Work IQ</span> <span class="chip">toutes sources</span></td>
-          <td>« Send to the right person » : carte du destinataire « Found by Work IQ » avec ses raisons, pastilles des sources, message modifiable, « Send in Teams » → « Sent to Elena Ruiz in Teams. »</td>
-          <td>« Work IQ a trouvé la bonne personne : Elena, parce que la Finance l’attend et qu’elle organise la revue client. Le message cite l’article 6.2, l’échéance du 14 novembre et le fichier de Marta. Pour Litware, James reçoit la réponse à la demande de Sarah et peut libérer la facture. J’envoie. »</td></tr>
+      <tr><td>“Zava IQ” for the whole page; the layer name when you point at a badge.</td><td>“Microsoft IQ” or “IQ in practice” (the old page names).</td></tr>
+      <tr><td>“The figure comes from a Fabric measure; the AI cites it.”</td><td>“The AI calculated the gap.”</td></tr>
+      <tr><td>“The agent found and cited article 6.2.”</td><td>“The AI interpreted the contract legally.”</td></tr>
+      <tr><td>“Foundry agents read the contract.”</td><td>“Foundry IQ is deployed.”</td></tr>
+      <tr><td>“The credit still has to be priced with the contractual net rate.”</td><td>“The credit is X euros.”</td></tr>
+      <tr><td>“Extra context qualifies the next step. The account lead keeps the decision.”</td><td>“The AI decides the credit.” / “It’s faster than Databricks.” / “Only Fabric can do this.”</td></tr>
+      <tr><td>“In the story, these files represent Databricks outputs.”</td><td>“We are connected to Databricks.”</td></tr>
+      <tr><td>If asked what is wired: answer from <a href="#honnetete">section 6</a>.</td><td>Claiming Work IQ reads real mail, or that a replayed answer is live.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="zava-iq-en">
+  <h2>5. Zava IQ — step-by-step walkthrough</h2>
+  <p>The full Zava IQ path, click by click, with what to point at on screen, what to say, and how to brand each layer. Screen text is quoted exactly as the app shows it. Scenario date: <strong>15 October 2026</strong> (Q3 closed). Allow <strong>≈ 5 minutes</strong>.</p>
+
+  <h3 style="margin-top:22px">The branding</h3>
+  <p><strong>Zava IQ</strong> is the customer-facing name: Zava's own intelligence layer, built by combining Microsoft's IQ layers over Zava's data, contracts and work. Each layer keeps its own name, colour and badge on every screen — the colour identifies <em>where a fact comes from</em>, never a risk or confidence level.</p>
+  <table>
+    <thead><tr><th>Layer</th><th>On-screen badge</th><th>Tagline (say it once)</th><th>Question it answers</th></tr></thead>
+    <tbody>
+      <tr><td><span class="swatch" style="background:#5eead4"></span><span class="brand-name">Fabric IQ</span><br><span class="mono">teal</span></td>
+          <td><code>Fabric IQ · figures &amp; scope</code></td>
+          <td>“The business meaning of the data.”</td>
+          <td>Which delivery gap are we reviewing?</td></tr>
+      <tr><td><span class="swatch" style="background:#fbbf24"></span><span class="brand-name">Foundry</span><br><span class="mono">amber</span></td>
+          <td><code>Foundry · contract context</code></td>
+          <td>“Agents that read and cite the signed agreement.”</td>
+          <td>What treatment does the agreement support?</td></tr>
+      <tr><td><span class="swatch" style="background:#c4b5fd"></span><span class="brand-name">Work IQ</span><br><span class="mono">violet</span></td>
+          <td><code>Work IQ</code> · <code>Found by Work IQ</code></td>
+          <td>“What is already underway, and who owns it.”</td>
+          <td>What is already underway, and who has to act?</td></tr>
+      <tr><td><span class="swatch" style="background:#93c5fd"></span><span class="brand-name">Web IQ</span><br><span class="mono">blue</span></td>
+          <td><code>Web IQ · announcement</code></td>
+          <td>“Public context for the next conversation.”</td>
+          <td>What upcoming campaign gives the meeting more context?</td></tr>
     </tbody>
   </table>
 
-  <h3 style="margin-top:22px">Phrases à dire, phrases à éviter</h3>
-  <table class="do-dont">
-    <thead><tr><th>Dire</th><th>Ne pas dire</th></tr></thead>
-    <tbody>
-      <tr><td>« Le chiffre vient d’une mesure Fabric ; l’IA le cite. »</td><td>« L’IA a calculé l’écart. »</td></tr>
-      <tr><td>« L’agent a trouvé et cité l’article 6.2. »</td><td>« L’IA a interprété le contrat juridiquement. »</td></tr>
-      <tr><td>« Work IQ et Web IQ sont simulés ici, avec des mails, chats et annonces fictifs. L’envoi aussi est simulé. »</td><td>« On lit vos mails et vos Teams. » / « On a cherché sur le web. »</td></tr>
-      <tr><td>« Les agents Foundry existants lisent les contrats. »</td><td>« Foundry IQ est déployé. »</td></tr>
-      <tr><td>« Le crédit reste à chiffrer avec le tarif net contractuel. »</td><td>« Le crédit est de X euros. »</td></tr>
-      <tr><td>« Le contexte supplémentaire qualifie la prochaine étape. »</td><td>« C’est plus rapide que Databricks. » / « Seul Fabric sait faire ça. »</td></tr>
-      <tr><td>« Dans le récit, ces fichiers représentent des sorties Databricks. »</td><td>« On est connecté à Databricks. »</td></tr>
-      <tr><td>« Cette réponse est un enregistrement ; le run live a pris 81 s. »</td><td>Laisser croire qu’une réponse rejouée est live.</td></tr>
-    </tbody>
-  </table>
+  <!-- EN Step 0 -->
+  <article class="scene">
+    <header><span class="n">0</span><span class="t">Open Zava IQ</span><span class="d">20 s</span></header>
+    <div class="body">
+      <div class="col">
+        <div class="label">Click</div>
+        <p>Header link <strong>Zava IQ</strong> (or the Zava IQ tile on the cover).</p>
+        <div class="label">What to show</div>
+        <div class="screen"><b>Which delivery gaps need action?</b><br>Start with the figures. Check the agreement. Then see what is already underway.</div>
+        <p>The step bar <strong>1 Facts · 2 Contract · 3 Work IQ · 4 Web IQ · 5 Send</strong>, the “Q3 close scenario · 15 Oct 2026” toolbar, and the four layer boxes under <em>What each layer contributes</em>.</p>
+      </div>
+      <div class="col">
+        <div class="label">What to say</div>
+        <div class="say">So far we have answered questions. Now we act. And an action needs more than numbers: it needs the contract, what is already in motion, the right person, and the context of the next client meeting. That combination is what we call Zava IQ.</div>
+        <div class="step-cue">Name the four layers once, pointing at their colours. From now on the colour tells the room where each fact comes from.</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- EN Step 1 -->
+  <article class="scene">
+    <header><span class="n">1</span><span class="t">Facts <span class="chip fabric">Fabric IQ</span></span><span class="d">1 min</span></header>
+    <div class="body">
+      <div class="col">
+        <div class="label">What to show</div>
+        <div class="screen"><b>Two similar gaps. Treatment still unknown.</b><br>The figures identify the variance, not the contractual response.</div>
+        <ul>
+          <li><strong>Contoso Mobility · Spain</strong>: +12% (320.8M delivered vs 286.4M planned impressions).</li>
+          <li><strong>Litware Retail · United Kingdom</strong>: +11% (250.8M vs 225.9M).</li>
+        </ul>
+        <div class="label">Clicks</div>
+        <ol>
+          <li><strong>Figures</strong> on Contoso: planned, delivered, Delivery vs Plan %, and the DAX query behind it.</li>
+          <li><strong>Why this scope?</strong>: the two campaigns (Contoso EV and Contoso Fleet ES Q3) and the ontology relations <code>AdvertiserHasBrand</code>, <code>BrandHasCampaign</code>, <code>CampaignInMarket</code>.</li>
+        </ol>
+      </div>
+      <div class="col">
+        <div class="label">What to say</div>
+        <div class="say">Two almost identical over-deliveries, twelve and eleven percent. At this point the data tells me there is a gap — not what to do about it. And I know exactly which campaigns we are talking about: the ontology graph guarantees the scope, and the number is a Fabric measure, not something the AI computed.</div>
+        <div class="step-cue">Point at the teal <code>Fabric IQ · figures &amp; scope</code> badge: “Fabric IQ gives the data its business meaning.”</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- EN Step 2 -->
+  <article class="scene">
+    <header><span class="n">2</span><span class="t">Contract <span class="chip foundry">Foundry</span></span><span class="d">1 min</span></header>
+    <div class="body">
+      <div class="col">
+        <div class="label">Click</div>
+        <p><strong>Read the contracts →</strong> — 2 s spinner: <em>“Foundry agents are reading the two agreements…”</em></p>
+        <div class="label">What to show</div>
+        <div class="screen"><b>Similar figures. Different obligations.</b><br>The agreement changes the treatment, not the measurement.</div>
+        <ul>
+          <li><strong>Contoso</strong> (ZM-ADV-001-2026): Article 6.2 — above 10% over-delivery, a compensation credit is required within 45 days of quarter close. Article 6.4 — each market assessed separately.</li>
+          <li><strong>Litware</strong> (ZM-ADV-004-2026): Articles 6.1–6.2 exclude compensation; Article 6.3 prohibits billing the excess.</li>
+        </ul>
+        <p>Then <strong>Contract articles</strong> on Contoso: the signed clause, word for word.</p>
+      </div>
+      <div class="col">
+        <div class="label">What to say (during the spinner)</div>
+        <div class="say">The Foundry agents are now reading both signed agreements.</div>
+        <div class="label">What to say (on the result)</div>
+        <div class="say">Same number, opposite obligations. Contoso is owed a make-good credit, without even having to ask. Litware gets nothing — and we cannot bill them the extra either. The contract changes the treatment, never the measurement. And what you see here is the signed text, quoted verbatim, not an AI paraphrase.</div>
+        <div class="wow">This is the core of the demo: neither the data nor the contract could answer this alone.</div>
+        <div class="step-cue">Amber <code>Foundry · contract context</code> badge: “Foundry agents read and cite the agreement.” Never say “Foundry IQ”.</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- EN Step 3 -->
+  <article class="scene">
+    <header><span class="n">3</span><span class="t">Work IQ <span class="chip work">Work IQ</span></span><span class="d">1 min 15</span></header>
+    <div class="body">
+      <div class="col">
+        <div class="label">Click</div>
+        <p><strong>Add Work IQ →</strong> — 2 s spinner: <em>“Work IQ is searching mail, Teams chats, meetings and files…”</em></p>
+        <div class="label">What to show</div>
+        <div class="screen"><b>Work IQ shows what is already underway, and who owns it.</b><br>Mail, Teams chats, meetings and files change who acts next, not what the contract says.</div>
+        <p><strong>Contoso</strong></p>
+        <ul>
+          <li><em>Outlook · email</em> — Marta Gil (Finance controller), 12 Oct: “Contoso ES Q3 make-good: calculation ready”.</li>
+          <li><em>SharePoint · file</em> — <code>Contoso_ES_Q3_make-good.xlsx</code>, status “Awaiting account lead validation”.</li>
+          <li><em>Calendar · meeting</em> — Elena Ruiz, 21 Oct: “Contoso Mobility · Q3 business review”. The credit is not on the agenda yet.</li>
+        </ul>
+        <p><strong>Litware</strong></p>
+        <ul>
+          <li><em>Teams · chat</em> — Sarah Bennett (client), 9 Oct: “Can we carry the extra impressions over as a credit?”</li>
+          <li><em>Outlook · email</em> — James Carter to Billing, 10 Oct: “Please hold the UK Q3 invoice…”</li>
+          <li><em>Calendar · meeting</em> — 20 Oct: “Litware Home · autumn campaign kick-off”.</li>
+        </ul>
+        <p>Finish on <strong>What Work IQ changes</strong> for each case.</p>
+      </div>
+      <div class="col">
+        <div class="label">What to say (during the spinner)</div>
+        <div class="say">Now Work IQ looks through mail, Teams, calendars and files for what is already happening on these two cases.</div>
+        <div class="label">What to say (on the result)</div>
+        <div class="say">Contoso: Marta in Finance has already done the calculation. It is waiting for Elena’s validation, and Elena runs the client review on the 21st. Without Work IQ, I would have asked Finance to do the work twice.</div>
+        <div class="say">Litware: the client asked James to carry the extra over as a credit, and James put the invoice on hold while he waits. The contract already answers both. Work IQ does not change the obligation — it changes who acts, and how.</div>
+        <div class="wow">Work IQ turns a correct answer into a useful one: no duplicated work, and the invoice on hold gets unblocked.</div>
+        <div class="step-cue">Violet <code>Work IQ</code> badge, and the source labels <em>Outlook · Teams · Calendar · SharePoint</em>: “Work IQ is the context of your work in Microsoft 365.”</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- EN Step 4 -->
+  <article class="scene">
+    <header><span class="n">4</span><span class="t">Web IQ <span class="chip web">Web IQ</span></span><span class="d">40 s</span></header>
+    <div class="body">
+      <div class="col">
+        <div class="label">Click</div>
+        <p><strong>Add Web IQ →</strong> — 2 s spinner: <em>“Web IQ is checking public announcements…”</em></p>
+        <div class="label">What to show</div>
+        <div class="screen"><b>An upcoming campaign adds context to the meeting.</b><br>Include it in the message or leave it out; it does not change the contract treatment.</div>
+        <ul>
+          <li><strong>Contoso</strong> — Contoso Mobility newsroom, 9 Oct: “Contoso EV announces a Spanish roadshow starting 2 November” (Madrid and Barcelona, 2–15 Nov).</li>
+          <li><strong>Litware</strong> — Litware Retail press room, 8 Oct: “Litware Home’s UK autumn campaign opens on 26 October” (26 Oct–8 Nov).</li>
+        </ul>
+        <p>Point at <strong>For the account meeting</strong> under each announcement.</p>
+      </div>
+      <div class="col">
+        <div class="label">What to say</div>
+        <div class="say">Both clients have just announced a new campaign. That is a great topic for the next meeting — but it changes neither the Q3 number nor what the contract says. It is context, and I choose whether it goes in the message.</div>
+        <div class="step-cue">Blue <code>Web IQ</code> badge: “Web IQ brings public context, clearly separated from contractual evidence.”</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- EN Step 5 -->
+  <article class="scene">
+    <header><span class="n">5</span><span class="t">Send to the right person <span class="chip work">Work IQ</span> <span class="chip">all sources</span></span><span class="d">1 min</span></header>
+    <div class="body">
+      <div class="col">
+        <div class="label">Click</div>
+        <p><strong>Find who to tell →</strong> — 2 s spinner: <em>“Work IQ is finding who needs to act on each case…”</em></p>
+        <div class="label">What to show</div>
+        <div class="screen"><b>The right person, with the full context.</b><br>Work IQ identifies who has to act, and the message carries every source.</div>
+        <ul>
+          <li><strong>Send to the right person</strong> card, badge <code>Found by Work IQ</code>: <strong>Elena Ruiz</strong>, Account lead · Contoso Mobility Spain — “Named by Finance as the pending validator”, “Organiser of the 21 October Q3 business review”, “Owns the ADV-001 relationship for Spain”.</li>
+          <li>The source chips on the message: <code>Fabric IQ · facts</code> · <code>Foundry · clauses</code> · <code>Work IQ · recipient &amp; context</code> · <code>Web IQ · announcement</code>.</li>
+          <li>The message itself: +12%, article 6.2, credit due by 14 November, Marta’s file, the 21 October review.</li>
+        </ul>
+        <div class="label">Click</div>
+        <p><strong>Send in Teams</strong> → <em>“Sent to Elena Ruiz in Teams.”</em> Optionally show Litware: James Carter gets the answer to Sarah’s request and can release the invoice.</p>
+      </div>
+      <div class="col">
+        <div class="label">What to say</div>
+        <div class="say">Work IQ found the right person: Elena, because Finance is waiting on her and she runs the client review. The message cites article 6.2, the 14 November deadline and Marta’s file — every fact carries its source. I can edit it. I send.</div>
+        <div class="say">For Litware, it goes to James: the contractual answer to Sarah’s question, and the green light to release the invoice for the approved budget only.</div>
+        <div class="step-cue">Read the four chips left to right: “Fabric IQ for the facts, Foundry for the clauses, Work IQ for the person and the context, Web IQ for the meeting. That is Zava IQ.”</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- EN Step 6 -->
+  <article class="scene">
+    <header><span class="n">6</span><span class="t">Prove it — remove a layer</span><span class="d">40 s</span></header>
+    <div class="body">
+      <div class="col">
+        <div class="label">Clicks (in <em>What each layer contributes</em>)</div>
+        <ol>
+          <li>Untick <strong>Work IQ</strong>: “Recipient unknown. Include Work IQ to find who owns the next step.” Send is disabled; the message falls back to asking Finance for the calculation. Tick it again.</li>
+          <li>Untick <strong>Foundry</strong>: “The contractual treatment is not established.” The message is withheld. Tick it again.</li>
+          <li>Optional — untick <strong>Fabric IQ</strong>: “The measured gap is not included.”</li>
+        </ol>
+      </div>
+      <div class="col">
+        <div class="label">What to say</div>
+        <div class="say">Take Work IQ away and the app no longer knows who to write to — and it would ask Finance for work already done. Take the contract or the figures away and it refuses to conclude. Extra context qualifies the action; it never replaces the evidence.</div>
+        <div class="wow">Each layer earns its place on screen: remove one and the outcome visibly degrades.</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- EN Close -->
+  <article class="scene">
+    <header><span class="n">✓</span><span class="t">Close the Zava IQ path</span><span class="d">15 s</span></header>
+    <div class="body">
+      <div class="col"><div class="say">The numbers say how much. The contract says what to do. Work IQ says where things stand and who to talk to. Zava IQ brings the three together — without ever mixing up their sources.</div></div>
+      <div class="col"><p><strong>Reset</strong> (top right) returns the page to step 1 with every layer included, ready for the next run.</p>
+        <div class="trap">Let each 2 s spinner run: it is your cue to say what the layer adds. Do not click twice — the buttons are disabled while it runs.</div></div>
+    </div>
+  </article>
 </section>
 
 <section id="honnetete">
-  <h2>5. Live, enregistré, simulé</h2>
+  <h2>6. Live, recorded, scripted</h2>
   <table>
-    <thead><tr><th>Élément</th><th>Statut</th><th>Comment l’écran le signale</th></tr></thead>
+    <thead><tr><th>Element</th><th>Status</th><th>How it shows on screen</th></tr></thead>
     <tbody>
-      <tr><td>Indicateurs, graphiques, tableaux</td><td><span class="chip live">live</span></td><td>Requêtes DAX sur le modèle sémantique déployé.</td></tr>
-      <tr><td>Questions libres tapées dans l’assistant, clics sur une ligne</td><td><span class="chip live">live</span></td><td>Durée réelle et badges des sources sous la réponse.</td></tr>
-      <tr><td>Questions préparées (cartes d’accueil, boutons « Ask »)</td><td><span class="chip recorded">enregistré</span></td><td>Rien à l’écran : réponse affichée après une pause de 5 s. Le présentateur porte le cadrage.</td></tr>
-      <tr><td>Page Zava IQ — faits et contrats</td><td><span class="chip recorded">exemple</span></td><td>Toujours sur l’exemple du repository, sans sélecteur ni badge.</td></tr>
-      <tr><td>Work IQ, Web IQ, envoi Teams</td><td><span class="chip sim">simulé</span></td><td>Rien à l’écran : c’est une démo, l’audience le sait. Les 2 s de chargement sont une mise en scène.</td></tr>
+      <tr><td>Indicators, charts, tables</td><td><span class="chip live">live</span></td><td>DAX queries on the deployed semantic model.</td></tr>
+      <tr><td>Free questions typed in the assistant, clicks on a row</td><td><span class="chip live">live</span></td><td>Real duration and source badges under the answer.</td></tr>
+      <tr><td>Prepared questions (home cards, “Ask” buttons)</td><td><span class="chip recorded">recorded</span></td><td>Nothing on screen: the answer appears after a 5 s pause. The presenter owns the framing.</td></tr>
+      <tr><td>Zava IQ page — facts and contracts</td><td><span class="chip recorded">example</span></td><td>Always on the repository example, with no selector or badge.</td></tr>
+      <tr><td>Work IQ, Web IQ, Teams send</td><td><span class="chip sim">scripted</span></td><td>Nothing on screen: it is a demo and the audience knows it. The 2 s spinners are staging.</td></tr>
     </tbody>
   </table>
-  <p>Règle simple : l’écran ne porte pas de mentions « simulated » ; si on vous demande ce qui est branché, répondez avec ce tableau.</p>
+  <p>Simple rule: the screen carries no “simulated” labels; if someone asks what is wired, answer with this table.</p>
 </section>
 
 <section id="challenge">
-  <h2>6. Questions de challenge pour la salle</h2>
-  <p>Des pièges volontaires. Les réponses attendues sont verrouillées par la suite de tests.</p>
+  <h2>7. Challenge questions for the room</h2>
+  <p>Deliberate traps. The expected answers are locked in by the test suite.</p>
   <table>
-    <thead><tr><th>Question du public</th><th>Réponse attendue</th></tr></thead>
+    <thead><tr><th>Audience question</th><th>Expected answer</th></tr></thead>
     <tbody>
-      <tr><td>Contoso surlivre de 12 % en Espagne. On le facture ?</td><td>Non : au-delà de 5 %, l’excédent n’est pas facturable (6.1). Au-delà de 10 %, crédit de 50 % de la valeur média de l’excédent, sous 45 jours, sans demande du client (6.2).</td></tr>
-      <tr><td>Litware surlivre de 11 %. Même traitement ?</td><td>Non : aucune compensation, quel que soit l’écart (6.1–6.2). Et l’agence ne peut pas facturer l’excédent (6.3).</td></tr>
-      <tr><td>On compense l’Espagne avec un marché sous-livré de Contoso ?</td><td>Non : les écarts sont évalués par marché et par trimestre, sans compensation entre marchés (6.4).</td></tr>
-      <tr><td>Fabrikam sous-livre de 8 % en Italie. Compensation en nature ?</td><td>Pas à 8 % : pénalité de 2 % du budget média net, de plein droit (6.2). La compensation en nature ne s’ajoute qu’au-delà de 10 % (6.3–6.4).</td></tr>
-      <tr><td>Combien vaut le crédit Contoso en euros ?</td><td>Il faut le tarif net contractuel par canal. L’application ne l’invente pas.</td></tr>
-      <tr><td>Combien de campagnes n’ont pas été entièrement facturées ?</td><td>Deux campagnes — mais six lignes au grain campagne × régie. 649 159 € de manque, réclamables 120 jours (Litware, 9.2), jusqu’au 28/01/2027.</td></tr>
-      <tr><td>Pourquoi ne pas mettre la règle de calcul dans le prompt ?</td><td>Parce qu’on aurait deux définitions des impressions livrées. La mesure reste dans Fabric, auditable.</td></tr>
+      <tr><td>Contoso over-delivers by 12% in Spain. Do we bill it?</td><td>No: above 5%, the excess cannot be billed (6.1). Above 10%, a credit of 50% of the media value of the excess is due within 45 days, without the client asking (6.2).</td></tr>
+      <tr><td>Litware over-delivers by 11%. Same treatment?</td><td>No: no compensation, whatever the gap (6.1–6.2). And the agency cannot bill the excess (6.3).</td></tr>
+      <tr><td>Can we offset Spain against an under-delivered Contoso market?</td><td>No: gaps are assessed per market and per quarter, with no netting across markets (6.4).</td></tr>
+      <tr><td>Fabrikam under-delivers by 8% in Italy. Make-good in kind?</td><td>Not at 8%: a penalty of 2% of the net media budget, automatically (6.2). Make-good in kind only adds on above 10% (6.3–6.4).</td></tr>
+      <tr><td>How much is the Contoso credit in euros?</td><td>It needs the contractual net rate per channel. The app does not invent it.</td></tr>
+      <tr><td>How many campaigns were not fully billed?</td><td>Two campaigns — but six lines at campaign × media owner grain. €649,159 missing, claimable for 120 days (Litware, 9.2), until 28 Jan 2027.</td></tr>
+      <tr><td>Why not put the calculation rule in the prompt?</td><td>Because we would have two definitions of delivered impressions. The measure stays in Fabric, auditable.</td></tr>
     </tbody>
   </table>
 </section>
 
 <section id="planb">
-  <h2>7. Plan B</h2>
+  <h2>8. Plan B</h2>
   <table>
-    <thead><tr><th>Symptôme</th><th>Réaction sur scène</th></tr></thead>
+    <thead><tr><th>Symptom</th><th>What to do on stage</th></tr></thead>
     <tbody>
-      <tr><td>Une question live dépasse 100 s ou échoue</td><td>« C’est la chaîne complète Fabric + Foundry qui tourne en direct. » Basculer sur une question préparée équivalente, en disant qu’elle est enregistrée.</td></tr>
-      <tr><td>Un écran affiche une erreur et « Retry »</td><td>Réessayer une fois. Sinon, ouvrir l’onglet <code>/diagnostic</code> : il indique quel maillon de la chaîne a échoué.</td></tr>
-      <tr><td>Écran de connexion inattendu</td><td>Se reconnecter avec le compte du tenant de démo, dans le même navigateur que la répétition.</td></tr>
-      <tr><td>Tout est bloqué</td><td>Raconter le tableau de la section 1 et l’architecture : le message de la démo tient sans l’écran.</td></tr>
+      <tr><td>A live question takes more than 100 s or fails</td><td>“This is the full Fabric + Foundry chain running live.” Switch to an equivalent prepared question, and say it is recorded.</td></tr>
+      <tr><td>A screen shows an error and “Retry”</td><td>Retry once. Otherwise open the <code>/diagnostic</code> tab: it shows which link in the chain failed.</td></tr>
+      <tr><td>Unexpected sign-in screen</td><td>Sign in again with the demo tenant account, in the same browser as the rehearsal.</td></tr>
+      <tr><td>Everything is stuck</td><td>Tell the story with the table in section 1 and the architecture: the demo’s message stands without the screen.</td></tr>
     </tbody>
   </table>
 </section>
 
 <section id="questions">
-  <h2>8. Questions à coller</h2>
-  <p id="q-live"><strong>Q1 — question live de la scène 3</strong> <span class="chip live">vérifiée en live · réponse en 75 s</span></p>
-  <div class="ask"><button type="button" data-copy>Copier</button>For advertiser ADV-001 in market MKT-ES during 2026-Q3, what are planned impressions, delivered impressions and signed compensation terms? Please cite the clause.</div>
+  <h2>9. Questions to paste</h2>
+  <p id="q-live"><strong>Q1 — live question for scene 3</strong> <span class="chip live">verified live · answered in 75 s</span></p>
+  <div class="ask"><button type="button" data-copy>Copy</button>For advertiser ADV-001 in market MKT-ES during 2026-Q3, what are planned impressions, delivered impressions and signed compensation terms? Please cite the clause.</div>
 
-  <p><strong>Q2 — même chiffre, autre contrat</strong> <span class="chip">à répéter avant usage</span></p>
-  <div class="ask"><button type="button" data-copy>Copier</button>For advertiser ADV-004 in market MKT-UK during 2026-Q3, what are planned impressions, delivered impressions and signed compensation terms? Please cite the clause.</div>
+  <p><strong>Q2 — same figure, different contract</strong> <span class="chip">rehearse before use</span></p>
+  <div class="ask"><button type="button" data-copy>Copy</button>For advertiser ADV-004 in market MKT-UK during 2026-Q3, what are planned impressions, delivered impressions and signed compensation terms? Please cite the clause.</div>
 
-  <p><strong>Q3 — sous-livraison</strong> <span class="chip">à répéter avant usage</span></p>
-  <div class="ask"><button type="button" data-copy>Copier</button>For advertiser ADV-002 in market MKT-IT during 2026-Q3, what are planned impressions, delivered impressions and signed compensation terms? Please cite the clause.</div>
+  <p><strong>Q3 — under-delivery</strong> <span class="chip">rehearse before use</span></p>
+  <div class="ask"><button type="button" data-copy>Copy</button>For advertiser ADV-002 in market MKT-IT during 2026-Q3, what are planned impressions, delivered impressions and signed compensation terms? Please cite the clause.</div>
 
   <details>
-    <summary>Questions préparées (rejeu enregistré) utilisables sur scène</summary>
+    <summary>Prepared questions (recorded replay) usable on stage</summary>
     <ul>
-      <li>« Which markets are off plan in Q3, and what does the contract say about it? » — chiffres + clauses, 81 s en live.</li>
-      <li>« Where does the portfolio stand over the period? » — chiffres, 67 s en live.</li>
-      <li>« Which media owners carry the campaigns in the off-plan market? » — graphe, 81 s en live.</li>
-      <li>« What ran and was never billed, and how long can it still be claimed? » — chiffres + clauses, 84 s en live.</li>
+      <li>“Which markets are off plan in Q3, and what does the contract say about it?” — figures + clauses, 81 s live.</li>
+      <li>“Where does the portfolio stand over the period?” — figures, 67 s live.</li>
+      <li>“Which media owners carry the campaigns in the off-plan market?” — graph, 81 s live.</li>
+      <li>“What ran and was never billed, and how long can it still be claimed?” — figures + clauses, 84 s live.</li>
     </ul>
-    <p>À éviter tant qu’ils ne sont pas réenregistrés : « What do the contracts provide for in case of over-delivery? » et « What deadlines do those clauses run on? ».</p>
+    <p>Avoid until they are re-recorded: “What do the contracts provide for in case of over-delivery?” and “What deadlines do those clauses run on?”.</p>
   </details>
 </section>
 
 <footer>
-  Zava Media est une agence fictive ; annonceurs, contrats, notes Work IQ et annonces Web IQ sont synthétiques.
-  Ce document ne contient ni identifiant de tenant, ni URL de déploiement : ils se trouvent dans <code>state.json</code>, non versionné.
+  Zava Media is a fictional agency; advertisers, contracts, Work IQ notes and Web IQ announcements are synthetic.
+  This document contains no tenant identifier or deployment URL: they live in <code>state.json</code>, which is not versioned.
 </footer>
 </main>
 <script>
   document.querySelectorAll('[data-copy]').forEach(function (button) {
     button.addEventListener('click', function () {
       var text = button.parentElement.textContent.replace(button.textContent, '').trim();
-      var done = function () { button.textContent = 'Copié'; setTimeout(function () { button.textContent = 'Copier'; }, 1500); };
-      if (navigator.clipboard) { navigator.clipboard.writeText(text).then(done, function () { button.textContent = 'Échec'; }); }
+      var done = function () { button.textContent = 'Copied'; setTimeout(function () { button.textContent = 'Copy'; }, 1500); };
+      if (navigator.clipboard) { navigator.clipboard.writeText(text).then(done, function () { button.textContent = 'Failed'; }); }
     });
   });
 </script>
