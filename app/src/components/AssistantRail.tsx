@@ -5,7 +5,6 @@ import type { Turn } from '@/domain/assistant';
 import type { Opener } from '@/domain/openers';
 import { Markdown } from '@/components/Markdown';
 import { splitAnswer } from '@/services/answer';
-import { frozenDate } from '@/services/frozen';
 import { badgeForFamily } from '@/domain/nav';
 import { useQuerySource } from '@/data/querySource';
 
@@ -252,13 +251,6 @@ function AnswerBubble({ turn }: { turn: Turn }) {
 
       <RouteBadges tools={a.toolsFired} />
 
-      {turn.replay ? (
-        <p className="mt-2 text-2xs" style={{ color: 'var(--text-muted)' }}>
-          Recorded {frozenDate(turn.replay.capturedAt)} — the live run took{' '}
-          {turn.replay.liveSeconds}s
-        </p>
-      ) : null}
-
       {a.citations.length > 0 ? (
         <ul className="mt-2 space-y-0.5 border-t pt-2" style={{ borderColor: 'var(--border)' }}>
           {a.citations.map((c, i) => (
@@ -369,7 +361,6 @@ function Failure({ turn }: { turn: Turn }) {
 }
 
 function Welcome({ configured }: { configured: boolean }) {
-  const { preview } = useQuerySource();
   return (
     <div
       className="rounded-xl border p-3"
@@ -379,10 +370,8 @@ function Welcome({ configured }: { configured: boolean }) {
         Ask a question about the campaigns
       </p>
       <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-        {preview
-          ? 'Suggested questions replay recorded answers, which may differ from the sample figures. Open the live app to ask your own question.'
-          : configured
-          ? 'Answers are read from live campaign data, the signed agreements and the account map. Each one states what it looked at.'
+        {configured
+          ? 'Answers are read from campaign data, the signed agreements and the account map. Each one states what it looked at.'
           : 'The assistant is not wired up in this build. Questions are shown exactly as they would be sent, so the wiring can be checked without inventing an answer.'}
       </p>
     </div>
@@ -475,9 +464,7 @@ export function AssistantRail() {
             Assistant Zava
           </h2>
           <p className="truncate text-xs" style={{ color: 'var(--text-muted)' }}>
-            {preview
-              ? 'Recorded answers - not based on the sample figures'
-              : configured
+            {preview || configured
               ? 'Reads campaign data, contracts and account relationships'
               : 'Not configured'}
           </p>
@@ -485,7 +472,7 @@ export function AssistantRail() {
       </header>
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
-        {turns.length === 0 ? <Welcome configured={configured} /> : null}
+        {turns.length === 0 ? <Welcome configured={preview || configured} /> : null}
 
         {turns.map((t) => (
           <div key={t.id} className="space-y-2">

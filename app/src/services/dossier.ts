@@ -1,12 +1,14 @@
 import reference from '@/data/iq-dossier-reference.generated.json';
 import webContext from '@/data/iq-web-context.generated.json';
-import { checkContractEvidence, dossierPrompt, type DossierCapture, type DossierCase, type DossierInput, type WebContext } from '@/domain/dossier';
+import workContext from '@/data/iq-work-context.generated.json';
+import { checkContractEvidence, dossierPrompt, type DossierCapture, type DossierCase, type DossierInput, type WebContext, type WorkContext } from '@/domain/dossier';
 import { executeDax, semanticModelId } from './powerbi';
 import { FABRIC_SCOPES, getToken } from './msal';
 import { askSupervisor } from './foundryAgent';
 
 export const DOSSIER_REFERENCE: DossierInput = reference;
 export const DOSSIER_WEB_CONTEXT: WebContext = webContext;
+export const DOSSIER_WORK_CONTEXT: WorkContext = workContext;
 
 const captureFiles = import.meta.glob('../data/iq-dossier-capture.generated.json', { eager: true, import: 'default' });
 

@@ -37,6 +37,38 @@ export interface WebContext {
   notes: WebNote[];
 }
 
+export type WorkSignalKind = 'email' | 'teams' | 'meeting' | 'file';
+
+export interface WorkSignal {
+  id: string;
+  kind: string;
+  date: string;
+  who: string;
+  title: string;
+  detail: string;
+}
+
+export interface WorkCase {
+  caseId: string;
+  advertiserId: string;
+  marketId: string;
+  quarter: string;
+  simulated: boolean;
+  impact: string;
+  nextStep: string;
+  signals: WorkSignal[];
+  people: { name: string; role: string }[];
+  recipient: { name: string; role: string; channel: string; reasons: string[] };
+}
+
+export interface WorkContext {
+  scenarioId: string;
+  asOf: string;
+  simulated: boolean;
+  fingerprint: string;
+  cases: WorkCase[];
+}
+
 export interface DossierCase {
   id: string;
   advertiserId: string;
@@ -127,7 +159,7 @@ export function checkContractEvidence(
 export const DOSSIER_STEPS: { id: DossierStep; label: string }[] = [
   { id: 'facts', label: 'Facts' }, { id: 'contract', label: 'Contract' },
   { id: 'work', label: 'Work IQ' }, { id: 'web', label: 'Web IQ' },
-  { id: 'action', label: 'Draft' },
+  { id: 'action', label: 'Send' },
 ];
 
 export function dossierStepAtLeast(step: DossierStep, minimum: DossierStep): boolean {
@@ -229,7 +261,7 @@ export function relevantWebNotes(item: DossierCase, context: WebContext, scenari
 
 export function webDraftContext(notes: WebNote[]): string {
   return notes.map((note) =>
-    `Simulated web context — ${note.source}, ${note.publishedOn}: ${note.summary} ${note.meetingPrompt}`,
+    `Web context — ${note.source}, ${note.publishedOn}: ${note.summary} ${note.meetingPrompt}`,
   ).join('\n\n');
 }
 
@@ -244,6 +276,61 @@ export function dossierDraft(item: DossierCase, action: DossierAction): string |
     return `For ${item.advertiser} in ${item.market}, articles 6.1–6.2 exclude a credit for the Q3 over-delivery. This conclusion concerns that delivery gap only, not other account issues.`;
   }
   return null;
+}
+
+export function relevantWorkCase(item: DossierCase, context: WorkContext, scenarioId: string, asOf: string): WorkCase | null {
+  if (!context.simulated || context.scenarioId !== scenarioId || context.asOf !== asOf || !isDateKey(asOf)) return null;
+  const found = context.cases.find((c) =>
+    c.simulated === true && c.caseId === item.id && c.advertiserId === item.advertiserId &&
+    c.marketId === item.marketId && c.quarter === item.quarter);
+  if (!found || !found.recipient?.name?.trim()) return null;
+  const signals = found.signals.filter((s) => isDateKey(s.date) && s.date > '2026-09-30' &&
+    (s.kind === 'meeting' || s.date <= asOf));
+  return signals.length ? { ...found, signals } : null;
+}
+
+/** Work IQ refines who acts next once the treatment is established; it never changes the treatment. */
+export function withWorkContext(action: DossierAction, work: WorkCase | null): DossierAction {
+  if (!work || (action.treatment !== 'follow-validation' && action.treatment !== 'no-credit')) return action;
+  return { ...action, next: work.nextStep };
+}
+
+function addDays(dateKey: string, days: number): string {
+  const d = new Date(`${dateKey}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function longDate(dateKey: string): string {
+  return new Date(`${dateKey}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+}
+
+const firstName = (who: string) => who.split(' · ')[0].split(' ')[0];
+const millions = (n: number) => `${(n / 1e6).toFixed(1)}M`;
+
+/** The message sent to the person Work IQ identifies. Without Work IQ, fall back to the generic draft. */
+export function dossierMessage(item: DossierCase, action: DossierAction, work: WorkCase | null,
+  facts: DossierCase['facts'] = item.facts): string | null {
+  if (!work || (action.treatment !== 'follow-validation' && action.treatment !== 'no-credit')) return dossierDraft(item, action);
+  const hello = `Hi ${firstName(work.recipient.name)},`;
+  const gap = `${item.advertiser} ${item.market} delivered ${facts.variance > 0 ? '+' : ''}${Math.round(facts.variance * 100)}% ` +
+    `against the Q3 plan (${millions(facts.delivered)} vs ${millions(facts.planned)} impressions).`;
+  const meeting = work.signals.find((s) => s.kind === 'meeting');
+  const beforeMeeting = meeting ? ` before the ${meeting.title.split(' · ').pop()} on ${longDate(meeting.date)}` : '';
+  if (action.treatment === 'follow-validation') {
+    const email = work.signals.find((s) => s.kind === 'email');
+    const file = work.signals.find((s) => s.kind === 'file');
+    const preparer = email ? firstName(email.who) : 'Finance';
+    return `${hello} ${gap} Under article 6.2 of ${item.contract.reference}, a make-good credit is due and must be issued ` +
+      `by ${longDate(addDays('2026-09-30', 45))}, without ${item.advertiser.split(' ')[0]} having to ask. ` +
+      `${preparer} has already prepared the calculation${file ? ` (${file.title})` : ''} and is waiting for your validation. ` +
+      `Could you review it${beforeMeeting}? Please confirm the contracted channel rates and the amount before issuance.`;
+  }
+  const chat = work.signals.find((s) => s.kind === 'teams');
+  const client = chat ? `${firstName(chat.who)}'s carry-over request from ${longDate(chat.date)}` : 'the client\'s question';
+  return `${hello} on ${client}: ${gap} Articles 6.1–6.2 of ${item.contract.reference} rule out any credit or carry-over ` +
+    `for over-delivery, whatever its size. Under article 6.3 we invoice the approved budget only, never the extra volume, ` +
+    `so the Q3 invoice on hold can be released on that basis. Worth closing${beforeMeeting}.`;
 }
 
 export function dossierPrompt(item: DossierCase, asOf: string): string {

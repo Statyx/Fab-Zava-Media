@@ -6,10 +6,10 @@ export interface IqContributions {
 }
 
 const CONTRIBUTIONS = [
-  { id: 'fabric', label: 'Fabric IQ', detail: 'Figures & campaign scope', effect: 'Which delivery gap are we reviewing?', status: 'Existing models' },
-  { id: 'foundry', label: 'Foundry', detail: 'Contract context', effect: 'What treatment does the agreement support?', status: 'Existing agents' },
-  { id: 'work', label: 'Work IQ', detail: 'Work already underway', effect: 'What is the next step, rather than a duplicate request?', status: 'Simulated' },
-  { id: 'web', label: 'Web IQ', detail: 'Public announcements', effect: 'What upcoming campaign gives the meeting more context?', status: 'Simulated' },
+  { id: 'fabric', label: 'Fabric IQ', detail: 'Figures & campaign scope', effect: 'Which delivery gap are we reviewing?', status: 'Included' },
+  { id: 'foundry', label: 'Foundry', detail: 'Contract context', effect: 'What treatment does the agreement support?', status: 'Included' },
+  { id: 'work', label: 'Work IQ', detail: 'Mail, Teams, meetings, files', effect: 'What is already underway, and who has to act?', status: 'Included' },
+  { id: 'web', label: 'Web IQ', detail: 'Public announcements', effect: 'What upcoming campaign gives the meeting more context?', status: 'Included' },
 ] as const;
 
 export function IqContributionControls({
@@ -25,7 +25,7 @@ export function IqContributionControls({
   return (
     <fieldset className="iq-contribution-controls">
       <legend>What each layer contributes</legend>
-      <p>Change the context included in both cases. This is a demonstration control, not a switch on the underlying services.</p>
+      <p>Change the context included in both cases.</p>
       <div className="iq-contribution-grid">
         {CONTRIBUTIONS.map((layer) => {
           const ready = layer.id === 'foundry' ? contractReady : layer.id === 'work' ? workReady : layer.id === 'web' ? webReady : true;
@@ -34,7 +34,7 @@ export function IqContributionControls({
             <label key={layer.id} className={`iq-source-control iq-source-${layer.id} ${ready && value[layer.id] ? 'is-included' : 'is-excluded'}`}>
               <span className="iq-source-control-heading">
                 <input type="checkbox" checked={ready && value[layer.id]} disabled={busy || !ready}
-                  aria-label={layer.id === 'work' ? 'Include simulated Work IQ context' : `Include ${layer.label} context`}
+                  aria-label={`Include ${layer.label} context`}
                   onChange={(e) => onChange(layer.id, e.target.checked)} />
                 <strong>{layer.label}</strong>
               </span>

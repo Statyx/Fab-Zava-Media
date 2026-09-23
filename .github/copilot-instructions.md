@@ -37,6 +37,15 @@ script; that is the copy-pasted glue this structure exists to delete.
 - No `parent.parent` path chains — import from `fabric._shared.paths`.
 - Every step is idempotent: read state, create only what is missing.
 
+## Demo UI wording
+
+This is a demo and the audience knows it. Screens never label the storyline as
+"simulated", "fictional", "not live", "recorded" or "repository example", and no page
+offers a source-mode selector (example / recorded / live) or a "Read live" button.
+Each screen runs one path; staged effects (loading pauses, the Teams send) read as the
+real interaction. The presenter owns the framing — it belongs in `docs/DEMO_SCRIPT.html`,
+not in the UI.
+
 ## Before proposing a change
 
 ```bash

@@ -1,0 +1,105 @@
+{
+  "scenarioId": "q3-close-2026",
+  "asOf": "2026-10-15",
+  "simulated": true,
+  "cases": [
+    {
+      "caseId": "contoso-es",
+      "advertiserId": "ADV-001",
+      "marketId": "MKT-ES",
+      "quarter": "2026-Q3",
+      "simulated": true,
+      "impact": "Finance has already prepared the calculation. Asking for it again would duplicate work: the only open action is Elena's validation, ahead of the 21 October review and the contractual deadline.",
+      "nextStep": "Ask Elena Ruiz, the account lead, to validate Finance's calculation before the 21 October business review. Do not request the calculation again.",
+      "signals": [
+        {
+          "id": "SIM-WORK-CONTOSO-MAIL",
+          "kind": "email",
+          "date": "2026-10-12",
+          "who": "Marta Gil · Finance controller",
+          "title": "Contoso ES Q3 make-good: calculation ready",
+          "detail": "Calculation prepared and sent to Elena for validation. Nothing issued yet; validation is still pending."
+        },
+        {
+          "id": "SIM-WORK-CONTOSO-FILE",
+          "kind": "file",
+          "date": "2026-10-12",
+          "who": "Edited by Marta Gil",
+          "title": "Contoso_ES_Q3_make-good.xlsx",
+          "detail": "Finance › Contoso Mobility · status field reads \"Awaiting account lead validation\"."
+        },
+        {
+          "id": "SIM-WORK-CONTOSO-MEETING",
+          "kind": "meeting",
+          "date": "2026-10-21",
+          "who": "Organised by Elena Ruiz",
+          "title": "Contoso Mobility · Q3 business review",
+          "detail": "Attendees include the Contoso marketing director. The Q3 credit is not on the agenda yet."
+        }
+      ],
+      "people": [
+        { "name": "Elena Ruiz", "role": "Account lead · Contoso Mobility Spain" },
+        { "name": "Marta Gil", "role": "Finance controller" }
+      ],
+      "recipient": {
+        "name": "Elena Ruiz",
+        "role": "Account lead · Contoso Mobility Spain",
+        "channel": "Teams",
+        "reasons": [
+          "Named by Finance as the pending validator",
+          "Organiser of the 21 October Q3 business review",
+          "Owns the ADV-001 relationship for Spain"
+        ]
+      }
+    },
+    {
+      "caseId": "litware-uk",
+      "advertiserId": "ADV-004",
+      "marketId": "MKT-UK",
+      "quarter": "2026-Q3",
+      "simulated": true,
+      "impact": "The client has asked for a carry-over credit and the Q3 invoice is on hold. The contract already answers both: James can reply to Sarah and release the invoice for the approved budget only.",
+      "nextStep": "Give James Carter, the account lead, the contractual answer to Litware's carry-over request and release the Q3 invoice for the approved budget only.",
+      "signals": [
+        {
+          "id": "SIM-WORK-LITWARE-CHAT",
+          "kind": "teams",
+          "date": "2026-10-09",
+          "who": "Sarah Bennett · Media director, Litware Retail (external)",
+          "title": "Chat with James Carter",
+          "detail": "\"Our UK campaigns over-delivered in Q3. Can we carry the extra impressions over as a credit for the autumn campaign?\""
+        },
+        {
+          "id": "SIM-WORK-LITWARE-MAIL",
+          "kind": "email",
+          "date": "2026-10-10",
+          "who": "James Carter · Account lead",
+          "title": "Hold the Litware UK Q3 invoice",
+          "detail": "To Billing: \"Please hold the UK Q3 invoice until we have answered the client on the over-delivery.\""
+        },
+        {
+          "id": "SIM-WORK-LITWARE-MEETING",
+          "kind": "meeting",
+          "date": "2026-10-20",
+          "who": "Organised by James Carter",
+          "title": "Litware Home · autumn campaign kick-off",
+          "detail": "Sarah Bennett attends. The carry-over question is still open in the chat."
+        }
+      ],
+      "people": [
+        { "name": "James Carter", "role": "Account lead · Litware Retail UK" },
+        { "name": "Sarah Bennett", "role": "Media director · Litware Retail (client)" }
+      ],
+      "recipient": {
+        "name": "James Carter",
+        "role": "Account lead · Litware Retail UK",
+        "channel": "Teams",
+        "reasons": [
+          "Received the client's carry-over question on 9 October",
+          "Put the UK Q3 invoice on hold on 10 October",
+          "Organiser of the 20 October kick-off with the client"
+        ]
+      }
+    }
+  ]
+}

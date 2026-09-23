@@ -51,7 +51,7 @@ describe('development preview', () => {
 
     expect(await screen.findAllByTitle(/^Preview sample for/)).toHaveLength(6);
     expect(screen.getByText('Preview data')).toBeInTheDocument();
-    expect(screen.getByRole('note')).toHaveTextContent('sample figures, not live results');
+    expect(screen.getByRole('note')).not.toHaveTextContent(/sample figures|not live|recorded/i);
     expect(screen.queryByText('Live Fabric data')).not.toBeInTheDocument();
     expect(screen.queryByText('The query failed')).not.toBeInTheDocument();
     expect(screen.queryByTitle(/semantic model/)).not.toBeInTheDocument();
@@ -79,7 +79,7 @@ describe('development preview', () => {
     await screen.findByText('Preview data');
     await userEvent.click(screen.getByRole('button', { name: starters(OPENERS)[0].label }));
     expect(window.location.pathname).toBe('/preview/delivery');
-    expect(await screen.findByText(/Replaying a recorded answer/)).toBeInTheDocument();
+    expect(await screen.findByText(/Reading campaign data, contracts and account relationships/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('link', { name: 'Open live app' }));
     await waitFor(() => expect(window.location.pathname).toBe('/auth'));
     expect(screen.queryByText('Preview data')).not.toBeInTheDocument();
@@ -103,7 +103,7 @@ describe('development preview', () => {
       expect(await screen.findByRole('heading', { level: 1, name: label })).toBeVisible();
       const destination = window.location.pathname;
       expect(window.location.search).toBe('');
-      expect(screen.queryByText(/Replaying a recorded answer/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Reading campaign data, contracts and account relationships/)).not.toBeInTheDocument();
       await user.click(screen.getByRole('link', { name: /Zava Media/ }));
       await user.click(within(screen.getByRole('navigation', { name: 'Main navigation' })).getByRole('link', { name: label }));
       expect(window.location.pathname).toBe(destination);
@@ -114,15 +114,15 @@ describe('development preview', () => {
     },
   );
 
-  it('uses Microsoft IQ consistently and preserves the existing URL', async () => {
+  it('uses Zava IQ consistently and preserves the existing URL', async () => {
     window.history.replaceState({}, '', '/preview');
     render(<App />);
     await screen.findByText('Preview data');
     expect(within(screen.getByRole('navigation', { name: 'Main navigation' }))
-      .getByRole('link', { name: 'Microsoft IQ' })).toHaveAttribute('href', `/preview${IQ_NAV.to}`);
-    await userEvent.click(screen.getByRole('button', { name: /^Microsoft IQ/ }));
+      .getByRole('link', { name: 'Zava IQ' })).toHaveAttribute('href', `/preview${IQ_NAV.to}`);
+    await userEvent.click(screen.getByRole('button', { name: /^Zava IQ/ }));
     expect(await screen.findByRole('heading', { name: 'Which delivery gaps need action?' }, { timeout: 5000 })).toBeVisible();
-    expect(document.querySelector('.iq-intro .cover-eyebrow')).toHaveTextContent('Microsoft IQ');
+    expect(document.querySelector('.iq-intro .cover-eyebrow')).toHaveTextContent('Zava IQ');
     expect(screen.queryByText('IQ in practice')).not.toBeInTheDocument();
   });
 
@@ -163,7 +163,7 @@ it('never forwards sample context to a live agent, including page-triggered ques
     </QuerySourceContext.Provider>,
   );
   await userEvent.click(screen.getByRole('button', { name: 'Ask live' }));
-  expect(await screen.findByText(/only replays recorded questions/)).toBeInTheDocument();
+  expect(await screen.findByText(/sign in to ask your own question/)).toBeInTheDocument();
   expect(askDataAgent).not.toHaveBeenCalled();
   expect(askSupervisor).not.toHaveBeenCalled();
 });

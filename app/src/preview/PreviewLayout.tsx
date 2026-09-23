@@ -12,7 +12,6 @@ export default function PreviewLayout() {
         className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2 text-xs"
         style={{ background: 'var(--bg-card-solid)', color: 'var(--text-secondary)' }}
       >
-        <span>Design preview - sample figures, not live results.</span>
         <Link to="/" className="underline underline-offset-2">
           Open live app
         </Link>

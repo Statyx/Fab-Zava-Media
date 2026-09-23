@@ -84,8 +84,8 @@ export const ARCHITECTURE_ROUTE = '/architecture';
 export const IQ_ROUTE = '/iq-in-practice';
 export const IQ_NAV: NavEntry = {
   to: IQ_ROUTE,
-  label: 'Microsoft IQ',
-  blurb: 'From delivery gaps to a sourced next step.',
+  label: 'Zava IQ',
+  blurb: 'From delivery gaps to the right person, with the full context.',
   icon: GRAPH,
 };
 

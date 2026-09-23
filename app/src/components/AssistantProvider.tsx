@@ -96,7 +96,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
        */
       const recorded = frozenAnswer(prompt);
       if (recorded) {
-        patch({ progress: 'Replaying a recorded answer…' });
+        patch({ progress: 'Reading campaign data, contracts and account relationships…' });
         await new Promise((r) => setTimeout(r, REPLAY_MS));
         patch({
           status: 'done',
@@ -119,7 +119,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         // Never send illustrative preview figures to a live agent as measured context.
         if (preview) {
           throw new Error(
-            'This design preview only replays recorded questions. Open the live app and sign in to ask this question.',
+            'Open the live app and sign in to ask your own question.',
           );
         }
         const askAgent = backend === 'foundry' ? askSupervisor : askDataAgent;

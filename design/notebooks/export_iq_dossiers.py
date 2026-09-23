@@ -16,6 +16,8 @@ OUTPUT = ROOT / "app" / "src" / "data" / "iq-dossier-reference.generated.json"
 WORK_NOTES = ROOT / "artifacts" / "iq_context" / "work-notes.json"
 WEB_NOTES = ROOT / "artifacts" / "iq_context" / "web-notes.json"
 WEB_OUTPUT = ROOT / "app" / "src" / "data" / "iq-web-context.generated.json"
+WORK_SIGNALS = ROOT / "artifacts" / "iq_context" / "work-signals.json"
+WORK_OUTPUT = ROOT / "app" / "src" / "data" / "iq-work-context.generated.json"
 CASES = (
     ("contoso-es", "ADV-001", "MKT-ES", "ADV-001-contoso-mobility.md", "credit"),
     ("litware-uk", "ADV-004", "MKT-UK", "ADV-004-litware-retail.md", "excluded"),
@@ -118,12 +120,62 @@ def build_web_context(dossiers):
     return web
 
 
+SIGNAL_KINDS = {"email", "teams", "meeting", "file"}
+
+
+def build_work_context(dossiers):
+    """Fictional Work IQ signals and recipients, kept outside the capture fingerprint like web news."""
+    work = json.loads(WORK_SIGNALS.read_text(encoding="utf-8"))
+    if work["simulated"] is not True or any(work[k] != dossiers[k] for k in ("scenarioId", "asOf")):
+        raise ValueError("Work signals must be simulated and match the dossier scenario")
+    as_of = date.fromisoformat(work["asOf"])
+    ids = set()
+    cases = set()
+    for entry in work["cases"]:
+        if entry.get("simulated") is not True:
+            raise ValueError("Work signals must remain explicitly simulated")
+        case = next((c for c in dossiers["cases"] if c["id"] == entry.get("caseId")), None)
+        if case is None or any(entry.get(k) != case[k] for k in ("advertiserId", "marketId", "quarter")):
+            raise ValueError("Work signals have an unmatched case scope")
+        if entry["caseId"] in cases:
+            raise ValueError("Duplicate work signals for a case")
+        cases.add(entry["caseId"])
+        for key in ("impact", "nextStep"):
+            if not isinstance(entry.get(key), str) or not entry[key].strip():
+                raise ValueError(f"Missing work context field: {key}")
+        recipient = entry.get("recipient") or {}
+        if not all(isinstance(recipient.get(k), str) and recipient[k].strip() for k in ("name", "role", "channel")) \
+                or not recipient.get("reasons"):
+            raise ValueError("Each case needs a named recipient with reasons")
+        if recipient["name"] not in {p["name"] for p in entry.get("people", [])}:
+            raise ValueError("The recipient must be one of the people involved")
+        if not entry.get("signals"):
+            raise ValueError("Expected fictional work signals")
+        for signal in entry["signals"]:
+            for key in ("id", "kind", "date", "who", "title", "detail"):
+                if not isinstance(signal.get(key), str) or not signal[key].strip():
+                    raise ValueError(f"Missing work signal field: {key}")
+            if signal["kind"] not in SIGNAL_KINDS or signal["id"] in ids:
+                raise ValueError("Unknown or duplicate work signal")
+            ids.add(signal["id"])
+            when = date.fromisoformat(signal["date"])
+            # Messages and files must already exist; a meeting may be on the calendar ahead.
+            if when <= date(2026, 9, 30) or (signal["kind"] != "meeting" and when > as_of):
+                raise ValueError("Work signal is outside the closed-quarter scenario")
+    if cases != {c["id"] for c in dossiers["cases"]}:
+        raise ValueError("Each dossier must have fictional work signals")
+    work["fingerprint"] = hashlib.sha256(json.dumps(work, sort_keys=True).encode()).hexdigest()
+    return work
+
+
 def main():
     payload = build_dossiers()
     web = build_web_context(payload)
+    work = build_work_context(payload)
     OUTPUT.write_text(json.dumps(payload, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
     WEB_OUTPUT.write_text(json.dumps(web, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
-    print("Exported two repository dossiers; Work IQ and Web IQ notes remain simulated.")
+    WORK_OUTPUT.write_text(json.dumps(work, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
+    print("Exported two repository dossiers; Work IQ and Web IQ context remains simulated.")
 
 
 if __name__ == "__main__":

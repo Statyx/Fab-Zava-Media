@@ -10,7 +10,7 @@
       "marketId": "MKT-ES",
       "quarter": "2026-Q3",
       "publishedOn": "2026-10-09",
-      "source": "Contoso Mobility newsroom (fictional)",
+      "source": "Contoso Mobility newsroom",
       "headline": "Contoso EV announces a Spanish roadshow starting 2 November",
       "summary": "Contoso EV has announced a roadshow in Madrid and Barcelona from 2 to 15 November 2026, supported by a new digital media campaign in Spain.",
       "meetingPrompt": "Discuss the upcoming launch when reviewing next-quarter planning, without assuming the Q3 credit has been approved or issued.",
@@ -23,12 +23,12 @@
       "marketId": "MKT-UK",
       "quarter": "2026-Q3",
       "publishedOn": "2026-10-08",
-      "source": "Litware Retail press room (fictional)",
+      "source": "Litware Retail press room",
       "headline": "Litware Home's UK autumn campaign opens on 26 October",
       "summary": "Litware Home has announced an autumn promotion across its UK stores and online shop from 26 October to 8 November 2026, with a new wave of retail media activity.",
       "meetingPrompt": "Confirm the separate Q4 plan and budget for the autumn campaign; do not treat Q3 extra delivery as a credit or carry-over.",
       "simulated": true
     }
   ],
-  "fingerprint": "891be4a17c33d562e935fa4111251f9b08346893861b4c03923c4990ebc2d843"
+  "fingerprint": "305fc9306fafbd4d183de963606e0d5e44b4d55620a8c37b1c44ac32a818214f"
 }

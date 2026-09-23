@@ -92,9 +92,10 @@ questions replay their recorded answers (from the original data); new live quest
 opening the authenticated app. Neither the fixtures nor the preview route ship in production,
 and a failed live query still shows its error and Retry rather than substituting sample data.
 
-### Microsoft IQ
+### Zava IQ
 
-The display name is **Microsoft IQ** in the header, cover entry and page eyebrow. The route
+The display name is **Zava IQ** in the header, cover entry and page eyebrow (renamed from
+"Microsoft IQ"; the page shows Zava's own use of the IQ layers). The route
 remains `/iq-in-practice` (and `/preview/iq-in-practice` in development) to preserve links.
 
 The full-width page sits outside `WorkspaceLayout`. Its compact cover link leaves the
@@ -103,7 +104,8 @@ on trailing-slash routes, rather than claiming the whole dossier is live.
 
 **"Which delivery gaps need action?"** follows two fictional closed-Q3 cases at the fixed
 scenario date **15 October 2026**: Contoso Spain +12% and Litware UK +11%. The cards reveal
-facts, contractual treatment, simulated work progress and a proposed follow-up. Contoso
+facts, contractual treatment, work context and a message to the person who has
+to act. Contoso
 requires a compensation credit under article 6.2; Litware excludes a credit for this
 variance under 6.1–6.2. Neither finding establishes the health of the entire account.
 
@@ -112,20 +114,12 @@ membership and verbatim contract excerpts. It uses the independent ontology-bind
 reference to verify campaign scope and rejects inconsistent advertiser/brand mappings.
 The files stand for Databricks outputs in the story; no Databricks integration is executed.
 
-The page opens directly: a compatible recording is preferred with a disclosed five-second
-replay; otherwise the labelled **Repository example** is selected at entry, without a
-blocking mode-choice screen. This initial source selection is not a fallback after a failed
-live request. Captures must match the exact question, case, scenario date and source
-fingerprint. Explicitly selecting unavailable recordings still shows an error and requires
-choosing another source; it never triggers a live call or manufactures agent prose. The capture command is
-`python -m foundry.capture_iq_dossiers`. Read its output: an incomplete capture is not ready
-for a customer recording. Original questions and their frozen answers remain untouched.
-
-The optional **Read live** action reads existing Power BI measurements, graph membership
-and a Foundry answer. It is disabled in the development preview. It requires the existing
-workspace, semantic model, Graph Model (`VITE_ZAVA_GRAPH_MODEL_ID`) and Foundry configuration.
-Changed figures/scope fail rather than silently reusing the prepared conclusion. An error
-remains visible; switching to recorded/reference evidence is an explicit action.
+The page always runs on the repository example: there is no evidence-mode selector, no
+source badge and no **Read live** action. The storyline is presented as a demo, so the
+screen carries no "simulated", "fictional" or "not live" labels; the presenter owns that
+framing. The capture pipeline (`python -m foundry.capture_iq_dossiers`, `recordedDossiers`,
+`readLiveDossier`, `checkContractEvidence`) is kept in the services and domain for future
+use, with its tests, but the page does not call it.
 
 Sign-in requests only the Fabric `.default` scope. Do not add Foundry `.default` to
 `extraScopesToConsent`: MSAL merges it into the same authorize request and Entra rejects
@@ -148,30 +142,45 @@ is fabricated: contracted channel rates, amount, approval and actual issuance re
 be confirmed. The existing contracts agent uses `file_search`; this does not claim a
 deployed Foundry IQ knowledge base.
 
-`artifacts/iq_context/work-notes.json` supplies a **Work IQ — simulated** Finance note:
+`artifacts/iq_context/work-notes.json` supplies a Work IQ Finance note:
 Contoso's calculation is prepared and awaiting validation. It changes the proposed next
 step, not the clause or the measurements. Missing notes mean unknown progress, not
-"nobody started"; conflicting notes require human review. No Microsoft 365 calls or
-permission checks are simulated as real. Drafts can be viewed or copied only.
+"nobody started"; conflicting notes require human review. No Microsoft 365 call is made.
 
-Reset, source changes and work-context changes discard old answers/drafts and prevent late
-requests from reappearing under a different context. `Why this scope?` and `How IQ contributes`
+`artifacts/iq_context/work-signals.json` makes Work IQ's contribution explicit. Per case it
+holds fictional mail, Teams chats, meetings and files, the people involved, the recipient
+and why Work IQ picks them, the impact of that context and the refined next step.
+`export_iq_dossiers` validates it (simulated flag, scenario, case scope, dates, recipient
+listed among the people) and generates `iq-work-context.generated.json` separately, so the
+Fabric/Foundry capture fingerprint is unchanged. Signals dated after the scenario date are
+dropped, except upcoming meetings. At the Work IQ step each card lists the signals by source
+(Outlook, Teams, Calendar, SharePoint), the people involved and **What Work IQ changes**:
+Contoso's calculation is already prepared, so the ask is Elena Ruiz's validation before the
+21 October review; Litware's client asked James Carter for a carry-over and the invoice is on
+hold, so the contract answer goes to him. Work IQ refines who acts and how
+(`withWorkContext`); it never changes the treatment, title or measured values.
+
+Reset and context changes discard old messages and cancel a pending pause. `Why this scope?` and `How IQ contributes`
 keep graph/source detail off the main business narrative. Nothing writes to Fabric, creates
 an entity, sends a message or issues a credit from this page.
 
 The contribution controls use a consistent, labelled color code: Fabric IQ (teal),
-Foundry agents (amber), Work IQ (purple, simulated), and Web IQ (blue, simulated).
+Foundry agents (amber), Work IQ (purple) and Web IQ (blue).
 Colors identify sources, not risk or confidence. Excluding Fabric figures/scope or Foundry
 contract context leaves both case treatments unqualified and withholds definitive drafts.
-The controls affect the demonstration's included context, not the underlying services;
-source changes clear displayed drafts and preserve explicit choices between steps.
+The controls affect the context included in the page, not the underlying services;
+changes clear displayed messages and preserve explicit choices between steps.
 
-The walkthrough has five stages: **Facts → Contract → Work IQ → Web IQ → Draft**.
-The Web IQ step follows the simulated work context and must be visited before Draft is
+The walkthrough has five stages: **Facts → Contract → Work IQ → Web IQ → Send**.
+Moving forward to each stage shows a two-second pause (`STAGE_MS` in
+`services/stage.ts`) with a spinner and a status line naming the layer being added, for
+example "Work IQ is searching mail, Teams chats, meetings and files…". It marks the step for
+the audience and does not reflect any service latency; going back is immediate, and Reset
+cancels a pending pause. The Web IQ step follows the work context and must be visited before Send is
 enabled. Its contribution is locked in earlier steps. At Web IQ, each card presents its
-fictional public announcement, included by default; the presenter can exclude it before drafting.
-Going back preserves the selection and hides the later-stage context, while Reset or a
-source reload requires reviewing Web IQ again.
+fictional public announcement, included by default; the presenter can exclude it before sending.
+Going back preserves the selection and hides the later-stage context, while Reset
+requires reviewing Web IQ again.
 
 Web IQ is **not connected**. `artifacts/iq_context/web-notes.json` contains two explicitly
 fictional announcements: a Contoso EV roadshow in Spain in November and a Litware Home
@@ -181,12 +190,21 @@ meeting prompt, with no invented real URL. `export_iq_dossiers` validates and ge
 Fabric/Foundry capture inputs or fingerprints. Notices published after the scenario date
 or belonging to another case are not used.
 
-The blue cards display **Web IQ — simulated**, the notice and its relevance for the
-meeting. Selected notices carry into the draft with an explicit simulation label and
-their fictional source/date; they cannot change any measured value, contract treatment
-or work status. Removing Web IQ removes its announcement from the draft. Work IQ's existing
-decision remains active at the Web IQ stage. Each card ends at **5 · Draft** with colored chips
-identifying the context included (including when no Work IQ note exists for Litware).
+The blue cards display **Web IQ**, the notice and its relevance for the
+meeting. Selected notices carry into the message as "Web context — <source>, <date>"; they cannot change any measured value, contract treatment
+or work status. Removing Web IQ removes its announcement from the message. Work IQ's existing
+decision remains active at the Web IQ stage.
+
+Each card ends at **5 · Send — Send to the right person**: a recipient card (name, role,
+**Found by Work IQ**, and the reasons), colored chips identifying the context
+included, an editable message and **Send in Teams**. The message is written for that person
+(`dossierMessage`): Contoso cites article 6.2, the 14 November deadline (quarter close + 45
+days), Finance's file and the review meeting; Litware answers the client's carry-over request
+with articles 6.1–6.3 and the invoice release. Sending is staged in the page: a two-second spinner
+(`SEND_MS`) then "Sent to <name> in Teams." Nothing actually leaves the page. Without Work
+IQ, the recipient is unknown, Send is disabled and the message falls back to the generic
+follow-up (Contoso would ask Finance for a calculation that already exists). **Copy message**
+remains available.
 
 Cover card titles and header links share the same navigation entry, icon, label and route.
 Cards follow the header's order for their selected sections. A title opens the section
