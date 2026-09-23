@@ -8,7 +8,10 @@ with a warm-up so the first live demo query — Fabric auth plus the Eventhouse 
 start from idle capacity — is paid for off-stage rather than in front of the client.
 
 USAGE
-  python deploy_all.py                     # full deploy, then warm-up
+  python deploy_all.py                     # Fabric + Foundry + application, then warm-up
+  python deploy_all.py --fabric-only       # Fabric backend only; no application
+  python deploy_all.py --foundry-only      # Foundry backend only; no application
+  python deploy_all.py --app-only          # application against existing backend state
   python deploy_all.py --from ontology     # resume from a given step to the end
   python deploy_all.py ontology graph      # run only these steps (canonical order kept)
   python deploy_all.py --skip generate_data
@@ -20,9 +23,9 @@ TENANT: az silently flips to another tenant. Set `az_subscription` in config.yam
 this script runs `az account set` first. Without it you get 404 EntityNotFound while
 authenticated against the wrong tenant, which looks exactly like a permissions problem.
 
-WHAT THIS DOES NOT DEPLOY: the Foundry side. The orchestrator agent (Zava-Media-Agent),
-its connection to this Fabric data agent and the contracts knowledge base are a separate
-deploy — see docs/ARCHITECTURE.md. This script stops at the Fabric boundary.
+The full chain includes the Foundry agents and the hosted Rayfin Fabric application.
+Backend-only runs do not deploy the application. Deployment completion is not an
+end-to-end verification: validate the hosted application in a browser before the demo.
 """
 import os, sys
 from fabric._shared.platform_env import bootstrap
@@ -56,16 +59,20 @@ STEPS = [
     ("report",          "fabric.powerbi.deploy_report"),
     ("data_agent",      "fabric.data_agent.deploy_data_agent"),
     # ── Foundry half ────────────────────────────────────────────────
-    # Everything below needs a PUBLISHED Fabric data agent, so it cannot move above
+    # These steps need a PUBLISHED Fabric data agent, so they cannot move above
     # data_agent: a connection can only point at a published artifact, and a draft has
     # no stable answer surface to bind to.
     ("foundry_project",    "foundry.deploy_foundry_project"),
     ("foundry_connection", "foundry.deploy_foundry_connection"),
     ("foundry_agents",     "foundry.deploy_foundry_agents"),
+    # The hosted console binds to the completed Fabric and Foundry backend state.
+    ("application",        "fabric.application.deploy_application"),
 ]
 STEP_NAMES = [name for name, _ in STEPS]
 FOUNDRY_STEPS = [name for name, _ in STEPS if name.startswith("foundry_")]
-FABRIC_STEPS = [name for name in STEP_NAMES if name not in FOUNDRY_STEPS]
+APPLICATION_STEPS = ["application"]
+FABRIC_STEPS = [name for name in STEP_NAMES
+               if name not in FOUNDRY_STEPS and name not in APPLICATION_STEPS]
 
 
 def ensure_tenant(cfg):
@@ -93,17 +100,17 @@ def select_steps(args):
     Two independent choices, and they compose:
 
       * WHICH RANGE - positional steps, `--from`, or everything.
-      * WHICH HALF  - `--fabric-only` / `--foundry-only`.
+      * WHICH SCOPE - `--fabric-only` / `--foundry-only` / `--app-only`.
 
-    The half flags are FILTERS applied on top of the range, not alternatives to it.
+    The scope flags are FILTERS applied on top of the range, not alternatives to it.
     They used to sit in the same elif chain as `--from`, which meant
     `--from preload_pacing --fabric-only` silently planned the three Foundry steps
     too: the flag was accepted, echoed in --help, and ignored. Observed on a live
     deploy 2026-09-02, where it queued a Foundry resource creation nobody asked for.
     A flag that is silently dropped is worse than one that errors.
     """
-    if args.fabric_only and args.foundry_only:
-        raise SystemExit("--fabric-only and --foundry-only are mutually exclusive.")
+    if sum((args.fabric_only, args.foundry_only, args.app_only)) > 1:
+        raise SystemExit("--fabric-only, --foundry-only and --app-only are mutually exclusive.")
 
     if args.steps:
         unknown = [s for s in args.steps if s not in STEP_NAMES]
@@ -121,6 +128,8 @@ def select_steps(args):
         chosen = [s for s in chosen if s in FABRIC_STEPS]
     elif args.foundry_only:
         chosen = [s for s in chosen if s in FOUNDRY_STEPS]
+    elif args.app_only:
+        chosen = [s for s in chosen if s in APPLICATION_STEPS]
 
     skip = set(s.strip() for s in (args.skip or "").split(",") if s.strip())
     chosen = [s for s in chosen if s not in skip]
@@ -188,16 +197,41 @@ def warm_up(cfg, state):
         print(f"   (warm-up Kusto skipped: {e})")
 
 
+def print_deployment_summary(names, state):
+    """Report only this run's scope; persisted backend/app state is not verification."""
+    if "application" in names and not state.get("application_url"):
+        raise RuntimeError(
+            "Application step returned without application_url in state; "
+            "deployment completion cannot be confirmed."
+        )
+
+    if names == STEP_NAMES:
+        print("\n✓  Full deployment steps completed: Fabric + Foundry + application.")
+    else:
+        print(f"\n✓  Selected deployment steps completed: {', '.join(names)}.")
+
+    if "application" in names:
+        print(f"   Hosted application: {state['application_url']}")
+        print("   Hosted browser sign-in, embeds and agent routing still require validation; "
+              "deployment alone does not verify the demo.")
+    else:
+        print("   Backend-only run: application not deployed in this run. "
+              "This is not a complete tenant migration.")
+
+
 def main():
     p = argparse.ArgumentParser(description="Zava Media deploy orchestrator")
     p.add_argument("steps", nargs="*",
                    help=f"run only these steps (order fixed). Valid: {STEP_NAMES}")
     p.add_argument("--from", dest="from_step", help="resume from this step to the end")
     p.add_argument("--skip", help="comma-separated steps to skip")
-    p.add_argument("--fabric-only", dest="fabric_only", action="store_true",
-                   help="stop after the published data agent (skip the Foundry half)")
-    p.add_argument("--foundry-only", dest="foundry_only", action="store_true",
-                   help="run only the Foundry half (needs a published data agent in state)")
+    scope = p.add_mutually_exclusive_group()
+    scope.add_argument("--fabric-only", dest="fabric_only", action="store_true",
+                       help="Fabric backend only, through the data agent (no Foundry or application)")
+    scope.add_argument("--foundry-only", dest="foundry_only", action="store_true",
+                       help="Foundry backend only (needs published data agent; no application)")
+    scope.add_argument("--app-only", dest="app_only", action="store_true",
+                       help="application only, using existing Fabric and Foundry state")
     p.add_argument("--warmup", action="store_true", help="run warm-up only (no deploy)")
     p.add_argument("--no-warmup", dest="no_warmup", action="store_true",
                    help="deploy without warm-up")
@@ -214,15 +248,11 @@ def main():
     print(f"Plan: {names}")
     run_steps(names)
 
+    state = load_state()
     if not args.no_warmup:
-        warm_up(cfg, load_state())
+        warm_up(cfg, state)
 
-    agent = cfg.get("data_agent_name", "Zava_Media_Analyst")
-    orch = cfg.get("foundry", {}).get("orchestrator_agent_name", "Zava-Media-Agent")
-    print(f"\n🎯  Zava Media ready on the Fabric side. Ask {agent}: "
-          f"\"What did we over-deliver for Contoso Mobility in Spain in 2026-Q3?\" "
-          f"→ it returns the figure and says the contractual entitlement is out of its scope. "
-          f"That refusal is the handoff: {orch} (Foundry) adds the clause.")
+    print_deployment_summary(names, state)
 
 
 if __name__ == "__main__":

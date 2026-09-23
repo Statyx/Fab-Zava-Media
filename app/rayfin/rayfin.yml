@@ -8,23 +8,14 @@ services:
       enabled: true
     password:
       enabled: true
-    # Sign-in only completes on a URI listed here. The port is Rayfin's, handed to Vite
-    # through VITE_PORT in .env.local — running `vite` on any other port gives you an app
-    # that renders and an auth redirect that is rejected. That is what /preview is for.
-    #
-    # `rayfin up staticapp deploy` rewrites this file programmatically and drops every
-    # comment in it; if this block is missing again, that is why. It also appends the
-    # hosting URL below on its own — do not add it by hand.
-    #
-    # This list is Rayfin's own. It is NOT the Entra app registration: the console signs in
-    # a second time, through its own MSAL, to obtain Power BI tokens. That registration is
-    # "Marketing Campaign App V2 (SPA)" (b5ba4dd6…), shared with two other demos, and each
-    # host has to be listed there twice — bare, and /blank.html. Publishing to a new host
-    # while forgetting that side leaves an app that loads and cannot read a single figure.
+    # Rayfin rewrites this list when publishing; previous hosting origins are preserved.
+    # The console uses its dedicated, single-tenant Entra SPA, configured separately by
+    # fabric.application.deploy_application with the hosting origin and /blank.html.
     allowedRedirectUris:
       - http://localhost:5173
       - http://127.0.0.1:5173
       - https://civic-spray-8c54cec687-swedencentral.webapp.fabricapps.net
+      - https://neat-reef-7b1309d7c0-swedencentral.webapp.fabricapps.net
   data:
     enabled: false
     dialect: mssql

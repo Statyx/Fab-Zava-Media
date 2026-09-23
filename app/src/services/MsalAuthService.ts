@@ -2,6 +2,7 @@ import { isFramed, withTimeout } from './authStartup';
 import type { AuthUser, IAuthService } from './IAuthService';
 import {
   activeAccount,
+  belongsToConfiguredTenant,
   ensureMsalReady,
   FABRIC_SCOPES,
   getToken,
@@ -30,6 +31,7 @@ function toUser(a: AccountInfo): AuthUser {
 export class MsalAuthService implements IAuthService {
   readonly fabricAuthEnabled = true;
   private sessionVerified = false;
+  private needsFreshSignIn = false;
 
   async signIn(): Promise<AuthUser> {
     this.sessionVerified = false;
@@ -39,13 +41,18 @@ export class MsalAuthService implements IAuthService {
     // it is not in `scopes`. Each service requests its own resource token separately.
     const r = await msal.loginPopup({
       scopes: FABRIC_SCOPES,
-      // Explicit sign-in must not silently reuse an invalid Entra SSO session (50197).
-      prompt: 'login',
+      // Choose the demo identity even when Edge already has a corporate SSO session.
+      // An explicitly rejected session still needs full reauthentication (50197).
+      prompt: this.needsFreshSignIn ? 'login' : 'select_account',
     });
+    if (r.account && !belongsToConfiguredTenant(r.account)) {
+      throw new Error('The selected account is not in the configured demo tenant. Choose the demo account.');
+    }
     if (r.account) msal.setActiveAccount(r.account);
     const a = activeAccount();
     if (!a) throw new Error('Sign-in returned no account.');
     this.sessionVerified = true;
+    this.needsFreshSignIn = false;
     return toUser(a);
   }
 
@@ -84,6 +91,7 @@ export class MsalAuthService implements IAuthService {
         this.sessionVerified = true;
         return await this.getCurrentUser();
       } catch {
+        this.needsFreshSignIn = true;
         return null;
       }
     }
@@ -96,10 +104,12 @@ export class MsalAuthService implements IAuthService {
 
     try {
       const r = await withTimeout(msal.ssoSilent({ scopes: FABRIC_SCOPES }), 'ssoSilent');
+      if (!belongsToConfiguredTenant(r.account)) return null;
       if (r.account) msal.setActiveAccount(r.account);
       this.sessionVerified = true;
       return await this.getCurrentUser();
     } catch {
+      this.needsFreshSignIn = true;
       return null;
     }
   }

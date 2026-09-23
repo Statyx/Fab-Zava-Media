@@ -508,16 +508,20 @@ def test_foundry_steps_come_after_the_fabric_data_agent():
     assert names.index("foundry_connection") < names.index("foundry_agents")
 
 
-def test_the_two_halves_partition_the_chain():
+def test_backend_and_application_scopes_partition_the_chain():
     """
-    --fabric-only exists because the Foundry half is the unproven one: a demo must be able
-    to stand up the Fabric side alone. The two lists must partition STEPS exactly, or a
-    step silently belongs to neither and never runs.
+    Backend-only scopes must never publish the application. The three scopes partition
+    STEPS exactly, so the app is included in a full deploy without leaking into either
+    backend filter.
     """
     import deploy_all
     assert set(deploy_all.FABRIC_STEPS) | set(deploy_all.FOUNDRY_STEPS) \
+        | set(deploy_all.APPLICATION_STEPS) \
         == set(deploy_all.STEP_NAMES)
     assert not set(deploy_all.FABRIC_STEPS) & set(deploy_all.FOUNDRY_STEPS)
+    assert not set(deploy_all.APPLICATION_STEPS) & (
+        set(deploy_all.FABRIC_STEPS) | set(deploy_all.FOUNDRY_STEPS))
+    assert deploy_all.APPLICATION_STEPS == ["application"]
     assert deploy_all.FABRIC_STEPS[-1] == "data_agent", \
         "--fabric-only must end on the published data agent, which is what Foundry binds to"
 
@@ -538,7 +542,7 @@ def test_half_filters_compose_with_a_resume():
 
     def plan(**kw):
         args = argparse.Namespace(steps=[], from_step=None, skip=None,
-                                  fabric_only=False, foundry_only=False)
+                                  fabric_only=False, foundry_only=False, app_only=False)
         for k, v in kw.items():
             setattr(args, k, v)
         return deploy_all.select_steps(args)
@@ -546,6 +550,7 @@ def test_half_filters_compose_with_a_resume():
     resumed = plan(from_step="preload_pacing", fabric_only=True)
     assert not set(resumed) & set(deploy_all.FOUNDRY_STEPS), \
         f"--from + --fabric-only leaked Foundry steps: {resumed}"
+    assert not set(resumed) & set(deploy_all.APPLICATION_STEPS)
     assert "preload_pacing" in resumed and resumed[-1] == "data_agent"
 
     # the same composition on the other half, and with explicit steps
@@ -588,12 +593,12 @@ def test_steps_that_parse_argv_are_isolated_from_the_orchestrator():
     saved = sys.argv
     sys.argv = list(sentinel)
     try:
-        deploy_all.run_steps(["semantic_model", "data_agent"])
+        deploy_all.run_steps(["semantic_model", "data_agent", "application"])
     finally:
         sys.argv = saved
         deploy_all.importlib.import_module = real_import
 
-    assert len(seen) == 2
+    assert len(seen) == 3
     for argv in seen:
         assert len(argv) == 1, f"step saw the orchestrator's flags: {argv}"
         assert argv[0].endswith(".py")

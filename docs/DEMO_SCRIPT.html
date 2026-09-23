@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zava Media — déroulé de démo et wording IQ</title>
+<style>
+  :root {
+    --bg: #0f1420; --panel: #171e2e; --panel-2: #1e2638; --text: #e8ecf4; --muted: #9aa6bd;
+    --line: #2c3650; --accent: #7aa2ff; --fabric: #2bb3a3; --foundry: #e0a33a;
+    --work: #a67cf0; --web: #4a9eea; --ok: #43c07a; --warn: #f0b429; --bad: #ef5d5d;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px; }
+  h1 { font-size: 2.1rem; margin: 0 0 6px; }
+  h2 { font-size: 1.45rem; margin: 48px 0 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.1rem; margin: 0 0 8px; }
+  p { margin: 8px 0; }
+  a { color: var(--accent); }
+  code, .mono { font-family: Consolas, "Cascadia Mono", monospace; font-size: 0.9em; }
+  code { background: var(--panel-2); padding: 1px 6px; border-radius: 4px; }
+  .lede { color: var(--muted); font-size: 1.1rem; max-width: 820px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; }
+  .chip { display: inline-block; padding: 3px 10px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); font-size: 0.82rem; color: var(--muted); }
+  .chip.fabric { color: var(--fabric); border-color: var(--fabric); }
+  .chip.foundry { color: var(--foundry); border-color: var(--foundry); }
+  .chip.work { color: var(--work); border-color: var(--work); }
+  .chip.web { color: var(--web); border-color: var(--web); }
+  .chip.live { color: var(--ok); border-color: var(--ok); }
+  .chip.recorded { color: var(--warn); border-color: var(--warn); }
+  .chip.sim { color: var(--bad); border-color: var(--bad); }
+  nav.toc { margin: 24px 0 0; padding: 14px 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+  nav.toc ol { margin: 4px 0; padding-left: 22px; columns: 2; }
+  .hero-q { margin: 22px 0; padding: 18px 22px; border-left: 4px solid var(--accent); background: var(--panel); border-radius: 0 10px 10px 0; font-size: 1.2rem; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.95rem; }
+  th, td { text-align: left; vertical-align: top; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: .03em; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+  .card.fabric { border-top: 3px solid var(--fabric); }
+  .card.foundry { border-top: 3px solid var(--foundry); }
+  .card.work { border-top: 3px solid var(--work); }
+  .card.web { border-top: 3px solid var(--web); }
+  .scene { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; margin: 18px 0; overflow: hidden; }
+  .scene > header { display: flex; align-items: baseline; gap: 12px; padding: 14px 18px; background: var(--panel-2); border-bottom: 1px solid var(--line); }
+  .scene > header .n { font-weight: 700; color: var(--accent); font-size: 1.3rem; }
+  .scene > header .t { font-weight: 600; font-size: 1.1rem; }
+  .scene > header .d { margin-left: auto; color: var(--muted); font-size: 0.9rem; white-space: nowrap; }
+  .scene .body { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .scene .col { padding: 14px 18px; }
+  .scene .col + .col { border-left: 1px solid var(--line); }
+  .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; margin: 10px 0 4px; }
+  .label:first-child { margin-top: 0; }
+  .say { margin: 6px 0; padding: 10px 14px; border-left: 3px solid var(--accent); background: rgba(122,162,255,.07); border-radius: 0 8px 8px 0; font-style: italic; }
+  .wow { margin: 10px 0 0; padding: 10px 14px; border-radius: 8px; background: rgba(67,192,122,.1); border: 1px solid rgba(67,192,122,.35); }
+  .wow::before { content: "Moment clé — "; font-weight: 700; color: var(--ok); font-style: normal; }
+  .trap { margin: 10px 0 0; padding: 10px 14px; border-radius: 8px; background: rgba(240,180,41,.08); border: 1px solid rgba(240,180,41,.35); }
+  .trap::before { content: "Attention — "; font-weight: 700; color: var(--warn); }
+  ul, ol { margin: 6px 0; padding-left: 22px; }
+  li { margin: 3px 0; }
+  .ask { position: relative; margin: 8px 0; padding: 12px 88px 12px 14px; background: #0b0f18; border: 1px solid var(--line); border-radius: 8px; font-family: Consolas, "Cascadia Mono", monospace; font-size: 0.88rem; white-space: pre-wrap; }
+  .ask button { position: absolute; top: 8px; right: 8px; background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 0.8rem; }
+  .ask button:hover { border-color: var(--accent); }
+  .do-dont td:first-child { color: var(--ok); }
+  .do-dont td:last-child { color: #f3a3a3; }
+  .checklist li { list-style: none; margin-left: -18px; }
+  .checklist li::before { content: "☐ "; color: var(--accent); }
+  details { margin: 8px 0; }
+  summary { cursor: pointer; color: var(--accent); }
+  footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; }
+  @media (max-width: 800px) { .scene .body { grid-template-columns: 1fr; } .scene .col + .col { border-left: 0; border-top: 1px solid var(--line); } nav.toc ol { columns: 1; } }
+  @media print {
+    body { background: #fff; color: #111; font-size: 12px; }
+    .card, .scene, nav.toc, .hero-q, .ask { background: #fff !important; border-color: #bbb !important; }
+    .scene > header { background: #f2f2f2; }
+    .ask button { display: none; }
+    h2 { page-break-before: auto; }
+    .scene { page-break-inside: avoid; }
+    .say { background: #f5f7ff; }
+    .muted, th, .lede, .chip { color: #444 !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <h1>Zava Media — déroulé de la démo</h1>
+  <p class="lede">Une agence média fictive, cinq annonceurs, une question que ni la donnée ni le contrat ne résolvent seuls.
+  Ce document donne l’ordre des écrans, les clics, la phrase à dire et le wording de la partie <strong>Microsoft IQ</strong>,
+  sans jamais présenter comme live ce qui est enregistré ou simulé.</p>
+  <div class="meta">
+    <span class="chip">≈ 20 min · version courte 10 min</span>
+    <span class="chip">Public métier + technique</span>
+    <span class="chip">Présentation en français · application et questions en anglais</span>
+    <span class="chip">Données synthétiques · seed 42</span>
+  </div>
+  <nav class="toc" aria-label="Sommaire">
+    <ol>
+      <li><a href="#fil-rouge">Le fil rouge</a></li>
+      <li><a href="#avant">Avant la démo</a></li>
+      <li><a href="#deroule">Déroulé écran par écran</a></li>
+      <li><a href="#iq">Microsoft IQ — le wording</a></li>
+      <li><a href="#honnetete">Live, enregistré, simulé</a></li>
+      <li><a href="#challenge">Questions de challenge pour la salle</a></li>
+      <li><a href="#planb">Plan B</a></li>
+      <li><a href="#questions">Questions à coller</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section id="fil-rouge">
+  <h2>1. Le fil rouge</h2>
+  <div class="hero-q">« Avons-nous surlivré Contoso Mobility en Espagne au T3 — et leur contrat prévoit-il une compensation ? »</div>
+  <p>Le chiffre est calculé dans <strong>Fabric</strong>, en DAX, sur le Lakehouse. La clause est retrouvée par <strong>Foundry</strong> dans le corpus contractuel.
+  Le modèle de langage route, cite et formule — <strong>il ne calcule jamais</strong>, et ne transforme jamais une clause en règle inventée.</p>
+
+  <table>
+    <thead><tr><th>Annonceur × marché × trimestre</th><th class="num">Écart vs plan</th><th>Contrat</th><th>Conséquence</th></tr></thead>
+    <tbody>
+      <tr><td>Contoso Mobility × Espagne × T3</td><td class="num"><strong>+12,00 %</strong></td><td>ADV-001 art. 6.1–6.2, 6.4</td><td>Excédent non facturable <em>et</em> crédit de compensation de 50 % de la valeur média de l’excédent, sous 45 jours, sans demande du client. Pas de compensation entre marchés.</td></tr>
+      <tr><td>Litware Retail × Royaume-Uni × T3</td><td class="num"><strong>+11,00 %</strong></td><td>ADV-004 art. 6.1–6.3</td><td><strong>Rien.</strong> Compensation, crédit et report exclus ; l’agence ne peut pas non plus facturer l’excédent.</td></tr>
+      <tr><td>Fabrikam Beauty × Italie × T3</td><td class="num"><strong>−8,00 %</strong></td><td>ADV-002 art. 6.2</td><td>Pénalité de 2 % du budget média net, due par l’agence, de plein droit, sans mise en demeure.</td></tr>
+    </tbody>
+  </table>
+  <div class="say">Trois écarts du même ordre de grandeur. Trois conséquences opposées. Les chiffres disent <strong>combien</strong> ; le contrat dit <strong>quoi faire</strong>. Aucun des deux ne suffit seul.</div>
+</section>
+
+<section id="avant">
+  <h2>2. Avant la démo</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>La veille</h3>
+      <ul class="checklist">
+        <li>Capacité Fabric active (une capacité en pause casse tout, sans message clair).</li>
+        <li>Suite de tests verte : <code>python -m pytest tests/ -q</code>.</li>
+        <li>Répétition complète dans le navigateur qui servira sur scène (Edge normal, déjà connecté au bon tenant).</li>
+        <li>Optionnel : générer les preuves enregistrées de la page IQ avec <code>python -m foundry.capture_iq_dossiers</code>, puis relire sa sortie. Une capture incomplète n’est pas prête pour un client.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Une heure avant</h3>
+      <ul class="checklist">
+        <li><code>python deploy_all.py --warmup</code> — on paie le démarrage à froid hors scène.</li>
+        <li>Ouvrir l’URL de l’application (<code>application_url</code> dans <code>state.json</code>) et se connecter.</li>
+        <li>Poser une fois la question live de la scène 3 : elle réveille la chaîne Fabric + Foundry.</li>
+        <li>Deuxième onglet ouvert sur <code>/diagnostic</code> (hors navigation, accessible sans connexion).</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Cinq minutes avant</h3>
+      <ul class="checklist">
+        <li>Zoom navigateur à 100 %, fenêtre plein écran, thème choisi.</li>
+        <li>Revenir sur l’accueil ; fermer le panneau assistant s’il contient des réponses de répétition.</li>
+        <li>Page Microsoft IQ : vérifier le badge affiché (<em>Recorded evidence</em> ou <em>Repository example · not live</em>) et adapter le wording.</li>
+        <li>Notifications coupées.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="deroule">
+  <h2>3. Déroulé écran par écran</h2>
+  <p>Les libellés entre guillemets sont ceux affichés par l’application. Durées indicatives ; la version courte (10 min) garde les scènes 1, 2, 3, 7 et 9.</p>
+
+  <!-- Scene 1 -->
+  <article class="scene">
+    <header><span class="n">1</span><span class="t">Accueil — « Your media ecosystem. Connected. »</span><span class="d">1 min 30</span></header>
+    <div class="body">
+      <div class="col">
+        <div class="label">À montrer</div>
+        <ul>
+          <li>Les six indicateurs : 80 campagnes, 5 annonceurs, 5 marchés, 6 régies, 4 en surlivraison, 2 en sous-livraison.</li>
+          <li>Survoler un indicateur : l’infobulle nomme la mesure du modèle sémantique qui l’a produit.</li>
+          <li>Les trois cartes « Explore — start with a business question ».</li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="label">À dire</div>
+        <div class="say">Ce n’est pas un dashboard de plus. Chaque chiffre vient d’une mesure nommée dans Fabric, et chaque carte est une vraie question qu’on peut poser à l’application.</div>
+        <div class="say">Quatre campagnes surlivrent. Question naïve : c’est une bonne nouvelle ? Réponse : ça dépend du contrat. C’est tout le sujet.</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- Scene 2 -->
+  <article class="scene">
+    <header><span class="n">2</span><span class="t">Première question — chiffres + contrat</span><span class="d">2 min 30</span></header>
+    <div class="body">
+      <div class="col">
+        <div class="label">Clic</div>
+        <p>Carte <strong>Delivery</strong> → bouton « Ask this question » : <em>« Which markets are off plan in Q3, and what does the contract say about it? »</em></p>
+        <div class="label">Ce qui se passe</div>
+        <p>La question préparée rejoue une réponse enregistrée (≈ 5 s). La réponse affiche « Recorded … — the live run took 81.1s » et les deux sources : données de campagne et accords signés.</p>
+      </div>
+      <div class="col">
+        <div class="label">À dire</div>
+        <div class="say">La première question mobilise volontairement les deux mondes. L’agent Fabric mesure l’écart ; l’agent contrats retrouve la clause ; le superviseur assemble et cite.</div>
+        <div class="say">Pour ne pas vous faire attendre, cette question-là est un enregistrement d’un vrai run — l’écran le dit, et il affiche la durée réelle : 81 secondes. Dans deux minutes, je vous en pose une en direct.</div>
+        <div class="wow">Contoso Espagne +12 % → crédit de compensation ; Fabrikam Italie −8 % → pénalité ; Litware → rien, quel que soit l’écart.</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- Scene 3 -->
+  <article class="scene">
+    <header><span class="n">3</span><span class="t">Delivery — « Plan against delivery »</span><span class="d">3 min</span></header>
+    <div class="body">
+      <div class="col">
+        <div class="label">À montrer</div>
+        <ul>
+          <li>Les barres divergentes centrées sur le plan, la bande de tolérance ±5 %.</li>
+          <li>Les trois encadrés de régimes, côte à côte.</li>
+        </ul>
+        <div class="label">Clic — question live</div>
+        <p>Taper dans l’assistant la question <a href="#q-live">Q1</a> (Contoso, Espagne, T3). Compter 60 à 100 s.</p>
+        <div class="label">Réponse attendue</div>
+        <p>286 404 580 impressions prévues, 320 773 136 livrées (+12 %) ; article 6.2, crédit de 50 % de la valeur média de l’excédent ; badges des deux sources.</p>
+      </div>
+      <div class="col">
+        <div class="label">À dire pendant l’attente</div>
+        <div class="say">Ce délai, c’est le prix d’un choix : la définition des « impressions livrées » vit dans Fabric, une seule fois. On ne la réécrit pas dans un prompt. Deux définitions du même chiffre, ce n’est pas lent — c’est inauditable.</div>
+        <div class="say">Regardez les trois régimes : même taille d’écart, trois issues. La barre ne décide rien ; c’est le contrat qui décide.</div>
+        <div class="wow">Le chiffre et la clause arrivent ensemble, chacun avec sa source. Le crédit n’est pas chiffré en euros : il faut le tarif net contractuel par canal, et l’agent refuse de l’inventer.</div>
+        <div class="trap">Ne pas poser de question live froide sans warm-up : un premier appel a déjà dépassé 100 s.</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- Scene 4 -->
+  <article class="scene">
+    <header><span class="n">4</span><span class="t">Portfolio — « How the portfolio is connected »</span><span class="d">2 min</span></header>
+    <div class="body">
+      <div class="col">
+        <div class="label">À montrer</div>
+        <ul>
+          <li>Section « The portfolio over the period » : budget prévu, dépense nette, surlivraison / sous-livraison.</li>
+          <li>Section ontologie : Advertiser → Brand → Campaign, puis Market, Channel, Media owner, Invoice.</li>
+        </ul>
+        <div class="label">Question optionnelle</div>
+        <p>Dans les suggestions de suivi de l’assistant : <em>« Which media owners carry the campaigns in the off-plan market? »</em> — réponse enregistrée, traversée du graphe.</p>
+      </div>
+      <div class="col">
+        <div class="label">À dire</div>
+        <div class="say">Le modèle sémantique répond à « combien ». L’ontologie répond à « qui est relié à quoi ». Ici, l’annonceur n’est atteignable que par ses marques : le raccourci direct n’existe pas, exprès. C’est ce qui oblige une vraie traversée de graphe plutôt qu’une jointure déguisée.</div>
+        <div class="say">C’est aussi ce qui permet de vérifier le périmètre : quelles campagnes appartiennent vraiment à Contoso en Espagne.</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- Scene 5 -->
+  <article class="scene">
+    <header><span class="n">5</span><span class="t">Contracts — « Five master agreements, three regimes »</span><span class="d">2 min</span></header>
+    <div class="body">
+      <div class="col">
+        <div class="label">À montrer</div>
+        <p>Une page volontairement <strong>sans aucun chiffre</strong>. Les résumés sont des légendes, pas des preuves.</p>
+        <div class="label">Clic — question live</div>
+        <p>Cliquer la ligne <strong>Litware Retail</strong> : question sur le texte seul (≈ 30–40 s).</p>
+      </div>
+      <div class="col">
+        <div class="label">À dire</div>
+        <div class="say">Le droit à compensation n’est pas dans l’entrepôt de données. Il est dans le contrat. Si j’ajoutais des KPI sur cette page pour l’équilibrer, je détruirais la démonstration.</div>
+        <div class="say">Et il faut pouvoir le prouver : la loi Sapin impose à l’agence de montrer comment un chiffre facturé a été produit.</div>
+        <div class="trap">Ne pas utiliser ici les questions préparées « What do the contracts provide for… » ni « What deadlines do those clauses run on? » : leurs enregistrements actuels sont de mauvaise qualité (noms inventés). Préférer le clic sur une ligne de contrat, qui part en live.</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- Scene 6 -->
+  <article class="scene">
+    <header><span class="n">6</span><span class="t">Billing — « What was never billed »</span><span class="d">2 min</span></header>
+    <div class="body">
+      <div class="col">
+        <div class="label">À montrer</div>
+        <ul>
+          <li>Deux panneaux côte à côte : <strong>6</strong> lignes de facturation incomplètes (grain campagne × régie) et <strong>2</strong> campagnes concernées (grain campagne), pour <strong>649 159 €</strong>.</li>
+          <li>Bouton « Ask the question » : fenêtre de réclamation lue dans le contrat.</li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="label">À dire</div>
+        <div class="say">Les deux chiffres sont justes. Ils ne répondent pas à la même question. Une campagne achetée chez trois régies fait trois lignes : demander « combien de campagnes » et recevoir un nombre de lignes, c’est une erreur d’un facteur trois qui ne déclenche aucune alerte.</div>
+        <div class="say">La date limite, elle, ne vient pas des données : Litware accorde 120 jours (art. 9.2). Au-delà, la créance est prescrite — ici le 28 janvier 2027.</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- Scene 7 -->
+  <article class="scene">
+    <header><span class="n">7</span><span class="t">Microsoft IQ — « Which delivery gaps need action? »</span><span class="d">5 min</span></header>
+    <div class="body">
+      <div class="col">
+        <div class="label">Principe</div>
+        <p>Deux dossiers fictifs, à la date de scénario du 15 octobre 2026 (T3 clos) : Contoso Espagne +12 % et Litware Royaume-Uni +11 %. Cinq étapes : Facts → Contract → Work IQ → Web IQ → Draft. Le wording détaillé est en <a href="#iq">section 4</a>.</p>
+        <div class="label">Clics</div>
+        <ol>
+          <li>« Review the context » après les faits.</li>
+          <li>Sur un dossier : « Why this scope? » puis « Contract articles ».</li>
+          <li>« Add work context », puis « Review web context », puis « Prepare the draft ».</li>
+          <li>Décocher Foundry : le brouillon disparaît. Recocher.</li>
+        </ol>
+      </div>
+      <div class="col">
+        <div class="label">Phrase d’ouverture</div>
+        <div class="say">Jusqu’ici, on a répondu à des questions. Maintenant, on prépare une action. Et une action a besoin de plus que des chiffres : le contrat, ce qui est déjà en cours, et le contexte du rendez-vous client.</div>
+        <div class="wow">Retirez le contrat : l’application refuse de conclure et retient le brouillon. Retirez les chiffres : même chose. Le contexte supplémentaire qualifie l’action ; il ne remplace jamais la preuve.</div>
+        <div class="trap">Si le badge indique « Repository example · not live », le dire. « Read live » n’est à utiliser sur scène qu’après l’avoir répété sur ce tenant.</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- Scene 8 -->
+  <article class="scene">
+    <header><span class="n">8</span><span class="t">Architecture — « The boundary rule »</span><span class="d">1 min 30</span></header>
+    <div class="body">
+      <div class="col">
+        <div class="label">À montrer</div>
+        <p>La chaîne déployée : Lakehouse, Eventhouse, ontologie, modèle sémantique, Data Agent côté Fabric ; superviseur, agent contrats et vector store côté Foundry ; l’application Fabric App par-dessus.</p>
+      </div>
+      <div class="col">
+        <div class="label">À dire</div>
+        <div class="say">Une règle : le monde de la donnée reste côté donnée. Les mesures, l’agrégation et la sémantique vivent dans Fabric. Foundry orchestre, retrouve la clause et rédige. Il ne réimplémente jamais une métrique.</div>
+        <div class="say">Le Data Agent est un <em>outil</em> — on lui délègue une question, il renvoie une réponse. Le corpus contractuel est une <em>source de connaissance</em> — on récupère du texte et l’agent raisonne dessus.</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- Scene 9 -->
+  <article class="scene">
+    <header><span class="n">9</span><span class="t">Conclusion</span><span class="d">30 s</span></header>
+    <div class="body">
+      <div class="col"><div class="say">Les chiffres disent combien. Le contrat dit quoi faire. Le contexte de travail dit où on en est. Microsoft IQ, c’est la capacité de réunir ces trois choses sans jamais en confondre les sources.</div></div>
+      <div class="col"><p>Ouvrir la parole : « Challengez-nous — voici trois cas où les chiffres se ressemblent. » Enchaîner sur la <a href="#challenge">section 6</a>.</p></div>
+    </div>
+  </article>
+</section>
+
+<section id="iq">
+  <h2>4. Microsoft IQ — le wording</h2>
+  <p>Une phrase par brique, et son statut exact dans cette démo. Les couleurs reprennent celles de l’application : elles identifient une source, pas un niveau de risque ou de confiance.</p>
+  <div class="grid">
+    <div class="card fabric">
+      <h3>Fabric IQ <span class="chip live">connecté</span></h3>
+      <p><strong>Le sens métier de la donnée.</strong> Le modèle sémantique fournit les mesures ; l’ontologie et son graphe relient annonceurs, marques, campagnes, marchés, régies et factures.</p>
+      <p class="mono">Rôle ici : chiffres + périmètre des campagnes.</p>
+    </div>
+    <div class="card foundry">
+      <h3>Agents Foundry <span class="chip live">connecté</span></h3>
+      <p><strong>La lecture des contrats.</strong> Les agents existants retrouvent et citent les accords signés (recherche documentaire sur un vector store).</p>
+      <p class="mono">Ne pas dire : « une base Foundry IQ est déployée ».</p>
+    </div>
+    <div class="card work">
+      <h3>Work IQ <span class="chip sim">simulé</span></h3>
+      <p><strong>Ce qui est déjà en cours.</strong> Une note Finance fictive : le calcul du crédit Contoso est prêt, en attente de validation.</p>
+      <p class="mono">Aucune donnée Microsoft 365 n’est lue.</p>
+    </div>
+    <div class="card web">
+      <h3>Web IQ <span class="chip sim">simulé</span></h3>
+      <p><strong>Le contexte public du rendez-vous.</strong> Deux annonces fictives : roadshow Contoso EV en Espagne (2–15 nov.), campagne d’automne Litware Home au Royaume-Uni (26 oct.–8 nov.).</p>
+      <p class="mono">Aucune recherche web n’est faite.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:22px">Le texte étape par étape</h3>
+  <table>
+    <thead><tr><th>Étape</th><th>Ce que montre l’écran</th><th>À dire</th></tr></thead>
+    <tbody>
+      <tr><td><strong>1 · Facts</strong><br><span class="chip fabric">Fabric IQ</span></td>
+          <td>« Two similar gaps. Treatment still unknown. » — +12 % et +11 %.</td>
+          <td>« Deux écarts presque identiques. À ce stade, la donnée identifie l’écart, pas la réponse contractuelle. Et je sais de quelles campagnes on parle : c’est le graphe qui le garantit. »</td></tr>
+      <tr><td><strong>2 · Contract</strong><br><span class="chip foundry">Foundry</span></td>
+          <td>« Similar figures. Different obligations. » — Contoso : crédit obligatoire (art. 6.2), chaque marché évalué séparément (6.4). Litware : crédit exclu (6.1–6.2).</td>
+          <td>« Même chiffre, obligations opposées. Le contrat change le traitement, pas la mesure. Les extraits affichés sont le texte signé, mot pour mot — pas une paraphrase de l’IA. »</td></tr>
+      <tr><td><strong>3 · Work IQ</strong><br><span class="chip work">simulé</span></td>
+          <td>« Before asking someone to start, check what is underway. » — Contoso : « Follow up on validation ». Litware : aucune note.</td>
+          <td>« Sans ce contexte, j’aurais demandé à la Finance de préparer un calcul qu’elle a déjà fait. La prochaine étape devient : demander au responsable de compte de valider. Pour Litware, pas de note ne veut pas dire que personne n’a commencé : ça veut dire qu’on ne sait pas. »</td></tr>
+      <tr><td><strong>4 · Web IQ</strong><br><span class="chip web">simulé</span></td>
+          <td>« An upcoming campaign adds context to the meeting. » — une annonce fictive par client, incluse par défaut.</td>
+          <td>« Le client lance une nouvelle campagne en novembre : c’est un sujet pour le rendez-vous. Mais ça ne change ni le chiffre du T3 ni ce que dit le contrat. Je peux l’inclure ou la retirer du brouillon. »</td></tr>
+      <tr><td><strong>5 · Draft</strong><br><span class="chip">toutes sources</span></td>
+          <td>« Draft — review before use », avec les pastilles des sources incluses. « Copy draft » → « Nothing has been sent. »</td>
+          <td>« Voilà un brouillon sourcé : chaque phrase sait d’où elle vient. Rien n’est envoyé, approuvé ni émis. La décision reste au responsable de compte. »</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:22px">Phrases à dire, phrases à éviter</h3>
+  <table class="do-dont">
+    <thead><tr><th>Dire</th><th>Ne pas dire</th></tr></thead>
+    <tbody>
+      <tr><td>« Le chiffre vient d’une mesure Fabric ; l’IA le cite. »</td><td>« L’IA a calculé l’écart. »</td></tr>
+      <tr><td>« L’agent a trouvé et cité l’article 6.2. »</td><td>« L’IA a interprété le contrat juridiquement. »</td></tr>
+      <tr><td>« Work IQ et Web IQ sont simulés ici, avec des notes fictives. »</td><td>« On lit vos mails et vos Teams. » / « On a cherché sur le web. »</td></tr>
+      <tr><td>« Les agents Foundry existants lisent les contrats. »</td><td>« Foundry IQ est déployé. »</td></tr>
+      <tr><td>« Le crédit reste à chiffrer avec le tarif net contractuel. »</td><td>« Le crédit est de X euros. »</td></tr>
+      <tr><td>« Le contexte supplémentaire qualifie la prochaine étape. »</td><td>« C’est plus rapide que Databricks. » / « Seul Fabric sait faire ça. »</td></tr>
+      <tr><td>« Dans le récit, ces fichiers représentent des sorties Databricks. »</td><td>« On est connecté à Databricks. »</td></tr>
+      <tr><td>« Cette réponse est un enregistrement ; le run live a pris 81 s. »</td><td>Laisser croire qu’une réponse rejouée est live.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="honnetete">
+  <h2>5. Live, enregistré, simulé</h2>
+  <table>
+    <thead><tr><th>Élément</th><th>Statut</th><th>Comment l’écran le signale</th></tr></thead>
+    <tbody>
+      <tr><td>Indicateurs, graphiques, tableaux</td><td><span class="chip live">live</span></td><td>Requêtes DAX sur le modèle sémantique déployé.</td></tr>
+      <tr><td>Questions libres tapées dans l’assistant, clics sur une ligne</td><td><span class="chip live">live</span></td><td>Durée réelle et badges des sources sous la réponse.</td></tr>
+      <tr><td>Questions préparées (cartes d’accueil, boutons « Ask »)</td><td><span class="chip recorded">enregistré</span></td><td>« Recorded … — the live run took N s », après un rejeu de 5 s.</td></tr>
+      <tr><td>Page Microsoft IQ — faits et contrats</td><td><span class="chip recorded">exemple</span> ou <span class="chip live">live sur demande</span></td><td>Badge « Repository example · not live », « Recorded evidence » ou « Live evidence · demo data ».</td></tr>
+      <tr><td>Work IQ, Web IQ</td><td><span class="chip sim">simulé</span></td><td>Mention « simulated » sur chaque bloc et dans le brouillon.</td></tr>
+    </tbody>
+  </table>
+  <p>Règle simple : si l’écran dit « recorded », « example » ou « simulated », le présentateur le dit aussi. Une étape annoncée n’est pas une étape observée.</p>
+</section>
+
+<section id="challenge">
+  <h2>6. Questions de challenge pour la salle</h2>
+  <p>Des pièges volontaires. Les réponses attendues sont verrouillées par la suite de tests.</p>
+  <table>
+    <thead><tr><th>Question du public</th><th>Réponse attendue</th></tr></thead>
+    <tbody>
+      <tr><td>Contoso surlivre de 12 % en Espagne. On le facture ?</td><td>Non : au-delà de 5 %, l’excédent n’est pas facturable (6.1). Au-delà de 10 %, crédit de 50 % de la valeur média de l’excédent, sous 45 jours, sans demande du client (6.2).</td></tr>
+      <tr><td>Litware surlivre de 11 %. Même traitement ?</td><td>Non : aucune compensation, quel que soit l’écart (6.1–6.2). Et l’agence ne peut pas facturer l’excédent (6.3).</td></tr>
+      <tr><td>On compense l’Espagne avec un marché sous-livré de Contoso ?</td><td>Non : les écarts sont évalués par marché et par trimestre, sans compensation entre marchés (6.4).</td></tr>
+      <tr><td>Fabrikam sous-livre de 8 % en Italie. Compensation en nature ?</td><td>Pas à 8 % : pénalité de 2 % du budget média net, de plein droit (6.2). La compensation en nature ne s’ajoute qu’au-delà de 10 % (6.3–6.4).</td></tr>
+      <tr><td>Combien vaut le crédit Contoso en euros ?</td><td>Il faut le tarif net contractuel par canal. L’application ne l’invente pas.</td></tr>
+      <tr><td>Combien de campagnes n’ont pas été entièrement facturées ?</td><td>Deux campagnes — mais six lignes au grain campagne × régie. 649 159 € de manque, réclamables 120 jours (Litware, 9.2), jusqu’au 28/01/2027.</td></tr>
+      <tr><td>Pourquoi ne pas mettre la règle de calcul dans le prompt ?</td><td>Parce qu’on aurait deux définitions des impressions livrées. La mesure reste dans Fabric, auditable.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="planb">
+  <h2>7. Plan B</h2>
+  <table>
+    <thead><tr><th>Symptôme</th><th>Réaction sur scène</th></tr></thead>
+    <tbody>
+      <tr><td>Une question live dépasse 100 s ou échoue</td><td>« C’est la chaîne complète Fabric + Foundry qui tourne en direct. » Basculer sur une question préparée équivalente, en disant qu’elle est enregistrée.</td></tr>
+      <tr><td>Un écran affiche une erreur et « Retry »</td><td>Réessayer une fois. Sinon, ouvrir l’onglet <code>/diagnostic</code> : il indique quel maillon de la chaîne a échoué.</td></tr>
+      <tr><td>Écran de connexion inattendu</td><td>Se reconnecter avec le compte du tenant de démo, dans le même navigateur que la répétition.</td></tr>
+      <tr><td>Page IQ : « Recorded evidence is not available yet »</td><td>Cliquer « Explore repository example » et le présenter comme un exemple du repository.</td></tr>
+      <tr><td>« Read live » échoue sur la page IQ</td><td>« Use recorded evidence » si disponible, sinon « Choose repository example ». L’erreur reste visible : c’est voulu.</td></tr>
+      <tr><td>Tout est bloqué</td><td>Raconter le tableau de la section 1 et l’architecture : le message de la démo tient sans l’écran.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="questions">
+  <h2>8. Questions à coller</h2>
+  <p id="q-live"><strong>Q1 — question live de la scène 3</strong> <span class="chip live">vérifiée en live · réponse en 75 s</span></p>
+  <div class="ask"><button type="button" data-copy>Copier</button>For advertiser ADV-001 in market MKT-ES during 2026-Q3, what are planned impressions, delivered impressions and signed compensation terms? Please cite the clause.</div>
+
+  <p><strong>Q2 — même chiffre, autre contrat</strong> <span class="chip">à répéter avant usage</span></p>
+  <div class="ask"><button type="button" data-copy>Copier</button>For advertiser ADV-004 in market MKT-UK during 2026-Q3, what are planned impressions, delivered impressions and signed compensation terms? Please cite the clause.</div>
+
+  <p><strong>Q3 — sous-livraison</strong> <span class="chip">à répéter avant usage</span></p>
+  <div class="ask"><button type="button" data-copy>Copier</button>For advertiser ADV-002 in market MKT-IT during 2026-Q3, what are planned impressions, delivered impressions and signed compensation terms? Please cite the clause.</div>
+
+  <details>
+    <summary>Questions préparées (rejeu enregistré) utilisables sur scène</summary>
+    <ul>
+      <li>« Which markets are off plan in Q3, and what does the contract say about it? » — chiffres + clauses, 81 s en live.</li>
+      <li>« Where does the portfolio stand over the period? » — chiffres, 67 s en live.</li>
+      <li>« Which media owners carry the campaigns in the off-plan market? » — graphe, 81 s en live.</li>
+      <li>« What ran and was never billed, and how long can it still be claimed? » — chiffres + clauses, 84 s en live.</li>
+    </ul>
+    <p>À éviter tant qu’ils ne sont pas réenregistrés : « What do the contracts provide for in case of over-delivery? » et « What deadlines do those clauses run on? ».</p>
+  </details>
+</section>
+
+<footer>
+  Zava Media est une agence fictive ; annonceurs, contrats, notes Work IQ et annonces Web IQ sont synthétiques.
+  Ce document ne contient ni identifiant de tenant, ni URL de déploiement : ils se trouvent dans <code>state.json</code>, non versionné.
+</footer>
+</main>
+<script>
+  document.querySelectorAll('[data-copy]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      var text = button.parentElement.textContent.replace(button.textContent, '').trim();
+      var done = function () { button.textContent = 'Copié'; setTimeout(function () { button.textContent = 'Copier'; }, 1500); };
+      if (navigator.clipboard) { navigator.clipboard.writeText(text).then(done, function () { button.textContent = 'Échec'; }); }
+    });
+  });
+</script>
+</body>
+</html>

@@ -37,6 +37,7 @@ demo, not an implementation detail.
 | **Company** | Zava Media (fictional agency), five fictional advertisers |
 | **Fabric items** | Lakehouse · Eventhouse · Ontology (Fabric IQ) · Data Agent · Semantic model · Report |
 | **Foundry items** | Project · supervisor agent · contracts agent (A2A) · vector store over the contracts |
+| **Hosted application** | Rayfin Fabric App · React/Vite console · Entra SPA + Fabric-brokered authentication |
 | **Region** | Sweden Central (capacity and Foundry project must match) |
 | **Dataset** | 11 tables, ~65 000 rows, deterministic, committed to the repo |
 | **Contracts** | 5 framework contracts with **deliberately divergent** clauses |
@@ -112,6 +113,8 @@ flowchart LR
   KB -->|file_search| CTR
   CTR -->|A2A| ORCH
   ORCH --> ANS([Number + clause,<br/>both cited])
+  ANS --> APP[Rayfin Fabric App<br/>Zava Media console]
+  RPT --> APP
 ```
 
 Two attachment kinds, and they are not interchangeable:
@@ -132,7 +135,7 @@ to the graph it feeds and nowhere near the report.
 | Path | What lives there |
 |---|---|
 | `deploy_all.py` | One-shot idempotent orchestrator, plus the pre-demo warm-up |
-| `fabric/` | Fabric deployment code, one package per workload — `_shared`, `workspace`, `lakehouse`, `ontology`, `graph`, `realtime`, `data_agent`, `powerbi` |
+| `fabric/` | Fabric deployment code, one package per workload — `_shared`, `workspace`, `lakehouse`, `ontology`, `graph`, `realtime`, `data_agent`, `powerbi`, `application` |
 | `foundry/` | Microsoft Foundry — project, connection, agents, and the post-deploy routing verifier |
 | `app/` | `zava-media-console` — React + Vite console embedding Fabric items (`@microsoft/fabric-embed`, MSAL, Rayfin) |
 | `design/` | Specifications, not deployment — `contracts/` (source corpus), `notebooks/` (offline generator) |
@@ -156,18 +159,41 @@ git clone https://github.com/Statyx/Fab-Zava-Media.git
 cd Fab-Zava-Media
 pip install -r requirements.txt
 python -m design.notebooks.generate_data     # regenerates artifacts/lakehouse_data/
-python -m pytest tests/ -q                   # expect: 192 passed
+python -m pytest tests/ -q                   # offline regression gate
 ```
 
-Then deploy — idempotent and resumable. Needs an F-SKU capacity and a Foundry project,
-both in Sweden Central:
+Then deploy — idempotent and resumable. Needs an F-SKU capacity and Foundry resources
+in Sweden Central, Node.js 22.12+, and permission to configure an Entra SPA registration
+and publish the Rayfin Fabric App in the target workspace:
 
 ```bash
 cp config.example.yaml config.yaml         # then fill capacity_id + tenant_id
-python deploy_all.py                       # workspace → … → supervisor, then warm up
+npm --prefix app ci                        # locked application dependencies
+python deploy_all.py                       # Fabric → Foundry → application → warm-up
 python deploy_all.py --from ontology       # resume after a failure
+python deploy_all.py --app-only             # isolated app redeploy, existing backend state
 python -m foundry.verify_foundry           # prove the routing, don't assume it
 ```
+
+The hosted console is a **first-class deployment step**, after `foundry_agents`.
+`--fabric-only` and `--foundry-only` remain backend-only: neither publishes the app, and
+neither completes a tenant migration. The mutually exclusive `--app-only` filter (or
+`application` / `--from application`) rebuilds and publishes against the backend state.
+On Windows, use `npm.cmd` if PowerShell blocks the `npm.ps1` launcher.
+
+The application step derives its local target environment from configuration/state,
+configures the Entra SPA, explicitly targets Rayfin, and saves the actual hosted
+`application_url`. Azure CLI, Rayfin and browser sign-in caches are independent; switching
+`az` alone does not migrate the application. Both Entra SPA/MSAL and Rayfin
+Fabric-brokered authentication must work in the new tenant. Never place secrets or
+tokens in `VITE_*`: those values ship to the browser.
+
+**Validate the hosted app, not just the backend APIs.** Open `application_url` from
+`state.json`, sign in to the target tenant, check the embedded items, and exercise the
+number-only, contract-only and combined questions through the console. Offline tests
+and deployment success are not evidence of a live, browser-validated migration. See
+the [deployment runbook](docs/DEPLOYMENT.md) for prerequisites, tenant isolation and
+the end-to-end checklist.
 
 Run `python deploy_all.py --warmup` right before the demo, to pay the cold start off-stage.
 

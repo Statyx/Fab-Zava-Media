@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthenticationResult } from '@azure/msal-browser';
 
 import { MsalAuthService } from '@/services/MsalAuthService';
-import { activeAccount, FABRIC_SCOPES, getToken, msal } from '@/services/msal';
+import { activeAccount, belongsToConfiguredTenant, FABRIC_SCOPES, getToken, msal } from '@/services/msal';
 import { isFramed } from '@/services/authStartup';
 
 const account = vi.hoisted(() => ({
@@ -18,6 +18,7 @@ const result: AuthenticationResult = {
 };
 vi.mock('@/services/msal', () => ({
   activeAccount: vi.fn(),
+  belongsToConfiguredTenant: vi.fn(),
   ensureMsalReady: vi.fn().mockResolvedValue(undefined),
   FABRIC_SCOPES: ['https://api.fabric.microsoft.com/.default'],
   FOUNDRY_SCOPES: ['https://ai.azure.com/.default'],
@@ -32,6 +33,7 @@ vi.mock('@/services/authStartup', async (importOriginal) => {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(activeAccount).mockReturnValue(account);
+  vi.mocked(belongsToConfiguredTenant).mockReturnValue(true);
   vi.mocked(msal.loginPopup).mockResolvedValue(result);
   vi.mocked(getToken).mockResolvedValue('test-fabric-token');
   vi.mocked(isFramed).mockReturnValue(false);
@@ -40,7 +42,7 @@ beforeEach(() => {
 describe('MSAL sign-in scopes', () => {
   it('requests one resource .default without merging Foundry into extraScopesToConsent', async () => {
     const user = await new MsalAuthService().signIn();
-    expect(msal.loginPopup).toHaveBeenCalledExactlyOnceWith({ scopes: FABRIC_SCOPES, prompt: 'login' });
+    expect(msal.loginPopup).toHaveBeenCalledExactlyOnceWith({ scopes: FABRIC_SCOPES, prompt: 'select_account' });
     expect(msal.setActiveAccount).toHaveBeenCalledWith(account);
     expect(user).toEqual({ id: 'user-1', email: 'demo@example.com', name: 'Demo User' });
   });
@@ -54,6 +56,12 @@ describe('MSAL sign-in scopes', () => {
   it('rejects a sign-in whose active account cannot be resolved', async () => {
     vi.mocked(activeAccount).mockReturnValue(null);
     await expect(new MsalAuthService().signIn()).rejects.toThrow('Sign-in returned no account');
+  });
+
+  it('rejects a different tenant instead of installing its account', async () => {
+    vi.mocked(belongsToConfiguredTenant).mockReturnValue(false);
+    await expect(new MsalAuthService().signIn()).rejects.toThrow('configured demo tenant');
+    expect(msal.setActiveAccount).not.toHaveBeenCalled();
   });
 });
 

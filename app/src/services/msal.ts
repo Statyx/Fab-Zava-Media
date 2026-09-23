@@ -96,15 +96,20 @@ export function ensureMsalReady(): Promise<void> {
   if (!ready) {
     ready = msal.initialize().then(async () => {
       await msal.handleRedirectPromise();
-      const [first] = msal.getAllAccounts();
-      if (first && !msal.getActiveAccount()) msal.setActiveAccount(first);
+      msal.setActiveAccount(activeAccount());
     });
   }
   return ready;
 }
 
 export function activeAccount(): AccountInfo | null {
-  return msal.getActiveAccount() ?? msal.getAllAccounts()[0] ?? null;
+  const current = msal.getActiveAccount();
+  if (belongsToConfiguredTenant(current)) return current;
+  return msal.getAllAccounts().find(belongsToConfiguredTenant) ?? null;
+}
+
+export function belongsToConfiguredTenant(account: AccountInfo | null): boolean {
+  return Boolean(tenantId && account?.tenantId.toLowerCase() === tenantId.toLowerCase());
 }
 
 /**
@@ -128,7 +133,12 @@ export async function getToken(scopes: string[], allowPopup = true): Promise<str
     throw new Error('No signed-in account and interaction is not allowed here.');
   }
 
-  const r = await msal.acquireTokenPopup({ scopes });
+  const r = await msal.acquireTokenPopup(
+    account ? { scopes, account } : { scopes, prompt: 'select_account' },
+  );
+  if (!belongsToConfiguredTenant(r.account)) {
+    throw new Error('The selected account is not in the configured demo tenant. Choose the demo account.');
+  }
   if (r.account) msal.setActiveAccount(r.account);
   return r.accessToken;
 }

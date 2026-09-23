@@ -36,8 +36,18 @@ shipped app is right and this spec has a bug.
 
 ## 1. Runtime
 
-**Fabric App on Rayfin**, static SPA, brokered auth — the default in
-`Apps-Brain/agents/fabric-apps-agent`. Same shape as `app-v2/rayfin/rayfin.yml`.
+**Fabric App on Rayfin**, static SPA. Rayfin provides hosting and its brokered-auth
+configuration; when Entra is configured, the console uses its own tenant-bound MSAL
+session for Fabric, Power BI and Foundry API access (`services/bootstrap.ts`).
+Cached accounts from other tenants are ignored. Explicit sign-in offers an account
+picker; a previously rejected session requires fresh authentication. InPrivate is
+not the deployment strategy: hosting, SPA registration, redirects and backend bindings
+must all belong to the selected target. See [DEPLOYMENT.md](DEPLOYMENT.md).
+
+Rayfin 1.34 resolves an existing deployment by normalized workspace **name** before
+checking `--workspace-id`. The application deploy step archives a colliding alias
+under its tenant/workspace-qualified name and releases only that alias before
+provisioning the new target. The old application and other project aliases remain intact.
 
 No server, no database. Two transports only:
 
