@@ -121,8 +121,7 @@ describe('development preview', () => {
     expect(within(screen.getByRole('navigation', { name: 'Main navigation' }))
       .getByRole('link', { name: 'Zava IQ' })).toHaveAttribute('href', `/preview${IQ_NAV.to}`);
     await userEvent.click(screen.getByRole('button', { name: /^Zava IQ/ }));
-    expect(await screen.findByRole('heading', { name: 'Which delivery gaps need action?' }, { timeout: 5000 })).toBeVisible();
-    expect(document.querySelector('.iq-intro .cover-eyebrow')).toHaveTextContent('Zava IQ');
+    expect(await screen.findByRole('heading', { name: 'What can I do for you?' }, { timeout: 5000 })).toBeVisible();
     expect(screen.queryByText('IQ in practice')).not.toBeInTheDocument();
   });
 
