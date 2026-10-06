@@ -8,9 +8,6 @@ services:
       enabled: true
     password:
       enabled: true
-    # Rayfin rewrites this list when publishing; previous hosting origins are preserved.
-    # The console uses its dedicated, single-tenant Entra SPA, configured separately by
-    # fabric.application.deploy_application with the hosting origin and /blank.html.
     allowedRedirectUris:
       - http://localhost:5173
       - http://127.0.0.1:5173
@@ -24,6 +21,7 @@ services:
     folder: dist
     buildCommand: npm run build:fabric
     indexDocument: index.html
+    assetAccess: protected
   storage:
     enabled: false
   functions:

@@ -305,6 +305,10 @@ def update_redirects(token, app, hosting_url):
 def verify_host(origin):
     for route in ("/", "/blank.html", "/diagnostic"):
         response = requests.get(f"{origin}{route}", timeout=90)
+        # Rayfin >= 1.35 static hosting is auth-protected: an anonymous probe gets 401,
+        # which still proves the host is live. Content is checked in the signed-in browser.
+        if response.status_code == 401:
+            continue
         response.raise_for_status()
         if "<html" not in response.text.lower():
             raise RuntimeError(f"{route} is not the deployed application HTML.")

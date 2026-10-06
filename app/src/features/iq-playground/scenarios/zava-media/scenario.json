@@ -223,10 +223,9 @@
         {
           "choices": [
             {
-              "label": "Start Work IQ — check the account context",
-              "proactive": true,
-              "user": "",
-              "assistant": "Work context matters here: the Q3 delivery gaps were already raised in last week's Q3 close review, Ad ops flagged Fabrikam in Teams, and Finance has prepared the Contoso Spain credit calculation — validation is still pending. Nobody has told Contoso yet, and Litware's QBR is next week.",
+              "label": "Has anyone already told Contoso about the Q3 shortfall?",
+              "user": "Before I call Contoso — has anyone already told them about the Q3 shortfall? What did Finance, Ad ops and the account leads say about these three accounts this month?",
+              "assistant": "Not yet — nobody has told Contoso. The Q3 delivery gaps were already raised in last week's Q3 close review, Ad ops flagged Fabrikam in Teams, and Finance has prepared the Contoso Spain credit calculation — validation is still pending. Litware's QBR is next week, so the window to go first is now.",
               "chain": "Work context",
               "reflection": "**Who is involved**\n- **Marta Gil** — Contoso Mobility account lead, Spain. Received the Finance calculation on 2026-10-12.\n- **Elena Ruiz** — Litware Retail account lead, UK. QBR in preparation.\n- **Sarah Bennett** — Finance, billing adjustments.\n- **James Carter** — Ad operations, Q4 trafficking.\n\n**Recent meetings**\n- **Q3 delivery close review** — 2026-10-09 · Sales, Ad ops, Finance. Decision: quantify the gap per campaign before any customer contact. Action on Sarah Bennett.\n- **Litware Retail QBR prep** — 2026-10-14 · Elena Ruiz, James Carter. Open point: how to present the Q3 over-delivery when the contract grants no compensation.\n\n**Teams threads**\n- **#ad-ops-q4** — 2026-10-11 · James Carter: \"Fabrikam Beauty ran short on prime-time slots in September. Q4 inventory is tight, so a re-run has to be booked this week.\"\n- **Contoso account channel** — 2026-10-13 · Marta Gil: \"Contoso's marketing director asked about Q3 reach on Friday's call. I'd rather come to them first with a proposal.\"\n\n**Email trail**\n> \"The Contoso Spain Q3 credit calculation is prepared and has been sent to the account lead. Validation is still pending.\" — Finance, 2026-10-12\n\n**What this tells us**\nThe Q3 gaps are known internally, nobody has told the customers yet, and two accounts are asking. The window to act first is this week.",
               "thinkingSteps": [
@@ -289,10 +288,9 @@
         {
           "choices": [
             {
-              "label": "Start Web IQ — check the market calendar",
-              "proactive": true,
-              "user": "",
-              "assistant": "Timing helps: the Contoso credit lands in Q4, right when Contoso runs its EV roadshow in Spain (2–15 November). Litware Home's promotion runs 26 October – 8 November, ahead of its QBR.",
+              "label": "Is anything coming up on the market side for Contoso and Litware?",
+              "user": "Is anything coming up publicly for Contoso and Litware this autumn that could help us time the compensation?",
+              "assistant": "Yes, and the timing helps: the Contoso credit lands in Q4, right when Contoso runs its EV roadshow in Spain (2–15 November). Litware Home's promotion runs 26 October – 8 November, ahead of its QBR.",
               "chain": "Market signals",
               "thinkingSteps": [
                 {
