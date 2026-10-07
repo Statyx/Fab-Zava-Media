@@ -60,10 +60,11 @@
     ],
     "suggestedChips": [
       "Suggested",
-      "Q3 is closed. Which advertisers ended the quarter outside contract tolerance, and by how much?",
-      "What does the Contoso contract say?",
-      "Prepare the Litware QBR"
+      "Which advertisers missed Q3 tolerance?",
+      "Contoso contract terms",
+      "Litware QBR prep"
     ],
+    "openerChip": "Which advertisers missed Q3 tolerance?",
     "upcomingTasks": [
       {
         "title": "Q3 close — delivery compensation decisions",

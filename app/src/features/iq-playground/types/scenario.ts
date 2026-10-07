@@ -178,6 +178,8 @@ export type ShellConfig = {
   /** Past conversation titles listed under "Conversations" in the sidebar. */
   conversationHistory: string[];
   suggestedChips: string[];
+  /** Short chip text that starts the scenario (the full prompt is still typed on click). */
+  openerChip?: string;
   upcomingTasks: UpcomingTask[];
   tryThese: TryThis[];
 };

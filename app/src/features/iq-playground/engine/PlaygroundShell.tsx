@@ -1024,16 +1024,24 @@ const scenes = tracks[0].scenes;
                   </span>
                 </button>
 
-                <div className="mt-4 flex flex-col md:flex-row flex-wrap md:justify-start gap-2 w-full max-w-2xl">
+                <div className="mt-3 flex flex-row flex-wrap items-center justify-center gap-1.5 w-full max-w-2xl">
                   {suggestedChips.map((chip) => {
                     // A chip that repeats the opening prompt starts the scenario on click.
                     const opener = scenes[0].choices[0];
-                    const startsScenario = chip === opener.user || chip === opener.label;
+                    const startsScenario =
+                      chip === opener.user || chip === opener.label || chip === scenario.shell.openerChip;
+                    if (chip === "Suggested") {
+                      return (
+                        <span key={chip} className="text-2xs uppercase tracking-wide text-ink-muted mr-1">
+                          {chip}
+                        </span>
+                      );
+                    }
                     if (!startsScenario) {
                       return (
                         <span
                           key={chip}
-                          className="rounded-2xl md:rounded-full bg-surface md:bg-transparent border-0 md:border md:border-hairline px-4 py-3 md:py-2 text-sm font-medium md:font-normal text-ink md:text-ink-muted text-left md:text-center"
+                          className="rounded-full border border-hairline px-3 py-1 text-xs text-ink-muted whitespace-nowrap"
                         >
                           {chip}
                         </span>
@@ -1048,9 +1056,10 @@ const scenes = tracks[0].scenes;
                           startTyping(opener);
                         }}
                         disabled={isBusy}
-                        className="flex items-center gap-2 rounded-2xl md:rounded-full border border-[#6f5bd6]/40 bg-[#6f5bd6]/5 px-4 py-3 md:py-2 text-sm font-medium text-ink text-left hover:bg-[#6f5bd6]/10 hover:border-[#6f5bd6] transition-colors disabled:opacity-60"
+                        title={opener.user}
+                        className="flex items-center gap-1.5 rounded-full border border-[#6f5bd6]/40 bg-[#6f5bd6]/5 px-3 py-1 text-xs font-medium text-ink whitespace-nowrap hover:bg-[#6f5bd6]/10 hover:border-[#6f5bd6] transition-colors disabled:opacity-60"
                       >
-                        <span className="text-[#6f5bd6] shrink-0">
+                        <span className="text-[#6f5bd6] shrink-0 [&_svg]:w-3 [&_svg]:h-3">
                           <IconSparkle />
                         </span>
                         {chip}
@@ -1058,20 +1067,6 @@ const scenes = tracks[0].scenes;
                     );
                   })}
                 </div>
-
-                <button
-                  onClick={() => {
-                    setActiveTrack(primaryTrackId);
-                    startTyping(scenes[0].choices[0]);
-                  }}
-                  disabled={isBusy}
-                  className="mt-8 md:mt-10 flex items-center gap-2 rounded-lg border border-hairline bg-white px-4 md:px-6 py-3 text-xs md:text-sm font-medium text-ink hover:bg-surface disabled:opacity-60 text-center"
-                >
-                  <span className="text-[#6f5bd6] shrink-0">
-                    <IconSparkle />
-                  </span>
-                  Copilot suggests: click to type &ldquo;{scenes[0].choices[0].label}&rdquo;
-                </button>
               </div>
             ) : (
               <>
